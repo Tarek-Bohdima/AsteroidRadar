@@ -50,6 +50,18 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+
+        buildTypes.each {
+            try{
+                it.buildConfigField 'String', 'NASA_API_KEY', nasaApiKey
+            }
+            catch (exception) {
+                throw new InvalidUserDataException(
+                        " API key Missing: Kindly Check README for supplying your API key from" +
+                                " https://api.nasa.gov/ " + exception.message
+                )
+            }
+        }
     }
     buildFeatures {
         dataBinding true
