@@ -27,7 +27,7 @@
  * if you submit it, it's your own responsibility if you get expelled.
  */
 
-package com.udacity.asteroidradar
+package com.udacity.asteroidradar.domain
 
 import com.squareup.moshi.Json
 

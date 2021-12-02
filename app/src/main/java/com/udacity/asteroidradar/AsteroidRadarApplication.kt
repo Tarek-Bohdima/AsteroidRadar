@@ -27,9 +27,16 @@
  * if you submit it, it's your own responsibility if you get expelled.
  */
 
-package com.udacity.asteroidradar.main
+package com.udacity.asteroidradar
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import timber.log.Timber
 
-class MainViewModel : ViewModel() {
+class AsteroidRadarApplication: Application() {
+
+
+    override fun onCreate() {
+        super.onCreate()
+        Timber.plant(Timber.DebugTree())
+    }
 }

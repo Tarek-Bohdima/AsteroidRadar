@@ -27,10 +27,39 @@
  * if you submit it, it's your own responsibility if you get expelled.
  */
 
-package com.udacity.asteroidradar
+package com.udacity.asteroidradar.ui.detail
 
-object Constants {
-    const val API_QUERY_DATE_FORMAT = "yyyy-MM-dd"
-    const val DEFAULT_END_DATE_DAYS = 7
-    const val BASE_URL = "https://api.nasa.gov/"
+
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.Fragment
+import com.udacity.asteroidradar.R
+import com.udacity.asteroidradar.databinding.FragmentDetailBinding
+
+class DetailFragment : Fragment() {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
+                              savedInstanceState: Bundle?): View? {
+        val binding = FragmentDetailBinding.inflate(inflater)
+        binding.lifecycleOwner = this
+
+        val asteroid = DetailFragmentArgs.fromBundle(arguments!!).selectedAsteroid
+
+        binding.asteroid = asteroid
+
+        binding.helpButton.setOnClickListener {
+            displayAstronomicalUnitExplanationDialog()
+        }
+
+        return binding.root
+    }
+
+    private fun displayAstronomicalUnitExplanationDialog() {
+        val builder = AlertDialog.Builder(activity!!)
+            .setMessage(getString(R.string.astronomica_unit_explanation))
+            .setPositiveButton(android.R.string.ok, null)
+        builder.create().show()
+    }
 }

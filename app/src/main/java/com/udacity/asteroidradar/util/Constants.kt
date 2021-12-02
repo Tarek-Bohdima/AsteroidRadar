@@ -27,13 +27,10 @@
  * if you submit it, it's your own responsibility if you get expelled.
  */
 
-package com.udacity.asteroidradar
+package com.udacity.asteroidradar.util
 
-import android.os.Parcelable
-import kotlinx.parcelize.Parcelize
-
-@Parcelize
-data class Asteroid(val id: Long, val codename: String, val closeApproachDate: String,
-                    val absoluteMagnitude: Double, val estimatedDiameter: Double,
-                    val relativeVelocity: Double, val distanceFromEarth: Double,
-                    val isPotentiallyHazardous: Boolean) : Parcelable
+object Constants {
+    const val API_QUERY_DATE_FORMAT = "yyyy-MM-dd"
+    const val DEFAULT_END_DATE_DAYS = 7
+    const val BASE_URL = "https://api.nasa.gov/"
+}
