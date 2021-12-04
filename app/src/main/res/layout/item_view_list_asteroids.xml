@@ -1,4 +1,4 @@
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   ~ MIT License Copyright (c) 2021. Tarek Bohdima
   ~
   ~ Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -27,31 +27,39 @@
   ~ if you submit it, it's your own responsibility if you get expelled.
   -->
 
-<navigation xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/nav_graph"
-    app:startDestination="@id/mainFragment">
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <fragment
-        android:id="@+id/mainFragment"
-        android:name="com.udacity.asteroidradar.ui.main.MainFragment"
-        android:label="fragment_main"
-        tools:layout="@layout/fragment_main" >
-        <action
-            android:id="@+id/action_showDetail"
-            app:destination="@id/detailFragment" />
-    </fragment>
+    <data>
 
-    <fragment
-        android:id="@+id/detailFragment"
-        android:name="com.udacity.asteroidradar.ui.detail.DetailFragment"
-        android:label="fragment_detail"
-        tools:layout="@layout/fragment_detail">
+        <variable
+            name="asteroid"
+            type="com.udacity.asteroidradar.domain.Asteroid" />
+    </data>
 
-        <argument
-            android:name="selectedAsteroid"
-            app:argType="com.udacity.asteroidradar.domain.Asteroid"/>
-    </fragment>
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
 
-</navigation>
+        <TextView
+            android:id="@+id/asteroid_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spacing_normal"
+            android:layout_marginTop="@dimen/spacing_normal"
+            android:text="@{asteroid.codename}"
+            android:textColor="@android:color/white"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_normal"
+            android:text="@{asteroid.closeApproachDate}"
+            android:textColor="@android:color/white"
+            app:layout_constraintStart_toStartOf="@+id/asteroid_name"
+            app:layout_constraintTop_toBottomOf="@+id/asteroid_name" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

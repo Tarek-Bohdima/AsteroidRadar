@@ -29,63 +29,40 @@
 
 package com.udacity.asteroidradar.ui.main
 
-import android.os.Bundle
-import android.view.*
-import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
-import com.udacity.asteroidradar.R
-import com.udacity.asteroidradar.databinding.FragmentMainBinding
+import android.view.LayoutInflater
+import android.view.ViewGroup
+import androidx.recyclerview.widget.RecyclerView
+import com.udacity.asteroidradar.databinding.ItemViewListAsteroidsBinding
 import com.udacity.asteroidradar.domain.Asteroid
 
-class MainFragment : Fragment() {
+class AsteroidAdapter() : RecyclerView.Adapter<AsteroidItemViewHolder>() {
 
-    val asteroids = mutableListOf<Asteroid>()
-    val asteroid1 = Asteroid(
-        1, "codenam1", "21-1-2022",
-        3.1, 1.2, 30.1, 2.1, false
-    )
+    var data = listOf<Asteroid>()
+        set(value) {
+            field = value
+            notifyDataSetChanged()
+        }
 
-    val asteroid2 = Asteroid(
-        2, "codenam2", "22-1-2022",
-        3.2, 1.3, 30.2, 2.2, false
-    )
-
-    val asteroid3 = Asteroid(
-        3, "codenam3", "23-1-2022",
-        3.3, 1.4, 30.3, 2.3, true
-    )
-
-    private val viewModel: MainViewModel by lazy {
-        ViewModelProvider(this).get(MainViewModel::class.java)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AsteroidItemViewHolder {
+        val itemBinding = ItemViewListAsteroidsBinding.inflate(
+            LayoutInflater.from(parent.context),
+            parent, false
+        )
+        return AsteroidItemViewHolder(itemBinding)
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        val binding = FragmentMainBinding.inflate(inflater)
-        binding.lifecycleOwner = this
-
-        binding.viewModel = viewModel
-
-        val adapter = AsteroidAdapter()
-        binding.asteroidRecycler.adapter = adapter
-
-        asteroids.addAll(0, listOf(asteroid1, asteroid2, asteroid3))
-
-        adapter.data = asteroids
-
-        setHasOptionsMenu(true)
-
-        return binding.root
+    override fun onBindViewHolder(holder: AsteroidItemViewHolder, position: Int) {
+        val item = data[position]
+        holder.bind(item)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.main_overflow_menu, menu)
-        super.onCreateOptionsMenu(menu, inflater)
-    }
+    override fun getItemCount() = data.size
+}
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return true
+class AsteroidItemViewHolder constructor(private var viewDataBinding: ItemViewListAsteroidsBinding) :
+    RecyclerView.ViewHolder(viewDataBinding.root) {
+    fun bind(asteroid: Asteroid) {
+        viewDataBinding.asteroid = asteroid
+        viewDataBinding.executePendingBindings()
     }
 }
