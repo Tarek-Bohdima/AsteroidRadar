@@ -29,4 +29,5 @@
 
 <resources>
     <dimen name="spacing_normal">16dp</dimen>
+    <dimen name="icon_size">64dp</dimen>
 </resources>

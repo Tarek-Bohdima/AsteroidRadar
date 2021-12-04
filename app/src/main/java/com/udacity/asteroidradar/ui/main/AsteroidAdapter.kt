@@ -35,7 +35,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.udacity.asteroidradar.databinding.ItemViewListAsteroidsBinding
 import com.udacity.asteroidradar.domain.Asteroid
 
-class AsteroidAdapter() : RecyclerView.Adapter<AsteroidItemViewHolder>() {
+class AsteroidAdapter() : RecyclerView.Adapter<AsteroidAdapter.AsteroidItemViewHolder>() {
 
     var data = listOf<Asteroid>()
         set(value) {
@@ -44,11 +44,7 @@ class AsteroidAdapter() : RecyclerView.Adapter<AsteroidItemViewHolder>() {
         }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AsteroidItemViewHolder {
-        val itemBinding = ItemViewListAsteroidsBinding.inflate(
-            LayoutInflater.from(parent.context),
-            parent, false
-        )
-        return AsteroidItemViewHolder(itemBinding)
+        return AsteroidItemViewHolder.from(parent)
     }
 
     override fun onBindViewHolder(holder: AsteroidItemViewHolder, position: Int) {
@@ -57,12 +53,27 @@ class AsteroidAdapter() : RecyclerView.Adapter<AsteroidItemViewHolder>() {
     }
 
     override fun getItemCount() = data.size
+
+    class AsteroidItemViewHolder private constructor(private var viewDataBinding: ItemViewListAsteroidsBinding) :
+        RecyclerView.ViewHolder(viewDataBinding.root) {
+        fun bind(asteroid: Asteroid) {
+            viewDataBinding.asteroid = asteroid
+            viewDataBinding.executePendingBindings()
+        }
+
+        companion object {
+            fun from(parent: ViewGroup): AsteroidItemViewHolder {
+                val itemBinding = ItemViewListAsteroidsBinding.inflate(
+                    LayoutInflater.from(parent.context),
+                    parent, false
+                )
+                return AsteroidItemViewHolder(itemBinding)
+            }
+        }
+
+    }
+
+
 }
 
-class AsteroidItemViewHolder constructor(private var viewDataBinding: ItemViewListAsteroidsBinding) :
-    RecyclerView.ViewHolder(viewDataBinding.root) {
-    fun bind(asteroid: Asteroid) {
-        viewDataBinding.asteroid = asteroid
-        viewDataBinding.executePendingBindings()
-    }
-}
+
