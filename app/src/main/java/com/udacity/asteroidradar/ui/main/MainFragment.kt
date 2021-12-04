@@ -73,7 +73,7 @@ class MainFragment : Fragment() {
 
         asteroids.addAll(0, listOf(asteroid1, asteroid2, asteroid3))
 
-        adapter.data = asteroids
+        adapter.submitList(asteroids)
 
         setHasOptionsMenu(true)
 
