@@ -37,7 +37,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.udacity.asteroidradar.databinding.ItemViewListAsteroidsBinding
 import com.udacity.asteroidradar.domain.Asteroid
 
-class AsteroidAdapter() : ListAdapter<Asteroid, AsteroidAdapter.AsteroidItemViewHolder>(AsteriodDiffCallback()){
+class AsteroidAdapter(private val clickListener: AsteroidListener) :
+    ListAdapter<Asteroid, AsteroidAdapter.AsteroidItemViewHolder>(AsteriodDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AsteroidItemViewHolder {
         return AsteroidItemViewHolder.from(parent)
@@ -45,13 +46,14 @@ class AsteroidAdapter() : ListAdapter<Asteroid, AsteroidAdapter.AsteroidItemView
 
     override fun onBindViewHolder(holder: AsteroidItemViewHolder, position: Int) {
         val item = getItem(position)
-        holder.bind(item)
+        holder.bind(item, clickListener)
     }
 
     class AsteroidItemViewHolder private constructor(private val viewDataBinding: ItemViewListAsteroidsBinding) :
         RecyclerView.ViewHolder(viewDataBinding.root) {
-        fun bind(asteroid: Asteroid) {
+        fun bind(asteroid: Asteroid, clickListener: AsteroidListener) {
             viewDataBinding.asteroid = asteroid
+            viewDataBinding.clickListener = clickListener
             viewDataBinding.executePendingBindings()
         }
 
@@ -68,7 +70,7 @@ class AsteroidAdapter() : ListAdapter<Asteroid, AsteroidAdapter.AsteroidItemView
     }
 }
 
-class AsteriodDiffCallback : DiffUtil.ItemCallback<Asteroid>(){
+class AsteriodDiffCallback : DiffUtil.ItemCallback<Asteroid>() {
     override fun areItemsTheSame(oldItem: Asteroid, newItem: Asteroid): Boolean {
         return oldItem.id == newItem.id
     }
@@ -79,4 +81,6 @@ class AsteriodDiffCallback : DiffUtil.ItemCallback<Asteroid>(){
 
 }
 
-
+class AsteroidListener(val clickListener: (asteroid: Asteroid) -> Unit) {
+    fun onClick(asteroid: Asteroid) = clickListener(asteroid)
+}

@@ -29,7 +29,21 @@
 
 package com.udacity.asteroidradar.ui.main
 
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.udacity.asteroidradar.domain.Asteroid
 
 class MainViewModel : ViewModel() {
+
+    private val _navigateToDetail = MutableLiveData<Asteroid?>()
+    val navigateToDetail
+        get() = _navigateToDetail
+
+    fun onAsteroidClicked(asteroid: Asteroid) {
+        _navigateToDetail.value = asteroid
+    }
+
+    fun onAsteroidDetailNavigated() {
+        _navigateToDetail.value = null
+    }
 }
