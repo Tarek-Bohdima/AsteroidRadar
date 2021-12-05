@@ -24,8 +24,10 @@ jobs:
         uses: actions/checkout@v2
         
       - name: Access API Key
-        with:
-          nasaApiKey: ${{ secrets.NASA_API_KEY }}
+        run: |
+          touch apikey.properties
+          echo nasaApiKey=${{ secrets.NASA_API_KEY }} >> apikey.properties
+          cat apikey.properties
 
       - name: Build the app
         run: ./gradlew build
