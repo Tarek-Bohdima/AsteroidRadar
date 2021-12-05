@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ MIT License Copyright (c) 2021. Tarek Bohdima
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy of
+  ~ this software and associated documentation files (the "Software"), to deal in
+  ~ the Software without restriction, including without limitation the rights to
+  ~ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+  ~ of the Software, and to permit persons to whom the Software is furnished to do
+  ~ so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  ~
+  ~ This project was submitted by Tarek Bohdima as part of the Android Kotlin
+  ~ Developer Nanodegree At Udacity. As part of Udacity Honor code, your
+  ~ submissions must be your own work, hence submitting this project as yours will
+  ~ cause you to break the Udacity Honor Code and the suspension of your account.
+  ~ I, the author of the project, allow you to check the code as a reference, but
+  ~ if you submit it, it's your own responsibility if you get expelled.
+  -->
+
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="asteroid"
+            type="com.udacity.asteroidradar.domain.Asteroid" />
+
+        <variable
+            name="clickListener"
+            type="com.udacity.asteroidradar.ui.main.AsteroidListener" />
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="@{() -> clickListener.onClick(asteroid)}">
+
+        <TextView
+            android:id="@+id/asteroid_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spacing_normal"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="16dp"
+            android:text="@{asteroid.codename}"
+            android:textColor="@android:color/white"
+            app:layout_constraintEnd_toStartOf="@+id/hazard_indicator"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="2001 KB67"
+            tools:textColor="@android:color/black" />
+
+        <TextView
+            android:id="@+id/date"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="8dp"
+            android:text="@{asteroid.closeApproachDate}"
+            android:textColor="@android:color/white"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/hazard_indicator"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/asteroid_name"
+            tools:text="2020-02-08"
+            tools:textColor="@android:color/black" />
+
+        <ImageView
+            android:id="@+id/hazard_indicator"
+            android:layout_width="@dimen/icon_size"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="8dp"
+            android:contentDescription="@string/content_description_hazard_indicator"
+            app:layout_constraintBottom_toBottomOf="@+id/date"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/asteroid_name"
+            app:statusIcon="@{asteroid.potentiallyHazardous}"
+            tools:srcCompat="@drawable/ic_status_potentially_hazardous" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

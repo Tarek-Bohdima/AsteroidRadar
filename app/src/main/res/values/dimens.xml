@@ -1,4 +1,4 @@
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   ~ MIT License Copyright (c) 2021. Tarek Bohdima
   ~
   ~ Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -27,31 +27,7 @@
   ~ if you submit it, it's your own responsibility if you get expelled.
   -->
 
-<navigation xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/nav_graph"
-    app:startDestination="@id/mainFragment">
-
-    <fragment
-        android:id="@+id/mainFragment"
-        android:name="com.udacity.asteroidradar.ui.main.MainFragment"
-        android:label="fragment_main"
-        tools:layout="@layout/fragment_main" >
-        <action
-            android:id="@+id/action_showDetail"
-            app:destination="@id/detailFragment" />
-    </fragment>
-
-    <fragment
-        android:id="@+id/detailFragment"
-        android:name="com.udacity.asteroidradar.ui.detail.DetailFragment"
-        android:label="fragment_detail"
-        tools:layout="@layout/fragment_detail">
-
-        <argument
-            android:name="selectedAsteroid"
-            app:argType="com.udacity.asteroidradar.domain.Asteroid"/>
-    </fragment>
-
-</navigation>
+<resources>
+    <dimen name="spacing_normal">16dp</dimen>
+    <dimen name="icon_size">64dp</dimen>
+</resources>
