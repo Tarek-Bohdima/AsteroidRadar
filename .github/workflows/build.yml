@@ -25,5 +25,5 @@ jobs:
 
       - name: Build the app
         env:
-          NASA_API_KEY: ${{ secrets.NASA_API_KEY }}
+          nasaApiKey: ${{ secrets.NASA_API_KEY }}
         run: ./gradlew build
