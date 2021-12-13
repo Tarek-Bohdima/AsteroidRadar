@@ -32,42 +32,29 @@ package com.udacity.asteroidradar.ui.main
 import android.os.Bundle
 import android.view.*
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.udacity.asteroidradar.R
 import com.udacity.asteroidradar.databinding.FragmentMainBinding
-import com.udacity.asteroidradar.domain.Asteroid
 
 class MainFragment : Fragment() {
 
     private lateinit var binding: FragmentMainBinding
 
-    private val asteroid1 = Asteroid(
-        1, "codename1", "21-1-2022",
-        3.1, 1.2, 30.1, 2.1, false
-    )
-
-    private val asteroid2 = Asteroid(
-        2, "codename2", "22-1-2022",
-        3.2, 1.3, 30.2, 2.2, false
-    )
-
-    private val asteroid3 = Asteroid(
-        3, "codename3", "23-1-2022",
-        3.3, 1.4, 30.3, 2.3, true
-    )
-
-    private val asteroids = listOf<Asteroid>(asteroid1, asteroid2, asteroid3)
-
     private val viewModel: MainViewModel by lazy {
-        ViewModelProvider(this)[MainViewModel::class.java]
+        val activity = requireNotNull(this.activity) {
+            "You can only access the viewModel after onViewCreated()"
+        }
+        ViewModelProvider(
+            this,
+            MainViewModel.Factory(activity.application)
+        )[MainViewModel::class.java]
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding = FragmentMainBinding.inflate(inflater, container, false)
         binding.lifecycleOwner = viewLifecycleOwner
 
@@ -79,15 +66,17 @@ class MainFragment : Fragment() {
 
         binding.asteroidRecycler.adapter = adapter
 
-        adapter.submitList(asteroids)
-
-        viewModel.navigateToDetail.observe(viewLifecycleOwner, Observer { asteroid ->
+        viewModel.navigateToDetail.observe(viewLifecycleOwner, { asteroid ->
             asteroid?.let {
                 this.findNavController().navigate(
                     MainFragmentDirections.actionShowDetail(asteroid)
                 )
                 viewModel.onAsteroidDetailNavigated()
             }
+        })
+
+        viewModel.asteroids.observe(viewLifecycleOwner, { asteroids ->
+            adapter.submitList(asteroids)
         })
 
         setHasOptionsMenu(true)

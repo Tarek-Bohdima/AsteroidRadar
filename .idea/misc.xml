@@ -3,6 +3,7 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="app/src/main/res/drawable/ic_help_circle.xml" value="0.3300925925925926" />
         <entry key="app/src/main/res/drawable/ic_status_normal.xml" value="0.33240740740740743" />
         <entry key="app/src/main/res/drawable/ic_status_potentially_hazardous.xml" value="0.33240740740740743" />
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.35520833333333335" />

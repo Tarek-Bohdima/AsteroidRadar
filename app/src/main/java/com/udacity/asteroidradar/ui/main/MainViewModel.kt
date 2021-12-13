@@ -29,15 +29,39 @@
 
 package com.udacity.asteroidradar.ui.main
 
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.*
+import com.udacity.asteroidradar.database.getDatabase
 import com.udacity.asteroidradar.domain.Asteroid
+import com.udacity.asteroidradar.repository.AsteroidRepository
+import kotlinx.coroutines.launch
+import timber.log.Timber
 
-class MainViewModel : ViewModel() {
+class MainViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val database = getDatabase(application)
+    private val repository = AsteroidRepository(database)
+//    private val _asteroidList = MutableLiveData<List<Asteroid>>()
+//    val asteroidList
+//        get() = _asteroidList
 
     private val _navigateToDetail = MutableLiveData<Asteroid?>()
     val navigateToDetail
         get() = _navigateToDetail
+
+    init {
+        getAsteroidList()
+    }
+
+    private fun getAsteroidList() {
+        viewModelScope.launch {
+            try {
+                repository.refreshAsteroids()
+            } catch (e: Exception) {
+                Timber.d("MainViewModel: getAsteroidList() called : %s", e.message)
+            }
+        }
+    }
 
     fun onAsteroidClicked(asteroid: Asteroid) {
         _navigateToDetail.value = asteroid
@@ -45,5 +69,20 @@ class MainViewModel : ViewModel() {
 
     fun onAsteroidDetailNavigated() {
         _navigateToDetail.value = null
+    }
+
+    val asteroids = repository.asteroids
+
+    /**
+     * Factory for constructing MainViewModel with parameter
+     */
+    class Factory(val app: Application) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
+                @Suppress("UNCHECKED_CAST")
+                return MainViewModel(app) as T
+            }
+            throw IllegalArgumentException("Unable to construct viewmodel")
+        }
     }
 }

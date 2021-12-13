@@ -27,15 +27,42 @@
  * if you submit it, it's your own responsibility if you get expelled.
  */
 
-package com.udacity.asteroidradar
+package com.udacity.asteroidradar.repository
 
-import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Transformations
+import com.udacity.asteroidradar.BuildConfig
+import com.udacity.asteroidradar.database.AsteroidDatabase
+import com.udacity.asteroidradar.database.asDomainModel
+import com.udacity.asteroidradar.domain.Asteroid
+import com.udacity.asteroidradar.network.AsteroidApi
+import com.udacity.asteroidradar.network.asDatabaseModel
+import com.udacity.asteroidradar.network.parseAsteroidsJsonResult
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import timber.log.Timber
 
-class MainActivity : AppCompatActivity() {
+class AsteroidRepository(private val database: AsteroidDatabase) {
+    companion object{
+        const val API_KEY = BuildConfig.NASA_API_KEY
+    }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+    val asteroids: LiveData<List<Asteroid>> =
+        Transformations.map(database.asteroidDao.getAsteroids()) {
+            it.asDomainModel()
+        }
+
+    suspend fun refreshAsteroids() {
+
+        withContext(Dispatchers.IO) {
+            try {
+                val asteroidsJson = AsteroidApi.retrofitService.getAsteroids(API_KEY)
+                database.asteroidDao.insertAll(*parseAsteroidsJsonResult(JSONObject(asteroidsJson))
+                    .asDatabaseModel())
+            } catch (e: Exception) {
+                Timber.d("AsteroidRepository: refreshAsteroids() failed %s", e.message)
+            }
+        }
     }
 }
