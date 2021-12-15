@@ -33,6 +33,7 @@ import android.app.Application
 import androidx.lifecycle.*
 import com.udacity.asteroidradar.database.getDatabase
 import com.udacity.asteroidradar.domain.Asteroid
+import com.udacity.asteroidradar.domain.PictureOfDay
 import com.udacity.asteroidradar.repository.AsteroidRepository
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -41,9 +42,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val database = getDatabase(application)
     private val repository = AsteroidRepository(database)
-//    private val _asteroidList = MutableLiveData<List<Asteroid>>()
-//    val asteroidList
-//        get() = _asteroidList
+
+    private val _imageOfTheDay = MutableLiveData<PictureOfDay>()
+    val imageOfTheDay: LiveData<PictureOfDay>
+        get() = _imageOfTheDay
+
 
     private val _navigateToDetail = MutableLiveData<Asteroid?>()
     val navigateToDetail
@@ -51,6 +54,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         getAsteroidList()
+        getImageOfTheDay()
+    }
+
+    private fun getImageOfTheDay() {
+        viewModelScope.launch {
+            try {
+                _imageOfTheDay.value = repository.getImageOfTheDay()
+            } catch (e: Exception) {
+                Timber.d("MainViewModel: getImageOfTheDay called : %s", e.message)
+            }
+        }
     }
 
     private fun getAsteroidList() {
@@ -72,6 +86,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     val asteroids = repository.asteroids
+
+//    val imageOfTheDay = repository.imageOfTheDay
 
     /**
      * Factory for constructing MainViewModel with parameter

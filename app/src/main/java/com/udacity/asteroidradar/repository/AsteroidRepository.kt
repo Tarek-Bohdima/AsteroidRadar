@@ -35,8 +35,10 @@ import com.udacity.asteroidradar.BuildConfig
 import com.udacity.asteroidradar.database.AsteroidDatabase
 import com.udacity.asteroidradar.database.asDomainModel
 import com.udacity.asteroidradar.domain.Asteroid
+import com.udacity.asteroidradar.domain.PictureOfDay
 import com.udacity.asteroidradar.network.AsteroidApi
 import com.udacity.asteroidradar.network.asDatabaseModel
+import com.udacity.asteroidradar.network.asDomainModel
 import com.udacity.asteroidradar.network.parseAsteroidsJsonResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -44,7 +46,7 @@ import org.json.JSONObject
 import timber.log.Timber
 
 class AsteroidRepository(private val database: AsteroidDatabase) {
-    companion object{
+    companion object {
         const val API_KEY = BuildConfig.NASA_API_KEY
     }
 
@@ -53,13 +55,23 @@ class AsteroidRepository(private val database: AsteroidDatabase) {
             it.asDomainModel()
         }
 
+    suspend fun getImageOfTheDay(): PictureOfDay {
+        var imageOfTheDay: PictureOfDay
+        withContext(Dispatchers.Default) {
+            imageOfTheDay = AsteroidApi.retrofitService.getImageOfDay(API_KEY).asDomainModel()
+        }
+        return imageOfTheDay
+    }
+
     suspend fun refreshAsteroids() {
 
         withContext(Dispatchers.IO) {
             try {
                 val asteroidsJson = AsteroidApi.retrofitService.getAsteroids(API_KEY)
-                database.asteroidDao.insertAll(*parseAsteroidsJsonResult(JSONObject(asteroidsJson))
-                    .asDatabaseModel())
+                database.asteroidDao.insertAll(
+                    *parseAsteroidsJsonResult(JSONObject(asteroidsJson))
+                        .asDatabaseModel()
+                )
             } catch (e: Exception) {
                 Timber.d("AsteroidRepository: refreshAsteroids() failed %s", e.message)
             }

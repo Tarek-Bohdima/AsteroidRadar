@@ -29,15 +29,19 @@
 
 package com.udacity.asteroidradar.network
 
+import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.udacity.asteroidradar.domain.Asteroid
 import com.udacity.asteroidradar.util.Constants
+import okhttp3.ResponseBody
+import retrofit2.Converter
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
+import java.lang.reflect.Type
 
 /**
  * A public interface that exposes the [getAsteroids] method
@@ -48,8 +52,13 @@ interface AsteroidService {
      * The @GET annotation indicates that the "neo/rest/v1/feed" endpoint will be requested with the GET
      * HTTP method
      */
-    @GET("neo/rest/v1/feed")
+    @ScalarResponse
+    @GET("neo/rest/v1/feed?start_date=2021-12-16&end_date=2021-12-23")
     suspend fun getAsteroids(@Query(Constants.PARAMETER_API_KEY) key: String): String
+
+    @JsonResponse
+    @GET("planetary/apod")
+    suspend fun getImageOfDay(@Query(Constants.PARAMETER_API_KEY) key: String): ImageOfTheDay
 }
 
 /**
@@ -66,8 +75,8 @@ private val moshi = Moshi.Builder()
  */
 private val retrofit = Retrofit.Builder()
     .baseUrl(Constants.BASE_URL)
-    .addConverterFactory(ScalarsConverterFactory.create())
-    .addConverterFactory(MoshiConverterFactory.create(moshi))
+    .addConverterFactory(HandleScalarAndJsonConverterFactory.create())
+    .addCallAdapterFactory(CoroutineCallAdapterFactory())
     .build()
 
 /**
@@ -75,4 +84,42 @@ private val retrofit = Retrofit.Builder()
  */
 object AsteroidApi {
     val retrofitService: AsteroidService by lazy { retrofit.create(AsteroidService::class.java) }
+}
+
+// credits to : https://stackoverflow.com/a/33459073/8899344
+// & https://www.py4u.net/discuss/645695
+@MustBeDocumented
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class ScalarResponse
+
+@MustBeDocumented
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class JsonResponse
+
+class HandleScalarAndJsonConverterFactory : Converter.Factory() {
+
+    override fun responseBodyConverter(
+        type: Type,
+        annotations: Array<Annotation>,
+        retrofit: Retrofit
+    ): Converter<ResponseBody, *>? {
+
+        annotations.forEach { annotation ->
+            return when (annotation) {
+                is ScalarResponse -> ScalarsConverterFactory.create()
+                    .responseBodyConverter(type, annotations, retrofit)
+                is JsonResponse -> MoshiConverterFactory.create(moshi)
+                    .responseBodyConverter(type, annotations, retrofit)
+                else -> null
+            }
+        }
+        return null
+    }
+
+    companion object {
+        fun create() = HandleScalarAndJsonConverterFactory()
+    }
+
 }
