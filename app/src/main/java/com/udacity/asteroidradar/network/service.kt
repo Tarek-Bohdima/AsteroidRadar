@@ -55,8 +55,8 @@ interface AsteroidService {
     @GET("neo/rest/v1/feed")
     suspend fun getAsteroids(
         @Query(Constants.PARAMETER_API_KEY) key: String,
-        @Query(Constants.PARAMETER_START) start: String,
-        @Query(Constants.PARAMETER_END) end: String
+        @Query(Constants.PARAMETER_START) startDate: String,
+        @Query(Constants.PARAMETER_END) endDate: String
     ): String
 
     @JsonResponse
