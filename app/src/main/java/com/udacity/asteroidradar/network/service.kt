@@ -29,7 +29,6 @@
 
 package com.udacity.asteroidradar.network
 
-import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.udacity.asteroidradar.domain.Asteroid
@@ -53,8 +52,12 @@ interface AsteroidService {
      * HTTP method
      */
     @ScalarResponse
-    @GET("neo/rest/v1/feed?start_date=2021-12-16&end_date=2021-12-23")
-    suspend fun getAsteroids(@Query(Constants.PARAMETER_API_KEY) key: String): String
+    @GET("neo/rest/v1/feed")
+    suspend fun getAsteroids(
+        @Query(Constants.PARAMETER_API_KEY) key: String,
+        @Query(Constants.PARAMETER_START) start: String,
+        @Query(Constants.PARAMETER_END) end: String
+    ): String
 
     @JsonResponse
     @GET("planetary/apod")
@@ -76,7 +79,6 @@ private val moshi = Moshi.Builder()
 private val retrofit = Retrofit.Builder()
     .baseUrl(Constants.BASE_URL)
     .addConverterFactory(HandleScalarAndJsonConverterFactory.create())
-    .addCallAdapterFactory(CoroutineCallAdapterFactory())
     .build()
 
 /**

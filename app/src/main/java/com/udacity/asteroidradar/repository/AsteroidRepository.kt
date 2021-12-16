@@ -63,11 +63,11 @@ class AsteroidRepository(private val database: AsteroidDatabase) {
         return imageOfTheDay
     }
 
-    suspend fun refreshAsteroids() {
+    suspend fun refreshAsteroids(startDate: String, endDate: String) {
 
         withContext(Dispatchers.IO) {
             try {
-                val asteroidsJson = AsteroidApi.retrofitService.getAsteroids(API_KEY)
+                val asteroidsJson = AsteroidApi.retrofitService.getAsteroids(API_KEY, startDate, endDate)
                 database.asteroidDao.insertAll(
                     *parseAsteroidsJsonResult(JSONObject(asteroidsJson))
                         .asDatabaseModel()

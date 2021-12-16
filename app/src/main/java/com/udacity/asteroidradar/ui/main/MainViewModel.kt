@@ -70,7 +70,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun getAsteroidList() {
         viewModelScope.launch {
             try {
-                repository.refreshAsteroids()
+                repository.refreshAsteroids("2021-12-16", "2021-12-23")
             } catch (e: Exception) {
                 Timber.d("MainViewModel: getAsteroidList() called : %s", e.message)
             }
@@ -86,8 +86,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     val asteroids = repository.asteroids
-
-//    val imageOfTheDay = repository.imageOfTheDay
 
     /**
      * Factory for constructing MainViewModel with parameter
