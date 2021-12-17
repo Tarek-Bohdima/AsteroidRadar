@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <!--
   ~ MIT License Copyright (c) 2021. Tarek Bohdima
   ~
@@ -29,14 +28,6 @@
   ~ if you submit it, it's your own responsibility if you get expelled.
   -->
 
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:id="@+id/show_next_week_asteroids"
-        android:title="@string/next_week_asteroids" />
-    <item
-        android:id="@+id/show_today_asteroids"
-        android:title="@string/today_asteroids" />
-    <item
-        android:id="@+id/show_stored_asteroids"
-        android:title="@string/saved_asteroids" />
-</menu>
+<full-backup-content>
+    <!-- Exclude specific shared preferences that contain GCM registration Id -->
+</full-backup-content>

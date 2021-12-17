@@ -32,44 +32,38 @@ package com.udacity.asteroidradar.ui.main
 import android.os.Bundle
 import android.view.*
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.udacity.asteroidradar.R
 import com.udacity.asteroidradar.databinding.FragmentMainBinding
-import com.udacity.asteroidradar.domain.Asteroid
 
 class MainFragment : Fragment() {
 
     private lateinit var binding: FragmentMainBinding
 
-    private val asteroid1 = Asteroid(
-        1, "codename1", "21-1-2022",
-        3.1, 1.2, 30.1, 2.1, false
-    )
-
-    private val asteroid2 = Asteroid(
-        2, "codename2", "22-1-2022",
-        3.2, 1.3, 30.2, 2.2, false
-    )
-
-    private val asteroid3 = Asteroid(
-        3, "codename3", "23-1-2022",
-        3.3, 1.4, 30.3, 2.3, true
-    )
-
-    private val asteroids = listOf<Asteroid>(asteroid1, asteroid2, asteroid3)
-
+    /**
+     * One way to delay creation of the viewModel until an appropriate lifecycle method is to use
+     * lazy. This requires that viewModel not be referenced before onViewCreated(), which we
+     * do in this Fragment.
+     */
     private val viewModel: MainViewModel by lazy {
-        ViewModelProvider(this)[MainViewModel::class.java]
+        val activity = requireNotNull(this.activity) {
+            "You can only access the viewModel after onViewCreated()"
+        }
+        ViewModelProvider(
+            this,
+            MainViewModel.Factory(activity.application)
+        )[MainViewModel::class.java]
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        binding = FragmentMainBinding.inflate(inflater, container, false)
-        binding.lifecycleOwner = viewLifecycleOwner
+    /**
+     * Called immediately after onCreateView() has returned, and fragment's
+     * view hierarchy has been created.  It can be used to do final
+     * initialization once these pieces are in place, such as retrieving
+     * views or restoring state.
+     */
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         binding.viewModel = viewModel
 
@@ -77,11 +71,38 @@ class MainFragment : Fragment() {
             viewModel.onAsteroidClicked(asteroid)
         })
 
+        viewModel.asteroids.observe(viewLifecycleOwner, { asteroids ->
+            adapter.submitList(asteroids)
+        })
+
         binding.asteroidRecycler.adapter = adapter
+    }
 
-        adapter.submitList(asteroids)
+    /**
+     * Called to have the fragment instantiate its user interface view.
+     *
+     * <p>If you return a View from here, you will later be called in
+     * {@link #onDestroyView} when the view is being released.
+     *
+     * @param inflater The LayoutInflater object that can be used to inflate
+     * any views in the fragment,
+     * @param container If non-null, this is the parent view that the fragment's
+     * UI should be attached to.  The fragment should not add the view itself,
+     * but this can be used to generate the LayoutParams of the view.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed
+     * from a previous saved state as given here.
+     *
+     * @return Return the View for the fragment's UI.
+     */
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        binding = FragmentMainBinding.inflate(inflater, container, false)
+        // Set the lifecycleOwner so DataBinding can observe LiveData
+        binding.lifecycleOwner = viewLifecycleOwner
 
-        viewModel.navigateToDetail.observe(viewLifecycleOwner, Observer { asteroid ->
+        viewModel.navigateToDetail.observe(viewLifecycleOwner, { asteroid ->
             asteroid?.let {
                 this.findNavController().navigate(
                     MainFragmentDirections.actionShowDetail(asteroid)

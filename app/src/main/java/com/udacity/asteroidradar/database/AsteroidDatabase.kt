@@ -27,15 +27,40 @@
  * if you submit it, it's your own responsibility if you get expelled.
  */
 
-package com.udacity.asteroidradar
+package com.udacity.asteroidradar.database
 
-import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
+import android.content.Context
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
 
-class MainActivity : AppCompatActivity() {
+/**
+ * A database that stores DatabaseAsteroid information.
+ * And a global method to get access to the database.
+ *
+ * This pattern is pretty much the same for any database,
+ * so you can reuse it.
+ */
+@Database(entities = [DatabaseAsteroid::class], version = 1)
+abstract class AsteroidDatabase : RoomDatabase() {
+    /**
+     * Connects the database to the DAO.
+     */
+    abstract val asteroidDao: AsteroidDao
+}
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+private lateinit var INSTANCE: AsteroidDatabase
+
+fun getDatabase(context: Context): AsteroidDatabase {
+    synchronized(AsteroidDatabase::class.java) {
+        if (!::INSTANCE.isInitialized) {
+            INSTANCE = Room.databaseBuilder(
+                context.applicationContext,
+                AsteroidDatabase::class.java,
+                "asteroids"
+            )
+                .build()
+        }
     }
+    return INSTANCE
 }

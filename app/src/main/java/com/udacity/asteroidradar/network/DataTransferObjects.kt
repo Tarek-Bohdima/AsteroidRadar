@@ -27,15 +27,41 @@
  * if you submit it, it's your own responsibility if you get expelled.
  */
 
-package com.udacity.asteroidradar
+package com.udacity.asteroidradar.network
 
-import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
+import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
+import com.udacity.asteroidradar.database.DatabaseAsteroid
+import com.udacity.asteroidradar.domain.Asteroid
+import com.udacity.asteroidradar.domain.PictureOfDay
 
-class MainActivity : AppCompatActivity() {
+@JsonClass(generateAdapter = true)
+data class ImageOfTheDay(
+    @Json(name = "media_type")
+    val mediaType: String,
+    val title: String,
+    val url: String
+)
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-    }
+fun ImageOfTheDay.asDomainModel(): PictureOfDay {
+    return PictureOfDay(
+        mediaType = this.mediaType,
+        title = this.title,
+        url = this.url
+    )
+}
+
+fun List<Asteroid>.asDatabaseModel(): Array<DatabaseAsteroid> {
+    return map {
+        DatabaseAsteroid(
+            id = it.id,
+            codename = it.codename,
+            closeApproachDate = it.closeApproachDate,
+            absoluteMagnitude = it.absoluteMagnitude,
+            estimatedDiameter = it.estimatedDiameter,
+            relativeVelocity = it.relativeVelocity,
+            distanceFromEarth = it.distanceFromEarth,
+            isPotentiallyHazardous = it.isPotentiallyHazardous
+        )
+    }.toTypedArray()
 }
