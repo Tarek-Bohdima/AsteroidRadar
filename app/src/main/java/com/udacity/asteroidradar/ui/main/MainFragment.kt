@@ -41,6 +41,11 @@ class MainFragment : Fragment() {
 
     private lateinit var binding: FragmentMainBinding
 
+    /**
+     * One way to delay creation of the viewModel until an appropriate lifecycle method is to use
+     * lazy. This requires that viewModel not be referenced before onViewCreated(), which we
+     * do in this Fragment.
+     */
     private val viewModel: MainViewModel by lazy {
         val activity = requireNotNull(this.activity) {
             "You can only access the viewModel after onViewCreated()"
@@ -51,12 +56,14 @@ class MainFragment : Fragment() {
         )[MainViewModel::class.java]
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        binding = FragmentMainBinding.inflate(inflater, container, false)
-        binding.lifecycleOwner = viewLifecycleOwner
+    /**
+     * Called immediately after onCreateView() has returned, and fragment's
+     * view hierarchy has been created.  It can be used to do final
+     * initialization once these pieces are in place, such as retrieving
+     * views or restoring state.
+     */
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         binding.viewModel = viewModel
 
@@ -64,7 +71,36 @@ class MainFragment : Fragment() {
             viewModel.onAsteroidClicked(asteroid)
         })
 
+        viewModel.asteroids.observe(viewLifecycleOwner, { asteroids ->
+            adapter.submitList(asteroids)
+        })
+
         binding.asteroidRecycler.adapter = adapter
+    }
+
+    /**
+     * Called to have the fragment instantiate its user interface view.
+     *
+     * <p>If you return a View from here, you will later be called in
+     * {@link #onDestroyView} when the view is being released.
+     *
+     * @param inflater The LayoutInflater object that can be used to inflate
+     * any views in the fragment,
+     * @param container If non-null, this is the parent view that the fragment's
+     * UI should be attached to.  The fragment should not add the view itself,
+     * but this can be used to generate the LayoutParams of the view.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed
+     * from a previous saved state as given here.
+     *
+     * @return Return the View for the fragment's UI.
+     */
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        binding = FragmentMainBinding.inflate(inflater, container, false)
+        // Set the lifecycleOwner so DataBinding can observe LiveData
+        binding.lifecycleOwner = viewLifecycleOwner
 
         viewModel.navigateToDetail.observe(viewLifecycleOwner, { asteroid ->
             asteroid?.let {
@@ -73,10 +109,6 @@ class MainFragment : Fragment() {
                 )
                 viewModel.onAsteroidDetailNavigated()
             }
-        })
-
-        viewModel.asteroids.observe(viewLifecycleOwner, { asteroids ->
-            adapter.submitList(asteroids)
         })
 
         setHasOptionsMenu(true)

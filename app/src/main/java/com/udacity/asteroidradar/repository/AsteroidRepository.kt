@@ -57,7 +57,7 @@ class AsteroidRepository(private val database: AsteroidDatabase) {
 
     suspend fun getImageOfTheDay(): PictureOfDay {
         var imageOfTheDay: PictureOfDay
-        withContext(Dispatchers.Default) {
+        withContext(Dispatchers.Main) {
             imageOfTheDay = AsteroidApi.retrofitService.getImageOfDay(API_KEY).asDomainModel()
         }
         return imageOfTheDay
@@ -67,7 +67,8 @@ class AsteroidRepository(private val database: AsteroidDatabase) {
 
         withContext(Dispatchers.IO) {
             try {
-                val asteroidsJson = AsteroidApi.retrofitService.getAsteroids(API_KEY, startDate, endDate)
+                val asteroidsJson =
+                    AsteroidApi.retrofitService.getAsteroids(API_KEY, startDate, endDate)
                 database.asteroidDao.insertAll(
                     *parseAsteroidsJsonResult(JSONObject(asteroidsJson))
                         .asDatabaseModel()

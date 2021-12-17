@@ -53,27 +53,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         get() = _navigateToDetail
 
     init {
-        getAsteroidList()
-        getImageOfTheDay()
-    }
-
-    private fun getImageOfTheDay() {
         viewModelScope.launch {
-            try {
-                _imageOfTheDay.value = repository.getImageOfTheDay()
-            } catch (e: Exception) {
-                Timber.d("MainViewModel: getImageOfTheDay called : %s", e.message)
-            }
+            getAsteroidList()
+            getImageOfTheDay()
         }
     }
 
-    private fun getAsteroidList() {
-        viewModelScope.launch {
-            try {
-                repository.refreshAsteroids("2021-12-16", "2021-12-23")
-            } catch (e: Exception) {
-                Timber.d("MainViewModel: getAsteroidList() called : %s", e.message)
-            }
+    private suspend fun getImageOfTheDay() {
+        try {
+            _imageOfTheDay.value = repository.getImageOfTheDay()
+        } catch (e: Exception) {
+            Timber.d("MainViewModel: getImageOfTheDay called : %s", e.message)
+        }
+    }
+
+    private suspend fun getAsteroidList() {
+        try {
+            repository.refreshAsteroids("2021-12-17", "2021-12-24")
+        } catch (e: Exception) {
+            Timber.d("MainViewModel: getAsteroidList() called : %s", e.message)
         }
     }
 
