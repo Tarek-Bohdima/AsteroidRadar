@@ -36,6 +36,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.udacity.asteroidradar.R
 import com.udacity.asteroidradar.databinding.FragmentMainBinding
+import com.udacity.asteroidradar.repository.AsteroidRepository
 
 class MainFragment : Fragment() {
 
@@ -54,28 +55,6 @@ class MainFragment : Fragment() {
             this,
             MainViewModel.Factory(activity.application)
         )[MainViewModel::class.java]
-    }
-
-    /**
-     * Called immediately after onCreateView() has returned, and fragment's
-     * view hierarchy has been created.  It can be used to do final
-     * initialization once these pieces are in place, such as retrieving
-     * views or restoring state.
-     */
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        binding.viewModel = viewModel
-
-        val adapter = AsteroidAdapter(AsteroidListener { asteroid ->
-            viewModel.onAsteroidClicked(asteroid)
-        })
-
-        viewModel.asteroids.observe(viewLifecycleOwner, { asteroids ->
-            adapter.submitList(asteroids)
-        })
-
-        binding.asteroidRecycler.adapter = adapter
     }
 
     /**
@@ -101,6 +80,18 @@ class MainFragment : Fragment() {
         binding = FragmentMainBinding.inflate(inflater, container, false)
         // Set the lifecycleOwner so DataBinding can observe LiveData
         binding.lifecycleOwner = viewLifecycleOwner
+        binding.viewModel = viewModel
+
+        val adapter = AsteroidAdapter(AsteroidListener { asteroid ->
+            viewModel.onAsteroidClicked(asteroid)
+        })
+
+        binding.asteroidRecycler.adapter = adapter
+
+        viewModel.asteroids.observe(viewLifecycleOwner, { asteroids ->
+            adapter.submitList(asteroids)
+        })
+
 
         viewModel.navigateToDetail.observe(viewLifecycleOwner, { asteroid ->
             asteroid?.let {
@@ -110,6 +101,8 @@ class MainFragment : Fragment() {
                 viewModel.onAsteroidDetailNavigated()
             }
         })
+
+        viewModel.updateFilters(AsteroidRepository.AsteroidsFilter.STORED)
 
         setHasOptionsMenu(true)
 
@@ -122,6 +115,20 @@ class MainFragment : Fragment() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        viewModel.updateFilters(
+            when (item.itemId) {
+                R.id.show_stored_asteroids -> {
+                    AsteroidRepository.AsteroidsFilter.STORED
+                }
+                R.id.show_next_week_asteroids -> {
+                    AsteroidRepository.AsteroidsFilter.WEEK
+                }
+                R.id.show_today_asteroids -> {
+                    AsteroidRepository.AsteroidsFilter.TODAY
+                }
+                else -> AsteroidRepository.AsteroidsFilter.STORED
+            }
+        )
         return true
     }
 }

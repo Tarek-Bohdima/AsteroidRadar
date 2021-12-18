@@ -35,6 +35,7 @@ import com.udacity.asteroidradar.database.getDatabase
 import com.udacity.asteroidradar.domain.Asteroid
 import com.udacity.asteroidradar.domain.PictureOfDay
 import com.udacity.asteroidradar.repository.AsteroidRepository
+import com.udacity.asteroidradar.repository.AsteroidRepository.AsteroidsFilter
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -51,6 +52,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _navigateToDetail = MutableLiveData<Asteroid?>()
     val navigateToDetail
         get() = _navigateToDetail
+
+    private val _filter = MutableLiveData<AsteroidsFilter>()
+    val filter
+        get() = _filter
+
+    val asteroids = Transformations.switchMap(filter) {
+        repository.getAsteroidSelection(it)
+    }
 
     init {
         viewModelScope.launch {
@@ -69,7 +78,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun getAsteroidList() {
         try {
-            repository.refreshAsteroids("2021-12-17", "2021-12-24")
+            repository.refreshAsteroids()
         } catch (e: Exception) {
             Timber.d("MainViewModel: getAsteroidList() called : %s", e.message)
         }
@@ -83,7 +92,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _navigateToDetail.value = null
     }
 
-    val asteroids = repository.asteroids
+    /**
+     * Updates the data set filter for the web services by querying the data with the new filter
+     * by calling [getAsteroidList]
+     * @param filter the [AsteroidsFilter] that is sent as part of the web server request
+     */
+    fun updateFilters(filter: AsteroidsFilter) {
+        _filter.value = filter
+    }
 
     /**
      * Factory for constructing MainViewModel with parameter
