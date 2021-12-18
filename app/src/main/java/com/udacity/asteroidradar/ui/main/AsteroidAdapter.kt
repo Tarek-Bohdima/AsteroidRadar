@@ -49,7 +49,9 @@ class AsteroidAdapter(private val clickListener: AsteroidListener) :
         holder.bind(item, clickListener)
     }
 
-    class AsteroidItemViewHolder private constructor(private val viewDataBinding: ItemViewListAsteroidsBinding) :
+    class AsteroidItemViewHolder private constructor(
+        private val viewDataBinding: ItemViewListAsteroidsBinding
+        ) :
         RecyclerView.ViewHolder(viewDataBinding.root) {
         fun bind(asteroid: Asteroid, clickListener: AsteroidListener) {
             viewDataBinding.asteroid = asteroid

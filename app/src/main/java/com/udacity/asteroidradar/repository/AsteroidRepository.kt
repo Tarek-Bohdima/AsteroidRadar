@@ -44,16 +44,52 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import timber.log.Timber
+import java.time.LocalDate
 
 class AsteroidRepository(private val database: AsteroidDatabase) {
+    sealed class AsteroidsFilter {
+        object TODAY : AsteroidsFilter()
+        object WEEK : AsteroidsFilter()
+        object STORED : AsteroidsFilter()
+    }
+
     companion object {
         const val API_KEY = BuildConfig.NASA_API_KEY
     }
 
-    val asteroids: LiveData<List<Asteroid>> =
-        Transformations.map(database.asteroidDao.getAsteroids()) {
-            it.asDomainModel()
+    private val startDate = LocalDate.now().toString()
+
+
+    private val endDate = LocalDate.now().plusDays(7).toString()
+
+    fun getAsteroidSelection(filter: AsteroidsFilter): LiveData<List<Asteroid>> {
+        return when (filter) {
+            AsteroidsFilter.STORED ->
+                Transformations.map(
+                    database.asteroidDao.getAsteroids()
+                ) {
+                    it.asDomainModel()
+                }
+
+            AsteroidsFilter.WEEK ->
+                Transformations.map(
+                    database.asteroidDao.getWeeklyAsteroids(
+                        startDate,
+                        endDate
+                    )
+                ) {
+                    it.asDomainModel()
+                }
+
+
+            AsteroidsFilter.TODAY ->
+                Transformations.map(
+                    database.asteroidDao.getTodayAsteroids(startDate)
+                ) {
+                    it.asDomainModel()
+                }
         }
+    }
 
     suspend fun getImageOfTheDay(): PictureOfDay {
         var imageOfTheDay: PictureOfDay
@@ -63,12 +99,12 @@ class AsteroidRepository(private val database: AsteroidDatabase) {
         return imageOfTheDay
     }
 
-    suspend fun refreshAsteroids(startDate: String, endDate: String) {
+    suspend fun refreshAsteroids() {
 
         withContext(Dispatchers.IO) {
             try {
                 val asteroidsJson =
-                    AsteroidApi.retrofitService.getAsteroids(API_KEY, startDate, endDate)
+                    AsteroidApi.retrofitService.getAsteroids(API_KEY)
                 database.asteroidDao.insertAll(
                     *parseAsteroidsJsonResult(JSONObject(asteroidsJson))
                         .asDatabaseModel()
