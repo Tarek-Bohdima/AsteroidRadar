@@ -36,4 +36,5 @@ object Constants {
     const val PARAMETER_API_KEY = "api_key"
     const val PARAMETER_START = "start_date"
     const val PARAMETER_END = "end_date"
+    const val TAG_OUTPUT = "OUTPUT"
 }
