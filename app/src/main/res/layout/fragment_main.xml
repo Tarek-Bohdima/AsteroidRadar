@@ -57,7 +57,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:adjustViewBounds="true"
-                app:imageUrl="@{viewModel.imageOfTheDay.url}" />
+                app:imageUrl="@{viewModel.imageOfTheDay.url}"
+                android:contentDescription="@string/image_of_the_day" />
 
             <TextView
                 android:id="@+id/textView"
