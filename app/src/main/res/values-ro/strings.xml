@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ MIT License Copyright (c) 2021. Tarek Bohdima
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy of
+  ~ this software and associated documentation files (the "Software"), to deal in
+  ~ the Software without restriction, including without limitation the rights to
+  ~ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+  ~ of the Software, and to permit persons to whom the Software is furnished to do
+  ~ so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  ~
+  ~ This project was submitted by Tarek Bohdima as part of the Android Kotlin
+  ~ Developer Nanodegree At Udacity. As part of Udacity Honor code, your
+  ~ submissions must be your own work, hence submitting this project as yours will
+  ~ cause you to break the Udacity Honor Code and the suspension of your account.
+  ~ I, the author of the project, allow you to check the code as a reference, but
+  ~ if you submit it, it's your own responsibility if you get expelled.
+  -->
+
+<resources>
+    <string name="app_name">Asteroid Radar</string>
+    <string name="next_week_asteroids">Vedeți săptămâna asteroizi</string>
+    <string name="today_asteroids">Vedeți astăzi asteroizii</string>
+    <string name="saved_asteroids">Vedeți asteroizii salvați</string>
+    <string name="close_approach_data_title">Data apropiată</string>
+    <string name="absolute_magnitude_title">Mărimea absolută</string>
+    <string name="estimated_diameter_title">Diametrul estimat</string>
+    <string name="relative_velocity_title">Viteza relativă</string>
+    <string name="distance_from_earth_title">Distanța față de pământ</string>
+    <string name="image_of_the_day">Imaginea zilei</string>
+    <string name="astronomical_unit_explanation">Unitatea astronomică (au) este o unitate de lungime, aproximativ distanța de la Pământ la Soare și egală cu aproximativ 150 de milioane de kilometri (93 de milioane de mile)</string>
+    <string name="astronomical_unit_explanation_button">Definiția unității astronomice</string>
+    <string name="potentially_hazardous_asteroid_image">Imagine cu asteroid potențial periculoasă</string>
+    <string name="not_hazardous_asteroid_image">Nu este periculoasă imagine de asteroid</string>
+    <string name="this_is_nasa_s_picture_of_day_showing_nothing_yet">Aceasta este imaginea zilei a NASA, care nu arată nimic încă</string>
+    <string name="nasa_picture_of_day_content_description_format">Imaginea zilei de la NASA: %s</string>
+    <string name="content_description_hazard_indicator">Indicator de pericol</string>
+</resources>
