@@ -30,7 +30,7 @@
 package com.udacity.asteroidradar.repository
 
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.Transformations
+import androidx.lifecycle.map
 import com.udacity.asteroidradar.BuildConfig
 import com.udacity.asteroidradar.database.AsteroidDatabase
 import com.udacity.asteroidradar.database.asDomainModel
@@ -49,7 +49,9 @@ import java.time.LocalDate
 class AsteroidRepository(private val database: AsteroidDatabase) {
     sealed class AsteroidsFilter {
         object TODAY : AsteroidsFilter()
+
         object WEEK : AsteroidsFilter()
+
         object STORED : AsteroidsFilter()
     }
 
@@ -59,33 +61,22 @@ class AsteroidRepository(private val database: AsteroidDatabase) {
 
     private val startDate = LocalDate.now().toString()
 
-
     private val endDate = LocalDate.now().plusDays(7).toString()
 
     fun getAsteroidSelection(filter: AsteroidsFilter): LiveData<List<Asteroid>> {
         return when (filter) {
             AsteroidsFilter.STORED ->
-                Transformations.map(
-                    database.asteroidDao.getAsteroids()
-                ) {
+                database.asteroidDao.getAsteroids().map {
                     it.asDomainModel()
                 }
 
             AsteroidsFilter.WEEK ->
-                Transformations.map(
-                    database.asteroidDao.getWeeklyAsteroids(
-                        startDate,
-                        endDate
-                    )
-                ) {
+                database.asteroidDao.getWeeklyAsteroids(startDate, endDate).map {
                     it.asDomainModel()
                 }
 
-
             AsteroidsFilter.TODAY ->
-                Transformations.map(
-                    database.asteroidDao.getTodayAsteroids(startDate)
-                ) {
+                database.asteroidDao.getTodayAsteroids(startDate).map {
                     it.asDomainModel()
                 }
         }
@@ -100,14 +91,13 @@ class AsteroidRepository(private val database: AsteroidDatabase) {
     }
 
     suspend fun refreshAsteroids() {
-
         withContext(Dispatchers.IO) {
             try {
                 val asteroidsJson =
                     AsteroidApi.retrofitService.getAsteroids(API_KEY)
                 database.asteroidDao.insertAll(
                     *parseAsteroidsJsonResult(JSONObject(asteroidsJson))
-                        .asDatabaseModel()
+                        .asDatabaseModel(),
                 )
             } catch (e: Exception) {
                 Timber.d("AsteroidRepository: refreshAsteroids() failed %s", e.message)

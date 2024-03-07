@@ -30,7 +30,13 @@
 package com.udacity.asteroidradar.ui.main
 
 import android.app.Application
-import androidx.lifecycle.*
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.switchMap
+import androidx.lifecycle.viewModelScope
 import com.udacity.asteroidradar.database.getDatabase
 import com.udacity.asteroidradar.domain.Asteroid
 import com.udacity.asteroidradar.domain.PictureOfDay
@@ -40,14 +46,12 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
-
     private val database = getDatabase(application)
     private val repository = AsteroidRepository(database)
 
     private val _imageOfTheDay = MutableLiveData<PictureOfDay>()
     val imageOfTheDay: LiveData<PictureOfDay>
         get() = _imageOfTheDay
-
 
     private val _navigateToDetail = MutableLiveData<Asteroid?>()
     val navigateToDetail
@@ -57,9 +61,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val filter
         get() = _filter
 
-    val asteroids = Transformations.switchMap(filter) {
-        repository.getAsteroidSelection(it)
-    }
+    val asteroids =
+        filter.switchMap {
+            repository.getAsteroidSelection(it)
+        }
 
     init {
         viewModelScope.launch {
