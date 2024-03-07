@@ -30,105 +30,98 @@
 package com.udacity.asteroidradar.ui.main
 
 import android.os.Bundle
-import android.view.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
+import androidx.core.view.MenuHost
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.navigation.fragment.findNavController
 import com.udacity.asteroidradar.R
 import com.udacity.asteroidradar.databinding.FragmentMainBinding
 import com.udacity.asteroidradar.repository.AsteroidRepository
 
+@Suppress("ktlint:standard:no-consecutive-comments")
 class MainFragment : Fragment() {
+    @Suppress("ktlint:standard:backing-property-naming")
+    private var _binding: FragmentMainBinding? = null
+    private val binding get() = _binding!!
 
-    private lateinit var binding: FragmentMainBinding
-
-    /**
-     * One way to delay creation of the viewModel until an appropriate lifecycle method is to use
-     * lazy. This requires that viewModel not be referenced before onViewCreated(), which we
-     * do in this Fragment.
-     */
-    private val viewModel: MainViewModel by lazy {
-        val activity = requireNotNull(this.activity) {
-            "You can only access the viewModel after onViewCreated()"
-        }
-        ViewModelProvider(
-            this,
-            MainViewModel.Factory(activity.application)
-        )[MainViewModel::class.java]
+    private val viewModel: MainViewModel by viewModels {
+        MainViewModel.Factory(requireActivity().application)
     }
 
-    /**
-     * Called to have the fragment instantiate its user interface view.
-     *
-     * <p>If you return a View from here, you will later be called in
-     * {@link #onDestroyView} when the view is being released.
-     *
-     * @param inflater The LayoutInflater object that can be used to inflate
-     * any views in the fragment,
-     * @param container If non-null, this is the parent view that the fragment's
-     * UI should be attached to.  The fragment should not add the view itself,
-     * but this can be used to generate the LayoutParams of the view.
-     * @param savedInstanceState If non-null, this fragment is being re-constructed
-     * from a previous saved state as given here.
-     *
-     * @return Return the View for the fragment's UI.
-     */
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
     ): View {
-        binding = FragmentMainBinding.inflate(inflater, container, false)
-        // Set the lifecycleOwner so DataBinding can observe LiveData
+        _binding = FragmentMainBinding.inflate(inflater, container, false)
         binding.lifecycleOwner = viewLifecycleOwner
         binding.viewModel = viewModel
 
-        val adapter = AsteroidAdapter(AsteroidListener { asteroid ->
-            viewModel.onAsteroidClicked(asteroid)
-        })
+        setupMenu()
+
+        val adapter =
+            AsteroidAdapter(
+                AsteroidListener { asteroid ->
+                    viewModel.onAsteroidClicked(asteroid)
+                },
+            )
 
         binding.asteroidRecycler.adapter = adapter
 
-        viewModel.asteroids.observe(viewLifecycleOwner, { asteroids ->
+        viewModel.asteroids.observe(viewLifecycleOwner) { asteroids ->
             adapter.submitList(asteroids)
-        })
+        }
 
-
-        viewModel.navigateToDetail.observe(viewLifecycleOwner, { asteroid ->
+        viewModel.navigateToDetail.observe(viewLifecycleOwner) { asteroid ->
             asteroid?.let {
-                this.findNavController().navigate(
-                    MainFragmentDirections.actionShowDetail(asteroid)
-                )
+                this.findNavController().navigate(MainFragmentDirections.actionShowDetail(asteroid))
                 viewModel.onAsteroidDetailNavigated()
             }
-        })
+        }
 
         viewModel.updateFilters(AsteroidRepository.AsteroidsFilter.STORED)
-
-        setHasOptionsMenu(true)
 
         return binding.root
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.main_overflow_menu, menu)
-        super.onCreateOptionsMenu(menu, inflater)
+    private fun setupMenu() {
+        val menuHost: MenuHost = requireActivity()
+        menuHost.addMenuProvider(
+            object : MenuProvider {
+                override fun onCreateMenu(
+                    menu: Menu,
+                    menuInflater: MenuInflater,
+                ) {
+                    menuInflater.inflate(R.menu.main_overflow_menu, menu)
+                }
+
+                override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+                    viewModel.updateFilters(
+                        when (menuItem.itemId) {
+                            R.id.show_stored_asteroids -> AsteroidRepository.AsteroidsFilter.STORED
+                            R.id.show_next_week_asteroids -> AsteroidRepository.AsteroidsFilter.WEEK
+                            R.id.show_today_asteroids -> AsteroidRepository.AsteroidsFilter.TODAY
+                            else -> return false // Not one of our menus
+                        },
+                    )
+                    return true
+                }
+            },
+            viewLifecycleOwner,
+            Lifecycle.State.RESUMED,
+        )
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        viewModel.updateFilters(
-            when (item.itemId) {
-                R.id.show_stored_asteroids -> {
-                    AsteroidRepository.AsteroidsFilter.STORED
-                }
-                R.id.show_next_week_asteroids -> {
-                    AsteroidRepository.AsteroidsFilter.WEEK
-                }
-                R.id.show_today_asteroids -> {
-                    AsteroidRepository.AsteroidsFilter.TODAY
-                }
-                else -> AsteroidRepository.AsteroidsFilter.STORED
-            }
-        )
-        return true
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null // Avoid memory leak
     }
 }
