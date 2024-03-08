@@ -34,14 +34,20 @@ apply plugin: 'kotlin-kapt'
 apply plugin: 'kotlin-parcelize'
 apply plugin: 'androidx.navigation.safeargs.kotlin'
 
+// Version components
+ext.versionMajor = 1
+ext.versionMinor = 2
+ext.versionPatch = 3
+ext.versionClassifier = "ALPHA" // Change this to ALPHA, BETA, RC, or RELEASE as needed
+
 android {
     compileSdk 34
     defaultConfig {
         applicationId "com.tarek.asteroidradar"
         minSdkVersion 26
         targetSdkVersion 33
-        versionCode 1
-        versionName "1.0"
+        versionCode generateVersionCode()
+        versionName generateVersionName()
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -74,6 +80,20 @@ android {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
     namespace 'com.tarek.asteroidradar'
+}
+
+// Helper method to calculate the version code
+@SuppressWarnings("GrMethodMayBeStatic")
+private Integer generateVersionCode() {
+    Integer versionCode = ext.minimumSdkVersion * 1000000 + ext.versionMajor * 10000 + ext.versionMinor * 100 + ext.versionPatch
+    return versionCode
+}
+
+// Helper method to construct the version name
+@SuppressWarnings("GrMethodMayBeStatic")
+private String generateVersionName() {
+    String versionName = "${ext.versionMajor}.${ext.versionMinor}.${ext.versionPatch}" + "-" + ext.versionClassifier
+    return versionName
 }
 
 dependencies {
