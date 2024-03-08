@@ -35,11 +35,11 @@
 
         <variable
             name="asteroid"
-            type="com.udacity.asteroidradar.domain.Asteroid" />
+            type="com.tarek.asteroidradar.domain.Asteroid" />
 
         <variable
             name="clickListener"
-            type="com.udacity.asteroidradar.ui.main.AsteroidListener" />
+            type="com.tarek.asteroidradar.ui.main.AsteroidListener" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout

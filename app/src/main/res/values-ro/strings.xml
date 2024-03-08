@@ -28,7 +28,7 @@
   -->
 
 <resources>
-    <string name="app_name">Asteroid Radar</string>
+    <string name="app_name" translatable="false">Asteroid Radar</string>
     <string name="next_week_asteroids">Vedeți săptămâna asteroizi</string>
     <string name="today_asteroids">Vedeți astăzi asteroizii</string>
     <string name="saved_asteroids">Vedeți asteroizii salvați</string>
