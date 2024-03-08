@@ -40,6 +40,12 @@ ext.versionMinor = 2
 ext.versionPatch = 3
 ext.versionClassifier = "ALPHA" // Change this to ALPHA, BETA, RC, or RELEASE as needed
 
+// SDK versions
+ext.minimumSdkVersion = 26
+ext.targetSdkVersion = 33
+ext.compileSdkVersion = 34
+ext.buildToolsVersion = "33.0.0"
+
 android {
     compileSdk 34
     defaultConfig {
