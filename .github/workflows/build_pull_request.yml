@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NASA_API_KEY: ${{ secrets.NASA_API_KEY }} # This line sets the API key as an environment variable
+      
     steps:
     - uses: actions/checkout@v2
 
