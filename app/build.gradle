@@ -62,18 +62,24 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
 
+        // Load local.properties file
+        def localProperties = new Properties()
+        def localPropertiesFile = rootProject.file('local.properties')
+        if (localPropertiesFile.exists()) {
+            localProperties.load(new FileInputStream(localPropertiesFile))
+        }
+
+        def nasaApiKey = System.getenv("NASA_API_KEY") ?: localProperties['NASA_API_KEY'].toString()
+
         buildTypes.each {
-            try{
-                it.buildConfigField 'String', 'NASA_API_KEY', nasaApiKey
-            }
-            catch (exception) {
-                throw new InvalidUserDataException(
-                        " API key Missing: Kindly Check README for supplying your API key from" +
-                                " https://api.nasa.gov/ " + exception.message
-                )
+            if (it.name == 'release') {
+                it.buildConfigField 'String', 'NASA_API_KEY', "\"${nasaApiKey}\"" // remember to change for release
+            } else {
+                it.buildConfigField 'String', 'NASA_API_KEY', "\"${nasaApiKey}\""
             }
         }
     }
+
     buildFeatures {
         dataBinding true
         buildConfig = true
