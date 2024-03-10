@@ -12,7 +12,7 @@ jobs:
       NASA_API_KEY: ${{ secrets.NASA_API_KEY }} # This line sets the API key as an environment variable
       
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Set up JDK 17
       uses: actions/setup-java@v2
@@ -24,7 +24,7 @@ jobs:
       run: chmod +x ./gradlew
 
     - name: Cache Gradle packages
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: |
           ~/.gradle/caches
