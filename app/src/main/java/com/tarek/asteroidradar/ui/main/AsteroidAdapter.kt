@@ -39,8 +39,10 @@ import com.tarek.asteroidradar.domain.Asteroid
 
 class AsteroidAdapter(private val clickListener: AsteroidListener) :
     ListAdapter<Asteroid, AsteroidAdapter.AsteroidItemViewHolder>(AsteriodDiffCallback()) {
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AsteroidItemViewHolder {
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): AsteroidItemViewHolder {
         return AsteroidItemViewHolder.from(parent)
     }
 
@@ -50,7 +52,7 @@ class AsteroidAdapter(private val clickListener: AsteroidListener) :
     }
 
     class AsteroidItemViewHolder private constructor(
-        private val viewDataBinding: ItemViewListAsteroidsBinding
+        private val viewDataBinding: ItemViewListAsteroidsBinding,
         ) :
         RecyclerView.ViewHolder(viewDataBinding.root) {
         fun bind(asteroid: Asteroid, clickListener: AsteroidListener) {
