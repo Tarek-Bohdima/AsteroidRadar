@@ -37,7 +37,7 @@ apply plugin: 'androidx.navigation.safeargs.kotlin'
 // Version components
 ext.versionMajor = 1
 ext.versionMinor = 2
-ext.versionPatch = 5
+ext.versionPatch = 6
 ext.versionClassifier = "INTERNAL" // Change this to ALPHA, BETA, RC, or RELEASE as needed
 
 // SDK versions
@@ -58,6 +58,10 @@ android {
     }
     buildTypes {
         release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
