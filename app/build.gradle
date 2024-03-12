@@ -37,7 +37,7 @@ apply plugin: 'androidx.navigation.safeargs.kotlin'
 // Version components
 ext.versionMajor = 1
 ext.versionMinor = 2
-ext.versionPatch = 6
+ext.versionPatch = 7
 ext.versionClassifier = "INTERNAL" // Change this to ALPHA, BETA, RC, or RELEASE as needed
 
 // SDK versions
@@ -56,31 +56,26 @@ android {
         versionName generateVersionName()
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
+
+    // Load local.properties file
+    def localProperties = new Properties()
+    def localPropertiesFile = rootProject.file('local.properties')
+    if (localPropertiesFile.exists()) {
+        localProperties.load(new FileInputStream(localPropertiesFile))
+    }
+
+    def nasaApiKey = System.getenv("NASA_API_KEY") ?: localProperties['NASA_API_KEY'].toString()
+
     buildTypes {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            buildConfigField 'String', 'NASA_API_KEY', "\"${nasaApiKey}\"" // remember to change for release
         }
         debug {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-
-        // Load local.properties file
-        def localProperties = new Properties()
-        def localPropertiesFile = rootProject.file('local.properties')
-        if (localPropertiesFile.exists()) {
-            localProperties.load(new FileInputStream(localPropertiesFile))
-        }
-
-        def nasaApiKey = System.getenv("NASA_API_KEY") ?: localProperties['NASA_API_KEY'].toString()
-
-        buildTypes.each {
-            if (it.name == 'release') {
-                it.buildConfigField 'String', 'NASA_API_KEY', "\"${nasaApiKey}\"" // remember to change for release
-            } else {
-                it.buildConfigField 'String', 'NASA_API_KEY', "\"${nasaApiKey}\""
-            }
+            buildConfigField 'String', 'NASA_API_KEY', "\"${nasaApiKey}\""
         }
     }
 

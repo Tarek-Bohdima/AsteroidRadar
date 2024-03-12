@@ -27,6 +27,14 @@
 # Serializables in the app
 -keep public class * extends java.io.Serializable
 
+-keep class * implements android.os.Parcelable {
+    public static final android.os.Parcelable$Creator *;
+}
+
+-keepclasseswithmembers class * {
+    public <init>(android.os.Parcel);
+}
+
 # Enums in the app
 -keepclassmembers,allowoptimization enum * {
     public static **[] values();
