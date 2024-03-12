@@ -37,7 +37,7 @@ apply plugin: 'androidx.navigation.safeargs.kotlin'
 // Version components
 ext.versionMajor = 1
 ext.versionMinor = 2
-ext.versionPatch = 7
+ext.versionPatch = 8
 ext.versionClassifier = "INTERNAL" // Change this to ALPHA, BETA, RC, or RELEASE as needed
 
 // SDK versions

@@ -33,7 +33,8 @@ import com.tarek.asteroidradar.domain.Asteroid
 import com.tarek.asteroidradar.util.Constants
 import org.json.JSONObject
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Locale
 import kotlin.collections.ArrayList
 
 fun parseAsteroidsJsonResult(jsonResult: JSONObject): ArrayList<Asteroid> {
