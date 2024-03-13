@@ -49,4 +49,5 @@
     <string name="this_is_nasa_s_picture_of_day_showing_nothing_yet">This is NASA\'s picture of day, showing nothing yet</string>
     <string name="nasa_picture_of_day_content_description_format">NASA\'s picture of day: %s</string>
     <string name="content_description_hazard_indicator">Hazard Indicator</string>
+    <string name="asteroid_recycler_description">List of asteroids from NASA\'s NeoW feed</string>
 </resources>

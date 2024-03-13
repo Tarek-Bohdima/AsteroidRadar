@@ -34,6 +34,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.tarek.asteroidradar.R
 import com.tarek.asteroidradar.databinding.FragmentDetailBinding
@@ -61,10 +62,19 @@ class DetailFragment : Fragment() {
     }
 
     private fun displayAstronomicalUnitExplanationDialog() {
-        val builder =
-            AlertDialog.Builder(requireActivity())
-                .setMessage(getString(R.string.astronomical_unit_explanation))
-                .setPositiveButton(android.R.string.ok, null)
-        builder.create().show()
+        val dialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogCustom)
+            .setMessage(getString(R.string.astronomical_unit_explanation))
+            .setPositiveButton(android.R.string.ok, null)
+            .create()
+
+        dialog.setOnShowListener {
+            // Change the OK button's background
+            val okButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            okButton.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.buttonBackground)) // Use your own color
+            okButton.setTextColor(ContextCompat.getColor(requireContext(), R.color.highContrastText)) // Use your text color for contrast
+        }
+
+        dialog.show()
     }
+
 }

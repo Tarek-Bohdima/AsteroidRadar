@@ -35,6 +35,28 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="actionBarStyle">@style/MyActionBar</item>
+    </style>
+
+    <style name="MyActionBar" parent="@style/Widget.AppCompat.Light.ActionBar.Solid.Inverse">
+        <item name="titleTextStyle">@style/MyActionBarTitleText</item>
+    </style>
+
+    <style name="MyActionBarTitleText" parent="@style/TextAppearance.Widget.AppCompat.Toolbar.Title">
+        <!-- Set text size in sp for better accessibility -->
+        <item name="android:textSize">20sp</item>
+        <!-- Adjust the color to ensure high contrast -->
+        <item name="android:textColor">@color/default_text_color</item>
+    </style>
+
+    <!-- Custom AlertDialog theme for better contrast -->
+    <style name="AlertDialogCustom" parent="ThemeOverlay.AppCompat.Dialog.Alert">
+        <!-- Change colorAccent to ensure high contrast for the button text -->
+        <item name="colorAccent">@color/highContrastText</item>
+        <!-- Optional: If you want to change the message text color for more contrast -->
+        <item name="android:textColorPrimary">@color/highContrastText</item>
+        <!-- You can also set background color if needed, ensure good contrast between text and background -->
+        <item name="android:background">@color/yourDialogBackground</item>
     </style>
 
 </resources>
