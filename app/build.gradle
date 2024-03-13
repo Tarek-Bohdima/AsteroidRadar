@@ -31,13 +31,14 @@ apply plugin: 'com.android.application'
 
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
+apply plugin: 'com.google.devtools.ksp'
 apply plugin: 'kotlin-parcelize'
 apply plugin: 'androidx.navigation.safeargs.kotlin'
 
 // Version components
 ext.versionMajor = 1
 ext.versionMinor = 2
-ext.versionPatch = 8
+ext.versionPatch = 9
 ext.versionClassifier = "INTERNAL" // Change this to ALPHA, BETA, RC, or RELEASE as needed
 
 // SDK versions
@@ -55,6 +56,14 @@ android {
         versionCode generateVersionCode()
         versionName generateVersionName()
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    sourceSets {
+        main {
+            java {
+                srcDir 'build/generated/ksp/src/main/kotlin'
+            }
+        }
     }
 
     // Load local.properties file
@@ -127,8 +136,8 @@ dependencies {
     implementation "androidx.navigation:navigation-ui-ktx:2.7.7"
 
     // Moshi
-    implementation 'com.squareup.moshi:moshi:1.15.0'
-    implementation 'com.squareup.moshi:moshi-kotlin:1.15.0'
+    implementation 'com.squareup.moshi:moshi:1.15.1'
+    implementation 'com.squareup.moshi:moshi-kotlin:1.15.1'
 
     // Retrofit
     implementation "com.squareup.retrofit2:retrofit:2.9.0"
@@ -144,11 +153,12 @@ dependencies {
     implementation "androidx.recyclerview:recyclerview:1.3.2"
 
     // Picasso
-    implementation 'com.squareup.picasso:picasso:2.71828'
+    //noinspection GradleDependency
+    implementation 'com.squareup.picasso:picasso:2.8'
 
     // Room database
     implementation "androidx.room:room-runtime:2.6.1"
-    kapt "androidx.room:room-compiler:2.6.1"
+    ksp "androidx.room:room-compiler:2.6.1"
     // Room KTX
     // https://developer.android.com/kotlin/ktx?gclid=CjwKCAiA-9uNBhBTEiwAN3IlNJuOM_ueGRxRMmGyFGLJcgm59xe5Ghad855qXhiBsr39dDg7_Bw6OBoCWgQQAvD_BwE&gclsrc=aw.ds#room
     implementation "androidx.room:room-ktx:2.6.1"
