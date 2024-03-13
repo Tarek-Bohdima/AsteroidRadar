@@ -30,6 +30,7 @@
 package com.tarek.asteroidradar.domain
 
 import android.os.Parcelable
+import com.squareup.moshi.Json
 import kotlinx.parcelize.Parcelize
 
 @Parcelize

@@ -27,7 +27,9 @@
 # Serializables in the app
 -keep public class * extends java.io.Serializable
 
--keep class * implements android.os.Parcelable {
+-keep @kotlinx.parcelize.Parcelize public class *
+
+-keepclassmembers class * implements android.os.Parcelable {
     public static final android.os.Parcelable$Creator *;
 }
 
@@ -77,42 +79,51 @@
 # Keep Gson classes
 -keep class com.google.gson.** { *; }
 
-# If using custom views or components that rely on reflection, add:
-#-keepclassmembers class com.tarek.asteroidradar.view.** {
-#    public <init>(android.content.Context, android.util.AttributeSet);
-#}
-# Replace `view` with the actual package name where your custom views are.
+# Retrofit does reflection on generic parameters. InnerClasses is required to use Signature and
+# EnclosingMethod is required to use InnerClasses.
+-keepattributes Signature, InnerClasses, EnclosingMethod
 
-# Application classes that will be serialized/deserialized over Gson
--keep class com.tarek.asteroidradar.** { *; }
+# Retrofit does reflection on method and parameter annotations.
+-keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations
 
-# Keep model classes used by Moshi
--keep class com.tarek.asteroidradar.domain.** { *; }
--keep class com.tarek.asteroidradar.network.** { *; }
+# Keep annotation default values (e.g., retrofit2.http.Field.encoded).
+-keepattributes AnnotationDefault
 
-# Keep Moshi classes
--keep class com.squareup.moshi.** { *; }
--keep @com.squareup.moshi.JsonQualifier interface *
-
-# Keep Kotlin classes and members used by Moshi
--keepclassmembers class * {
-    @com.squareup.moshi.FromJson *;
-    @com.squareup.moshi.ToJson *;
+# Retain service method parameters when optimizing.
+-keepclassmembers,allowshrinking,allowobfuscation interface * {
+    @retrofit2.http.* <methods>;
 }
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
--dontwarn com.squareup.okhttp3.internal.**
--dontwarn com.squareup.okhttp3.**
+
+# Ignore annotation used for build tooling.
+-dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
+
+# Ignore JSR 305 annotations for embedding nullability information.
 -dontwarn javax.annotation.**
--dontwarn okio.**
--dontwarn retrofit2.**
--dontwarn android.support.v4.**
--dontwarn com.google.android.gms.internal.**
--dontwarn com.fasterxml.jackson.core.**
--dontwarn java.lang.management.**
--dontwarn com.google.android.gms.**
--keep class * {
-    public private *;
-}
--keep public class com.google.android.gms.*
+
+# Guarded by a NoClassDefFoundError try/catch and only used when on the classpath.
+-dontwarn kotlin.Unit
+
+# Top-level functions that can only be used by Kotlin.
+-dontwarn retrofit2.KotlinExtensions
+-dontwarn retrofit2.KotlinExtensions$*
+
+# With R8 full mode, it sees no subtypes of Retrofit interfaces since they are created with a Proxy
+# and replaces all potential values with null. Explicitly keeping the interfaces prevents this.
+-if interface * { @retrofit2.http.* <methods>; }
+-keep,allowobfuscation interface <1>
+
+# Keep inherited services.
+-if interface * { @retrofit2.http.* <methods>; }
+-keep,allowobfuscation interface * extends <1>
+
+# With R8 full mode generic signatures are stripped for classes that are not
+# kept. Suspend functions are wrapped in continuations where the type argument
+# is used.
+-keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
+
+# R8 full mode strips generic signatures from return types if not kept.
+-if interface * { @retrofit2.http.* public *** *(...); }
+-keep,allowoptimization,allowshrinking,allowobfuscation class <3>
+
+# With R8 full mode generic signatures are stripped for classes that are not kept.
+-keep,allowobfuscation,allowshrinking class retrofit2.Response
