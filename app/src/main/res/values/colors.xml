@@ -36,4 +36,8 @@
     <color name="default_text_color">#FFFFFF</color>
     <color name="text_grey">#D2D2D2</color>
     <color name="potentially_hazardous">#FF8282</color>
+    <color name="highContrastText">#DE000000</color> <!-- A dark grey for contrast -->
+    <color name="yourDialogBackground">#FFFFFF</color> <!-- This is white; change if you want a different dialog background -->
+    <color name="buttonBackground">#FFBB86FC</color>  <!-- Example background color -->
+
 </resources>

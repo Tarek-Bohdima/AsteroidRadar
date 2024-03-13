@@ -45,4 +45,6 @@
     <string name="this_is_nasa_s_picture_of_day_showing_nothing_yet">Aceasta este imaginea zilei a NASA, care nu arată nimic încă</string>
     <string name="nasa_picture_of_day_content_description_format">Imaginea zilei de la NASA: %s</string>
     <string name="content_description_hazard_indicator">Indicator de pericol</string>
+    <string name="asteroid_recycler_description">Lista de asteroizi din fluxul NeoW al NASA</string>
+
 </resources>
