@@ -83,8 +83,7 @@
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/activity_main_image_of_the_day_layout"
-            app:layout_constraintVertical_bias="0.0"
-            android:contentDescription="@string/asteroid_recycler_description"/>
+            app:layout_constraintVertical_bias="0.0"/>
 
         <ProgressBar
             android:id="@+id/status_loading_wheel"

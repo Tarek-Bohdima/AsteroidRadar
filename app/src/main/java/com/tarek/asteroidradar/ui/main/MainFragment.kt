@@ -76,6 +76,9 @@ class MainFragment : Fragment() {
 
         binding.asteroidRecycler.adapter = adapter
 
+        // Set content description for accessibility
+        binding.asteroidRecycler.contentDescription = getString(R.string.asteroid_recycler_description)
+
         viewModel.asteroids.observe(viewLifecycleOwner) { asteroids ->
             adapter.submitList(asteroids)
         }
