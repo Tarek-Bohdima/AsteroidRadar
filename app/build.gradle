@@ -38,7 +38,7 @@ apply plugin: 'androidx.navigation.safeargs.kotlin'
 // Version components
 ext.versionMajor = 1
 ext.versionMinor = 3
-ext.versionPatch = 2
+ext.versionPatch = 3
 ext.versionClassifier = "INTERNAL" // Change this to ALPHA, BETA, RC, or RELEASE as needed
 
 // SDK versions
@@ -77,7 +77,7 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled true
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             buildConfigField 'String', 'NASA_API_KEY', "\"${nasaApiKey}\"" // remember to change for release
         }
