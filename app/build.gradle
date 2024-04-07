@@ -48,6 +48,28 @@ ext.compileSdkVersion = 34
 ext.buildToolsVersion = "33.0.0"
 
 android {
+    // Load local.properties file
+    def localProperties = new Properties()
+    def localPropertiesFile = rootProject.file('local.properties')
+    if (localPropertiesFile.exists()) {
+        localProperties.load(new FileInputStream(localPropertiesFile))
+    }
+
+    def nasaApiKey = System.getenv("NASA_API_KEY") ?: localProperties['NASA_API_KEY'].toString()
+    // Keystore properties
+    def myKeystorePath = System.getenv("KEYSTORE_PATH") ?: localProperties['KEYSTORE_PATH'].toString()
+    def myKeystorePassword =  System.getenv("KEYSTORE_PASSWORD") ?: localProperties['KEYSTORE_PASSWORD'].toString()
+    def myKeyAlias = System.getenv("KEY_ALIAS") ?: localProperties['KEY_ALIAS'].toString()
+    def myKeyPassword = System.getenv("KEY_PASSWORD") ?: localProperties['KEY_PASSWORD'].toString()
+
+    signingConfigs {
+        release {
+            storeFile myKeystorePath ? file(myKeystorePath) : null
+            storePassword myKeystorePassword
+            keyAlias myKeyAlias
+            keyPassword myKeyPassword
+        }
+    }
     compileSdk 34
     defaultConfig {
         applicationId "com.tarek.asteroidradar"
@@ -66,20 +88,12 @@ android {
         }
     }
 
-    // Load local.properties file
-    def localProperties = new Properties()
-    def localPropertiesFile = rootProject.file('local.properties')
-    if (localPropertiesFile.exists()) {
-        localProperties.load(new FileInputStream(localPropertiesFile))
-    }
-
-    def nasaApiKey = System.getenv("NASA_API_KEY") ?: localProperties['NASA_API_KEY'].toString()
-
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             buildConfigField 'String', 'NASA_API_KEY', "\"${nasaApiKey}\"" // remember to change for release
+            signingConfig signingConfigs.release
         }
         debug {
             minifyEnabled false
