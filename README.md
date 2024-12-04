@@ -1,8 +1,4 @@
-[![Android CI](https://github.com/Tarek-Bohdima/AsteroidRadar/actions/workflows/build_pull_request.yml/badge.svg)](https://github.com/Tarek-Bohdima/AsteroidRadar/actions/workflows/build_pull_request.yml)
-
-# Purpose of this Folder
-
-This folder should contain the scaffolded project files to get a student started on their project. This repo will be added to the Classroom for students to use, so please do not have any solutions in this folder.
+[![Android CI](https://github.com/Tarek-Bohdima/AsteroidRadar/actions/workflows/build_pull_request.yml/badge.svg)](https://github.com/Tarek-Bohdima/AsteroidRadar/actions/workflows/
 
 ## Note: Android Kotlin Gradle Update
 Use the updated Gradle version in the `~/gradle/wrapper/gradle-wrapper.properties` file:
