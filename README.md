@@ -1,4 +1,4 @@
-[![Android CI](https://github.com/Tarek-Bohdima/AsteroidRadar/actions/workflows/build_pull_request.yml/badge.svg)](https://github.com/Tarek-Bohdima/AsteroidRadar/actions/workflows/
+[![Android CI](https://github.com/Tarek-Bohdima/AsteroidRadar/actions/workflows/build_pull_request.yml/badge.svg)](https://github.com/Tarek-Bohdima/AsteroidRadar/actions/workflows/)
 
 ## Note: Android Kotlin Gradle Update
 
