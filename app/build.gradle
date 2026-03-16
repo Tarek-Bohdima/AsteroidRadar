@@ -43,9 +43,9 @@ ext.versionClassifier = "INTERNAL" // Change this to ALPHA, BETA, RC, or RELEASE
 
 // SDK versions
 ext.minimumSdkVersion = 26
-ext.targetSdkVersion = 33
-ext.compileSdkVersion = 34
-ext.buildToolsVersion = "33.0.0"
+ext.targetSdkVersion = 35
+ext.compileSdkVersion = 35
+ext.buildToolsVersion = "35.0.0"
 
 android {
     // Load local.properties file
@@ -70,11 +70,11 @@ android {
             keyPassword myKeyPassword
         }
     }
-    compileSdk 34
+    compileSdk 35
     defaultConfig {
         applicationId "com.tarek.asteroidradar"
         minSdkVersion 26
-        targetSdkVersion 33
+        targetSdkVersion 35
         versionCode generateVersionCode()
         versionName generateVersionName()
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
