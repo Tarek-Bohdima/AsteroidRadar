@@ -6,11 +6,12 @@
 #   git push origin v1.4.0
 #
 # WHAT IT DOES:
-#   1. Runs unit tests (fail fast — no broken releases)
-#   2. Decodes the keystore from base64 and sets env vars
-#   3. Builds & signs a release APK  → attached to GitHub Release
-#   4. Builds & signs a release AAB  → saved as workflow artifact for Play Store
-#   5. Creates a GitHub Release with the APK attached + auto-generated changelog
+#   1. Validates tag version matches app/build.gradle version
+#   2. Runs unit tests (fail fast — no broken releases)
+#   3. Decodes the keystore from base64 and sets env vars
+#   4. Builds & signs a release APK  → attached to GitHub Release
+#   5. Builds & signs a release AAB  → saved as workflow artifact for Play Store
+#   6. Creates a GitHub Release with the APK attached + auto-generated changelog
 #
 # WHY APK FOR GITHUB, AAB FOR PLAY STORE?
 #   APK = self-contained, installs directly on any Android device.
@@ -26,10 +27,10 @@
 #   action needed.
 #
 # SECRETS TO ADD (Settings → Secrets and variables → Actions):
-#   KEYSTORE_BASE64      — base64-encoded .jks file
-#                          Generate: base64 -i your-keystore.jks | pbcopy
+#   KEYSTORE_BASE64   — base64-encoded .jks file
+#                          Generate: base64 -i your-keystore | tr -d '\n' | pbcopy
 #   KEYSTORE_PASSWORD    — your keystore password
-#   KEY_ALIAS            — your key alias
+#   KEY_ALIAS            — your key alias (e.g. key13)
 #   KEY_PASSWORD         — your key password
 #   NASA_API_KEY         — NASA API key for release builds
 # ──────────────────────────────────────────────────────────────
@@ -76,12 +77,50 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # ── 5. Run unit tests ────────────────────────────────────
+      # ── 5. Validate tag matches build.gradle version ─────────
+      #    Extracts versionMajor/Minor/Patch from app/build.gradle
+      #    and checks they match the git tag that triggered this run.
+      #
+      #    Example: tag v1.3.6 must match versionMajor=1, versionMinor=3,
+      #    versionPatch=6 in build.gradle — if not, the workflow fails
+      #    immediately with a clear message before wasting build time.
+      #
+      #    The classifier (INTERNAL, BETA, RELEASE etc.) is intentionally
+      #    NOT checked — it's a label, not part of the numeric version.
+      - name: Validate tag matches build.gradle version
+        run: |
+          # Extract the three numbers from build.gradle
+          MAJOR=$(grep "versionMajor" app/build.gradle | head -1 | grep -o '[0-9]*')
+          MINOR=$(grep "versionMinor" app/build.gradle | head -1 | grep -o '[0-9]*')
+          PATCH=$(grep "versionPatch" app/build.gradle | head -1 | grep -o '[0-9]*')
+          GRADLE_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+
+          # Strip the leading 'v' from the tag, then strip any classifier
+          # e.g. v1.3.6-INTERNAL → 1.3.6,  v2.0.0-beta → 2.0.0
+          TAG_VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//' | sed 's/-.*//')
+
+          echo "Tag version:          $TAG_VERSION"
+          echo "build.gradle version: $GRADLE_VERSION"
+
+          if [ "$TAG_VERSION" != "$GRADLE_VERSION" ]; then
+            echo ""
+            echo "ERROR: Version mismatch!"
+            echo "  Tag says:          $TAG_VERSION"
+            echo "  build.gradle says: $GRADLE_VERSION"
+            echo ""
+            echo "Fix: update versionMajor/Minor/Patch in app/build.gradle"
+            echo "to match the tag, commit and push, then re-tag."
+            exit 1
+          fi
+
+          echo "Version check passed: $GRADLE_VERSION"
+
+      # ── 6. Run unit tests ────────────────────────────────────
       #    Fail the release immediately if any test fails
       - name: Run unit tests
         run: ./gradlew test --no-daemon
 
-      # ── 6. Decode keystore ───────────────────────────────────
+      # ── 7. Decode keystore ───────────────────────────────────
       #    Decodes the base64 secret back into a real .jks file
       #    in a temp location. The path is then passed to Gradle
       #    via KEYSTORE_PATH, matching exactly what your build.gradle
@@ -91,7 +130,7 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode \
             > ${{ runner.temp }}/release.jks
 
-      # ── 7. Build & sign release APK ──────────────────────────
+      # ── 8. Build & sign release APK ──────────────────────────
       #    Gradle reads the env vars below and applies signingConfigs.release
       #    automatically — no separate signing step needed.
       - name: Build release APK
@@ -103,7 +142,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      # ── 8. Build & sign release AAB ──────────────────────────
+      # ── 9. Build & sign release AAB ──────────────────────────
       #    Same env vars — Gradle signs the AAB the same way.
       - name: Build release AAB
         run: ./gradlew bundleRelease --no-daemon
@@ -114,7 +153,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      # ── 9. Locate built artifacts ────────────────────────────
+      # ── 10. Locate built artifacts ───────────────────────────
       - name: Locate APK and AAB
         id: locate
         run: |
@@ -123,7 +162,7 @@ jobs:
           echo "apk_path=$APK" >> $GITHUB_OUTPUT
           echo "aab_path=$AAB" >> $GITHUB_OUTPUT
 
-      # ── 10. Upload AAB as workflow artifact ──────────────────
+      # ── 11. Upload AAB as workflow artifact ──────────────────
       #    The AAB is NOT attached to the GitHub Release — it can't
       #    be sideloaded anyway. Download it from the Actions tab
       #    after the workflow runs, then upload to Google Play Console.
@@ -134,7 +173,7 @@ jobs:
           path: ${{ steps.locate.outputs.aab_path }}
           retention-days: 30
 
-      # ── 11. Auto-generate changelog ──────────────────────────
+      # ── 12. Auto-generate changelog ──────────────────────────
       #    Collects all commits between this tag and the previous one.
       - name: Generate changelog
         run: |
@@ -153,7 +192,7 @@ jobs:
           >> changelog.md
           cat changelog.md
 
-      # ── 12. Create GitHub Release ────────────────────────────
+      # ── 13. Create GitHub Release ────────────────────────────
       #    APK is attached — download and sideload any old version
       #    directly to your Android phone for testing.
       #    AAB is NOT attached — it's in the workflow artifact above.
