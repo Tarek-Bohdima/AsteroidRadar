@@ -102,6 +102,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          JAVA_TOOL_OPTIONS: "-Dkeystore.pkcs12.legacy"
 
       # ── 8. Build & sign release AAB ──────────────────────────
       #    Same env vars — Gradle signs the AAB the same way.
@@ -113,6 +114,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          JAVA_TOOL_OPTIONS: "-Dkeystore.pkcs12.legacy"
 
       # ── 9. Locate built artifacts ────────────────────────────
       - name: Locate APK and AAB
