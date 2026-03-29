@@ -68,6 +68,7 @@ android {
             storePassword myKeystorePassword
             keyAlias myKeyAlias
             keyPassword myKeyPassword
+            storeType "PKCS12"
         }
     }
     compileSdk 35
