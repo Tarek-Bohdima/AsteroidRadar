@@ -55,7 +55,7 @@ android {
         localProperties.load(new FileInputStream(localPropertiesFile))
     }
 
-    def nasaApiKey = System.getenv("NASA_API_KEY") ?: localProperties['NASA_API_KEY'].toString()
+    def nasaApiKey = System.getenv("NASA_API_KEY") ?: localProperties.getProperty('NASA_API_KEY', '')
     // Keystore properties
     def myKeystorePath = System.getenv("KEYSTORE_PATH") ?: localProperties['KEYSTORE_PATH'].toString()
     def myKeystorePassword =  System.getenv("KEYSTORE_PASSWORD") ?: localProperties['KEYSTORE_PASSWORD'].toString()

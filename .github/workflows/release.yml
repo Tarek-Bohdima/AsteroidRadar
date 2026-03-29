@@ -1,0 +1,169 @@
+# ──────────────────────────────────────────────────────────────
+# Release workflow for AsteroidRadar
+#
+# TRIGGER: Push a tag like v1.4.0 or v2.0.0-beta
+#   git tag v1.4.0
+#   git push origin v1.4.0
+#
+# WHAT IT DOES:
+#   1. Runs unit tests (fail fast — no broken releases)
+#   2. Decodes the keystore from base64 and sets env vars
+#   3. Builds & signs a release APK  → attached to GitHub Release
+#   4. Builds & signs a release AAB  → saved as workflow artifact for Play Store
+#   5. Creates a GitHub Release with the APK attached + auto-generated changelog
+#
+# WHY APK FOR GITHUB, AAB FOR PLAY STORE?
+#   APK = self-contained, installs directly on any Android device.
+#         Perfect for sideloading old versions for testing.
+#   AAB = smaller, optimised per-device by Play Store. Google requires
+#         this format for new apps since Aug 2021. Cannot be sideloaded.
+#
+# HOW SIGNING WORKS HERE:
+#   Your build.gradle already reads signing config from env vars:
+#     KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
+#   So we just decode the JKS to a temp file and set those vars —
+#   Gradle handles signing itself during the build. No extra signing
+#   action needed.
+#
+# SECRETS TO ADD (Settings → Secrets and variables → Actions):
+#   KEYSTORE_BASE64      — base64-encoded .jks file
+#                          Generate: base64 -i your-keystore.jks | pbcopy
+#   KEYSTORE_PASSWORD    — your keystore password
+#   KEY_ALIAS            — your key alias
+#   KEY_PASSWORD         — your key password
+#   NASA_API_KEY         — NASA API key for release builds
+# ──────────────────────────────────────────────────────────────
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'           # triggers on v1.0.0, v1.2.3-beta, v2.0.0, etc.
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0       # full history needed for changelog generation
+
+      # ── 2. Java setup ────────────────────────────────────────
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # ── 3. Gradle cache ──────────────────────────────────────
+      #    Caches ~/.gradle between runs so dependencies aren't
+      #    re-downloaded every time (same idea as Artifactory caching)
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: gradle-
+
+      # ── 4. Make gradlew executable ───────────────────────────
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # ── 5. Run unit tests ────────────────────────────────────
+      #    Fail the release immediately if any test fails
+      - name: Run unit tests
+        run: ./gradlew test --no-daemon
+
+      # ── 6. Decode keystore ───────────────────────────────────
+      #    Decodes the base64 secret back into a real .jks file
+      #    in a temp location. The path is then passed to Gradle
+      #    via KEYSTORE_PATH, matching exactly what your build.gradle
+      #    reads with: System.getenv("KEYSTORE_PATH")
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode \
+            > ${{ runner.temp }}/release.jks
+
+      # ── 7. Build & sign release APK ──────────────────────────
+      #    Gradle reads the env vars below and applies signingConfigs.release
+      #    automatically — no separate signing step needed.
+      - name: Build release APK
+        run: ./gradlew assembleRelease --no-daemon
+        env:
+          NASA_API_KEY: ${{ secrets.NASA_API_KEY }}
+          KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      # ── 8. Build & sign release AAB ──────────────────────────
+      #    Same env vars — Gradle signs the AAB the same way.
+      - name: Build release AAB
+        run: ./gradlew bundleRelease --no-daemon
+        env:
+          NASA_API_KEY: ${{ secrets.NASA_API_KEY }}
+          KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      # ── 9. Locate built artifacts ────────────────────────────
+      - name: Locate APK and AAB
+        id: locate
+        run: |
+          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+          AAB=$(find app/build/outputs/bundle/release -name "*.aab" | head -1)
+          echo "apk_path=$APK" >> $GITHUB_OUTPUT
+          echo "aab_path=$AAB" >> $GITHUB_OUTPUT
+
+      # ── 10. Upload AAB as workflow artifact ──────────────────
+      #    The AAB is NOT attached to the GitHub Release — it can't
+      #    be sideloaded anyway. Download it from the Actions tab
+      #    after the workflow runs, then upload to Google Play Console.
+      - name: Upload AAB for Play Store
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-aab-${{ github.ref_name }}
+          path: ${{ steps.locate.outputs.aab_path }}
+          retention-days: 30
+
+      # ── 11. Auto-generate changelog ──────────────────────────
+      #    Collects all commits between this tag and the previous one.
+      - name: Generate changelog
+        run: |
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -z "$PREVIOUS_TAG" ]; then
+            LOG=$(git log --pretty=format:"- %s (%h)" | head -20)
+          else
+            LOG=$(git log --pretty=format:"- %s (%h)" "$PREVIOUS_TAG"..HEAD)
+          fi
+          echo "## What's changed" > changelog.md
+          echo "" >> changelog.md
+          echo "$LOG" >> changelog.md
+          echo "" >> changelog.md
+          echo "**Full changelog:** \
+          https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...${{ github.ref_name }}" \
+          >> changelog.md
+          cat changelog.md
+
+      # ── 12. Create GitHub Release ────────────────────────────
+      #    APK is attached — download and sideload any old version
+      #    directly to your Android phone for testing.
+      #    AAB is NOT attached — it's in the workflow artifact above.
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "${{ github.ref_name }}"
+          body_path: changelog.md
+          files: ${{ steps.locate.outputs.apk_path }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'INTERNAL') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
