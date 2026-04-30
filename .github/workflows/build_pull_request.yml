@@ -4,37 +4,51 @@ on:
   pull_request:
     branches: [ master ]
 
+# Read-only token; fork PRs cannot write back to the repo via this workflow.
+permissions:
+  contents: read
+
+# Cancel in-progress runs when a new commit lands on the same ref so superseded
+# commits don't keep burning runner minutes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Third-party actions are pinned to commit SHAs (with the version tag in a
+# trailing comment) to neutralize supply-chain risk: a compromised upstream
+# tag can't silently swap behavior under us. Dependabot's `github-actions`
+# ecosystem auto-bumps these on a weekly cadence.
 jobs:
   build:
-
     runs-on: ubuntu-latest
     env:
-      NASA_API_KEY: ${{ secrets.NASA_API_KEY }} # This line sets the API key as an environment variable
-      
+      NASA_API_KEY: ${{ secrets.NASA_API_KEY }}
+
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v2
-      with:
-        java-version: '17'
-        distribution: 'temurin'   # Temurin is a reliable distribution of OpenJDK
+      - name: Set up JDK 17
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x ./gradlew
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
 
-    - name: Cache Gradle packages
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
+      - name: Cache Gradle packages
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
-    - name: Build debug APK
-      run: ./gradlew assembleDebug
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
 
-    - name: Run unit tests
-      run: ./gradlew test
+      - name: Run unit tests
+        run: ./gradlew test
