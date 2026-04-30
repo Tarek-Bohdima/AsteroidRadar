@@ -32,6 +32,7 @@
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.androidx.navigation.safeargs) apply false
+    alias(libs.plugins.detekt) apply false
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.kotlin.kapt) apply false
     alias(libs.plugins.kotlin.parcelize) apply false
@@ -66,5 +67,28 @@ subprojects {
             // use the first script-level construct as the marker instead.
             licenseHeaderFile(licenseHeader, "(plugins|import|@file)")
         }
+    }
+}
+
+// Detekt — static analysis for code-smell-level issues (cyclomatic complexity,
+// long methods, magic numbers, exception swallowing, naming, etc.) — the things
+// ktlint deliberately doesn't touch. Existing violations live in
+// `config/detekt/baseline.xml`; new code is checked against the merged result
+// of defaults + `config/detekt.yml` overrides.
+val detektConfigFile = file("config/detekt.yml")
+val detektBaselineFile = file("config/detekt/baseline.xml")
+
+subprojects {
+    apply(plugin = "io.gitlab.arturbosch.detekt")
+
+    extensions.configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
+        config.setFrom(detektConfigFile)
+        baseline = detektBaselineFile
+        // Layer overrides on top of upstream defaults rather than replacing
+        // them; smaller config file, fewer surprises on Detekt bumps.
+        buildUponDefaultConfig = true
+        // Don't auto-correct on `detekt` — only via `detektFormat` (out of
+        // scope here; we already format via Spotless).
+        autoCorrect = false
     }
 }

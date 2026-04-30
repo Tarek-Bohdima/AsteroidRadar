@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>MatchingDeclarationName:DataTransferObjects.kt$ImageOfTheDay</ID>
+    <ID>MatchingDeclarationName:DatabaseEntities.kt$DatabaseAsteroid</ID>
+    <ID>MaxLineLength:AsteroidDao.kt$AsteroidDao$@Query("SELECT * FROM asteroid_database WHERE closeApproachDate BETWEEN :startDate AND :endDate ORDER BY closeApproachDate ASC")</ID>
+    <ID>MaxLineLength:DetailFragment.kt$DetailFragment$okButton.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.buttonBackground))</ID>
+    <ID>MaxLineLength:DetailFragment.kt$DetailFragment$okButton.setTextColor(ContextCompat.getColor(requireContext(), R.color.highContrastText))</ID>
+    <ID>SpreadOperator:AsteroidRepository.kt$AsteroidRepository$( *parseAsteroidsJsonResult(JSONObject(asteroidsJson)) .asDatabaseModel(), )</ID>
+    <ID>SwallowedException:RefreshDataWorker.kt$RefreshDataWorker$e: HttpException</ID>
+    <ID>TooGenericExceptionCaught:AsteroidRepository.kt$AsteroidRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:MainViewModel.kt$MainViewModel$e: Exception</ID>
+  </CurrentIssues>
+</SmellBaseline>

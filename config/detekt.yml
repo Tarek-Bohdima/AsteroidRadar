@@ -1,0 +1,34 @@
+# Detekt config — only overrides upstream defaults where they need adjustment
+# for this project. `buildUponDefaultConfig = true` is set in the root build
+# script so any rule not listed here uses Detekt's stock setting.
+#
+# Generate `config/detekt/baseline.xml` to grandfather existing violations:
+#   ./gradlew detektBaseline
+#
+# Phase 4 (toolchain bump) and Phase 7 (real tests) will likely revisit these
+# thresholds — the goal here is "wired in, not noisy," not "maximally strict."
+
+build:
+  maxIssues: 0  # Any non-baselined violation fails the task.
+
+complexity:
+  LongParameterList:
+    # Room entities and DTO copy(...) calls naturally have many params.
+    functionThreshold: 8
+    constructorThreshold: 10
+  TooManyFunctions:
+    # Default 11 is tight for ViewModels / Fragments.
+    thresholdInClasses: 18
+    thresholdInObjects: 18
+
+style:
+  MagicNumber:
+    # Resource sizes, sleep durations, color hex literals — magic numbers in
+    # Android UI code are normal. Phase 4+ may revisit.
+    active: false
+  ReturnCount:
+    # Sealed-class branch handling often returns from each branch.
+    max: 4
+  WildcardImport:
+    # Already enforced by ktlint via Spotless; redundant here.
+    active: false
