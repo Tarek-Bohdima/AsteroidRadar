@@ -58,8 +58,26 @@ jobs:
         # new code is checked against defaults + `config/detekt.yml`.
         run: ./gradlew detekt
 
+      - name: Run Android Lint (release variant)
+        # Catches Android-specific issues (deprecated APIs, missing translations,
+        # accessibility, manifest, resources). Existing warnings live in each
+        # module's `lint-baseline.xml`.
+        run: ./gradlew lintRelease
+
       - name: Build debug APK
         run: ./gradlew assembleDebug
 
       - name: Run unit tests
         run: ./gradlew test
+
+      - name: Upload lint and test reports
+        # Always upload — they're most useful when one of the gates above fails.
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build-reports
+          path: |
+            **/build/reports/lint-results-*.html
+            **/build/reports/tests/**
+          if-no-files-found: ignore
+          retention-days: 7
