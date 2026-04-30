@@ -30,6 +30,10 @@ import com.android.build.api.dsl.ApplicationExtension
 //
 // Plugin order matters: kotlin-android must precede
 // androidx.navigation.safeargs.kotlin (safe-args fails fast otherwise).
+//
+// `kotlin-kapt` is applied even though Room runs on KSP — AGP 8.3.0's
+// DataBinding compiler discovers @BindingAdapter methods via kapt. AGP 8.6+
+// moves DataBinding to KSP; drop kapt with the AGP bump.
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
