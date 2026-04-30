@@ -56,6 +56,15 @@ extensions.configure<ApplicationExtension> {
     buildFeatures {
         buildConfig = true
     }
+
+    // Android Lint runs on every release build and is gated in CI. Existing
+    // warnings live in each module's `lint-baseline.xml` (regenerate via
+    // `./gradlew :<module>:updateLintBaseline`); new warnings fail the build.
+    lint {
+        baseline = file("lint-baseline.xml")
+        checkReleaseBuilds = true
+        abortOnError = true
+    }
 }
 
 // `kotlinOptions` lives on the Kotlin plugin extension, not the Android one;
