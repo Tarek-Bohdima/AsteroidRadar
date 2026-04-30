@@ -204,3 +204,10 @@ fabric.properties
 # End of https://www.toptal.com/developers/gitignore/api/androidstudio,kotlin,macos
 /app/config/
 /.idea/
+
+# Claude Code per-project settings (local to each developer's workspace).
+.claude/
+
+# AGP release artifacts (baselineProfiles, output-metadata.json) emitted
+# outside the standard app/build/ tree.
+/app/release/
