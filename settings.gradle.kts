@@ -27,5 +27,29 @@
  * if you submit it, it's your own responsibility if you get expelled.
  */
 
-include ':app'
-rootProject.name='Asteroid Radar'
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+// Modexa trick #3: type-safe project accessors. `projects.app` instead of
+// `project(":app")`. Cheap to enable now even with one module — pays off the
+// moment a second module lands (Phase 2's convention plugin or a feature split).
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
+// Build identifier — must match `[a-zA-Z]([A-Za-z0-9\-_])*` for type-safe
+// project accessors above. The user-facing app name lives in
+// `app/src/main/res/values/strings.xml` (`app_name`) and is unchanged.
+rootProject.name = "AsteroidRadar"
+include(":app")

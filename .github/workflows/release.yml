@@ -85,21 +85,23 @@ jobs:
         run: chmod +x gradlew
 
       # ── 5. Validate tag matches build.gradle version ─────────
-      #    Extracts versionMajor/Minor/Patch from app/build.gradle
+      #    Extracts versionMajor/Minor/Patch from app/build.gradle.kts
       #    and checks they match the git tag that triggered this run.
       #
       #    Example: tag v1.3.6 must match versionMajor=1, versionMinor=3,
-      #    versionPatch=6 in build.gradle — if not, the workflow fails
+      #    versionPatch=6 in build.gradle.kts — if not, the workflow fails
       #    immediately with a clear message before wasting build time.
       #
       #    The classifier (INTERNAL, BETA, RELEASE etc.) is intentionally
       #    NOT checked — it's a label, not part of the numeric version.
       - name: Validate tag matches build.gradle version
         run: |
-          # Extract the three numbers from build.gradle
-          MAJOR=$(grep "versionMajor" app/build.gradle | head -1 | grep -o '[0-9]*')
-          MINOR=$(grep "versionMinor" app/build.gradle | head -1 | grep -o '[0-9]*')
-          PATCH=$(grep "versionPatch" app/build.gradle | head -1 | grep -o '[0-9]*')
+          # Extract the three numbers from app/build.gradle.kts. The Kotlin
+          # DSL declares them as `val versionMajor = 1` etc.; `grep -oE
+          # '[0-9]+'` plucks the first integer literal out of each line.
+          MAJOR=$(grep "versionMajor" app/build.gradle.kts | head -1 | grep -oE '[0-9]+' | head -1)
+          MINOR=$(grep "versionMinor" app/build.gradle.kts | head -1 | grep -oE '[0-9]+' | head -1)
+          PATCH=$(grep "versionPatch" app/build.gradle.kts | head -1 | grep -oE '[0-9]+' | head -1)
           GRADLE_VERSION="${MAJOR}.${MINOR}.${PATCH}"
 
           # Strip the leading 'v' from the tag, then strip any classifier
@@ -112,10 +114,10 @@ jobs:
           if [ "$TAG_VERSION" != "$GRADLE_VERSION" ]; then
             echo ""
             echo "ERROR: Version mismatch!"
-            echo "  Tag says:          $TAG_VERSION"
-            echo "  build.gradle says: $GRADLE_VERSION"
+            echo "  Tag says:              $TAG_VERSION"
+            echo "  build.gradle.kts says: $GRADLE_VERSION"
             echo ""
-            echo "Fix: update versionMajor/Minor/Patch in app/build.gradle"
+            echo "Fix: update versionMajor/Minor/Patch in app/build.gradle.kts"
             echo "to match the tag, commit and push, then re-tag."
             exit 1
           fi

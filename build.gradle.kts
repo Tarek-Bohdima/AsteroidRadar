@@ -27,34 +27,13 @@
  * if you submit it, it's your own responsibility if you get expelled.
  */
 
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
-
-buildscript {
-    ext.kotlin_version = '1.6.21'
-    ext.ksp_version = '1.9.0-1.0.13'
-    repositories {
-        google()
-        mavenCentral()
-
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:8.3.0'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin:$ksp_version"
-        classpath 'androidx.navigation:navigation-safe-args-gradle-plugin:2.7.7'
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
-    }
-}
-
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-
-tasks.register('copyDependencyLibs', Copy) {
-    into layout.buildDirectory.dir('libs/dependencies')
-    from configurations.runtimeClasspath
+// Top-level build file. Plugins are declared here and applied per-module so
+// that subprojects compose them via aliases without re-resolving versions.
+plugins {
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.androidx.navigation.safeargs) apply false
+    alias(libs.plugins.kotlin.android) apply false
+    alias(libs.plugins.kotlin.kapt) apply false
+    alias(libs.plugins.kotlin.parcelize) apply false
+    alias(libs.plugins.ksp) apply false
 }
