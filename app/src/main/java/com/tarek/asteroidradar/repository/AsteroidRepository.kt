@@ -26,7 +26,6 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-
 package com.tarek.asteroidradar.repository
 
 import androidx.lifecycle.LiveData
@@ -46,7 +45,9 @@ import org.json.JSONObject
 import timber.log.Timber
 import java.time.LocalDate
 
-class AsteroidRepository(private val database: AsteroidDatabase) {
+class AsteroidRepository(
+    private val database: AsteroidDatabase,
+) {
     sealed class AsteroidsFilter {
         data object TODAY : AsteroidsFilter()
 
@@ -63,8 +64,8 @@ class AsteroidRepository(private val database: AsteroidDatabase) {
 
     private val endDate = LocalDate.now().plusDays(7).toString()
 
-    fun getAsteroidSelection(filter: AsteroidsFilter): LiveData<List<Asteroid>> {
-        return when (filter) {
+    fun getAsteroidSelection(filter: AsteroidsFilter): LiveData<List<Asteroid>> =
+        when (filter) {
             AsteroidsFilter.STORED ->
                 database.asteroidDao.getAsteroids().map {
                     it.asDomainModel()
@@ -80,7 +81,6 @@ class AsteroidRepository(private val database: AsteroidDatabase) {
                     it.asDomainModel()
                 }
         }
-    }
 
     suspend fun getImageOfTheDay(): PictureOfDay {
         var imageOfTheDay: PictureOfDay

@@ -26,7 +26,6 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-
 package com.tarek.asteroidradar.ui.detail
 
 import android.os.Bundle
@@ -62,10 +61,12 @@ class DetailFragment : Fragment() {
     }
 
     private fun displayAstronomicalUnitExplanationDialog() {
-        val dialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogCustom)
-            .setMessage(getString(R.string.astronomical_unit_explanation))
-            .setPositiveButton(android.R.string.ok, null)
-            .create()
+        val dialog =
+            AlertDialog
+                .Builder(requireActivity(), R.style.AlertDialogCustom)
+                .setMessage(getString(R.string.astronomical_unit_explanation))
+                .setPositiveButton(android.R.string.ok, null)
+                .create()
 
         dialog.setOnShowListener {
             // Change the OK button's background
@@ -76,5 +77,4 @@ class DetailFragment : Fragment() {
 
         dialog.show()
     }
-
 }

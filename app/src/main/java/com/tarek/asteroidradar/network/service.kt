@@ -26,7 +26,6 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-
 package com.tarek.asteroidradar.network
 
 import com.squareup.moshi.Moshi
@@ -54,30 +53,36 @@ interface AsteroidService {
     @ScalarResponse
     @GET("neo/rest/v1/feed")
     suspend fun getAsteroids(
-        @Query(Constants.PARAMETER_API_KEY) key: String
+        @Query(Constants.PARAMETER_API_KEY) key: String,
     ): String
 
     @JsonResponse
     @GET("planetary/apod")
-    suspend fun getImageOfDay(@Query(Constants.PARAMETER_API_KEY) key: String): ImageOfTheDay
+    suspend fun getImageOfDay(
+        @Query(Constants.PARAMETER_API_KEY) key: String,
+    ): ImageOfTheDay
 }
 
 /**
  * Build the Moshi object that Retrofit will be using, making sure to add the Kotlin adapter for
  * full Kotlin compatibility.
  */
-private val moshi = Moshi.Builder()
-    .add(KotlinJsonAdapterFactory())
-    .build()
+private val moshi =
+    Moshi
+        .Builder()
+        .add(KotlinJsonAdapterFactory())
+        .build()
 
 /**
  * Use the Retrofit builder to build a retrofit object using a Moshi converter with our Moshi
  * object.
  */
-private val retrofit = Retrofit.Builder()
-    .baseUrl(Constants.BASE_URL)
-    .addConverterFactory(HandleScalarAndJsonConverterFactory.create())
-    .build()
+private val retrofit =
+    Retrofit
+        .Builder()
+        .baseUrl(Constants.BASE_URL)
+        .addConverterFactory(HandleScalarAndJsonConverterFactory.create())
+        .build()
 
 /**
  * A public Api object that exposes the lazy-initialized Retrofit service
@@ -99,19 +104,21 @@ annotation class ScalarResponse
 annotation class JsonResponse
 
 class HandleScalarAndJsonConverterFactory : Converter.Factory() {
-
     override fun responseBodyConverter(
         type: Type,
         annotations: Array<Annotation>,
-        retrofit: Retrofit
+        retrofit: Retrofit,
     ): Converter<ResponseBody, *>? {
-
         annotations.forEach { annotation ->
             return when (annotation) {
-                is ScalarResponse -> ScalarsConverterFactory.create()
-                    .responseBodyConverter(type, annotations, retrofit)
-                is JsonResponse -> MoshiConverterFactory.create(moshi)
-                    .responseBodyConverter(type, annotations, retrofit)
+                is ScalarResponse ->
+                    ScalarsConverterFactory
+                        .create()
+                        .responseBodyConverter(type, annotations, retrofit)
+                is JsonResponse ->
+                    MoshiConverterFactory
+                        .create(moshi)
+                        .responseBodyConverter(type, annotations, retrofit)
                 else -> null
             }
         }
@@ -121,5 +128,4 @@ class HandleScalarAndJsonConverterFactory : Converter.Factory() {
     companion object {
         fun create() = HandleScalarAndJsonConverterFactory()
     }
-
 }

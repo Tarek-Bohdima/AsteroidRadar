@@ -26,7 +26,6 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-
 package com.tarek.asteroidradar
 
 import android.app.Application
@@ -59,7 +58,8 @@ class AsteroidRadarApplication : Application() {
 
     private fun setupRecurringWork() {
         val constraints =
-            Constraints.Builder()
+            Constraints
+                .Builder()
                 .setRequiredNetworkType(NetworkType.UNMETERED)
                 .setRequiresBatteryNotLow(true)
                 .setRequiresCharging(true)
@@ -71,8 +71,7 @@ class AsteroidRadarApplication : Application() {
             PeriodicWorkRequestBuilder<RefreshDataWorker>(
                 1,
                 TimeUnit.DAYS,
-            )
-                .setConstraints(constraints)
+            ).setConstraints(constraints)
                 .build()
 
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(

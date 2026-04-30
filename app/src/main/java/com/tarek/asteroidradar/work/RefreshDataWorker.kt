@@ -26,7 +26,6 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-
 package com.tarek.asteroidradar.work
 
 import android.content.Context
@@ -36,12 +35,14 @@ import com.tarek.asteroidradar.database.getDatabase
 import com.tarek.asteroidradar.repository.AsteroidRepository
 import retrofit2.HttpException
 
-class RefreshDataWorker(appContext: Context, params: WorkerParameters) : CoroutineWorker(
-    appContext,
-    params
-) {
-
-    companion object{
+class RefreshDataWorker(
+    appContext: Context,
+    params: WorkerParameters,
+) : CoroutineWorker(
+        appContext,
+        params,
+    ) {
+    companion object {
         const val WORK_NAME = "RefreshDataWorker"
     }
 

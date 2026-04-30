@@ -47,6 +47,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
+      - name: Run Spotless check
+        # Fast formatting / license-header check — runs before the heavier
+        # build steps so missing header or wrong indent fails fast.
+        run: ./gradlew spotlessCheck
+
       - name: Build debug APK
         run: ./gradlew assembleDebug
 

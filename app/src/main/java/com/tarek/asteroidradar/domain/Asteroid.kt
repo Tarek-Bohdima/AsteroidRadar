@@ -26,11 +26,9 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-
 package com.tarek.asteroidradar.domain
 
 import android.os.Parcelable
-import com.squareup.moshi.Json
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
@@ -42,5 +40,5 @@ data class Asteroid(
     val estimatedDiameter: Double,
     val relativeVelocity: Double,
     val distanceFromEarth: Double,
-    val isPotentiallyHazardous: Boolean
+    val isPotentiallyHazardous: Boolean,
 ) : Parcelable
