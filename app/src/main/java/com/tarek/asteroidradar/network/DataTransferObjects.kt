@@ -26,7 +26,6 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-
 package com.tarek.asteroidradar.network
 
 import com.squareup.moshi.Json
@@ -40,19 +39,18 @@ data class ImageOfTheDay(
     @Json(name = "media_type")
     val mediaType: String,
     val title: String,
-    val url: String
+    val url: String,
 )
 
-fun ImageOfTheDay.asDomainModel(): PictureOfDay {
-    return PictureOfDay(
+fun ImageOfTheDay.asDomainModel(): PictureOfDay =
+    PictureOfDay(
         mediaType = this.mediaType,
         title = this.title,
-        url = this.url
+        url = this.url,
     )
-}
 
-fun List<Asteroid>.asDatabaseModel(): Array<DatabaseAsteroid> {
-    return map {
+fun List<Asteroid>.asDatabaseModel(): Array<DatabaseAsteroid> =
+    map {
         DatabaseAsteroid(
             id = it.id,
             codename = it.codename,
@@ -61,7 +59,6 @@ fun List<Asteroid>.asDatabaseModel(): Array<DatabaseAsteroid> {
             estimatedDiameter = it.estimatedDiameter,
             relativeVelocity = it.relativeVelocity,
             distanceFromEarth = it.distanceFromEarth,
-            isPotentiallyHazardous = it.isPotentiallyHazardous
+            isPotentiallyHazardous = it.isPotentiallyHazardous,
         )
     }.toTypedArray()
-}

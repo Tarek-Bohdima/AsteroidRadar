@@ -26,7 +26,6 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-
 package com.tarek.asteroidradar.database
 
 import androidx.room.Entity
@@ -46,8 +45,8 @@ data class DatabaseAsteroid(
     val isPotentiallyHazardous: Boolean,
 )
 
-fun List<DatabaseAsteroid>.asDomainModel(): List<Asteroid> {
-    return map {
+fun List<DatabaseAsteroid>.asDomainModel(): List<Asteroid> =
+    map {
         Asteroid(
             id = it.id,
             codename = it.codename,
@@ -59,4 +58,3 @@ fun List<DatabaseAsteroid>.asDomainModel(): List<Asteroid> {
             isPotentiallyHazardous = it.isPotentiallyHazardous,
         )
     }
-}

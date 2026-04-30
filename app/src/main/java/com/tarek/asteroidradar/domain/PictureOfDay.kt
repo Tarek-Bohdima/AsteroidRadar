@@ -26,7 +26,6 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-
 package com.tarek.asteroidradar.domain
 
 import com.squareup.moshi.Json
@@ -35,5 +34,5 @@ data class PictureOfDay(
     @Json(name = "media_type")
     val mediaType: String,
     val title: String,
-    val url: String
+    val url: String,
 )

@@ -26,7 +26,6 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-
 package com.tarek.asteroidradar.util
 
 import android.widget.ImageView
@@ -37,7 +36,10 @@ import com.squareup.picasso.Picasso
 import com.tarek.asteroidradar.R
 
 @BindingAdapter("statusIcon")
-fun bindAsteroidStatusImage(imageView: ImageView, isHazardous: Boolean) {
+fun bindAsteroidStatusImage(
+    imageView: ImageView,
+    isHazardous: Boolean,
+) {
     if (isHazardous) {
         imageView.setImageResource(R.drawable.ic_status_potentially_hazardous)
     } else {
@@ -46,7 +48,10 @@ fun bindAsteroidStatusImage(imageView: ImageView, isHazardous: Boolean) {
 }
 
 @BindingAdapter("asteroidStatusImage")
-fun bindDetailsStatusImage(imageView: ImageView, isHazardous: Boolean) {
+fun bindDetailsStatusImage(
+    imageView: ImageView,
+    isHazardous: Boolean,
+) {
     if (isHazardous) {
         imageView.setImageResource(R.drawable.asteroid_hazardous)
     } else {
@@ -55,28 +60,46 @@ fun bindDetailsStatusImage(imageView: ImageView, isHazardous: Boolean) {
 }
 
 @BindingAdapter("astronomicalUnitText")
-fun bindTextViewToAstronomicalUnit(textView: TextView, number: Double) {
+fun bindTextViewToAstronomicalUnit(
+    textView: TextView,
+    number: Double,
+) {
     val context = textView.context
     textView.text = String.format(context.getString(R.string.astronomical_unit_format), number)
 }
 
 @BindingAdapter("kmUnitText")
-fun bindTextViewToKmUnit(textView: TextView, number: Double) {
+fun bindTextViewToKmUnit(
+    textView: TextView,
+    number: Double,
+) {
     val context = textView.context
     textView.text = String.format(context.getString(R.string.km_unit_format), number)
 }
 
 @BindingAdapter("velocityText")
-fun bindTextViewToDisplayVelocity(textView: TextView, number: Double) {
+fun bindTextViewToDisplayVelocity(
+    textView: TextView,
+    number: Double,
+) {
     val context = textView.context
     textView.text = String.format(context.getString(R.string.km_s_unit_format), number)
 }
 
 @BindingAdapter("imageUrl")
-fun bindImage(imageView: ImageView, imageUrl: String?) {
+fun bindImage(
+    imageView: ImageView,
+    imageUrl: String?,
+) {
     imageUrl?.let {
-        val imageUri = imageUrl.toUri().buildUpon().scheme("https").build()
-        Picasso.get()
+        val imageUri =
+            imageUrl
+                .toUri()
+                .buildUpon()
+                .scheme("https")
+                .build()
+        Picasso
+            .get()
             .load(imageUri)
             .placeholder(R.drawable.placeholder_picture_of_day)
             .error(R.drawable.ic_broken_image)
@@ -85,4 +108,3 @@ fun bindImage(imageView: ImageView, imageUrl: String?) {
             .into(imageView)
     }
 }
-

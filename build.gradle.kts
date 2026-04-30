@@ -36,4 +36,35 @@ plugins {
     alias(libs.plugins.kotlin.kapt) apply false
     alias(libs.plugins.kotlin.parcelize) apply false
     alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.spotless) apply false
+}
+
+// Spotless applied across every subproject so formatting + license-header
+// enforcement is uniform without each module having to opt in. License header
+// in `config/spotless/copyright.kt` is enforced as a literal byte-for-byte
+// match — not rewritten — because the existing MIT block predates this
+// tooling and shouldn't have its `Copyright (c) 2021` line drift to a
+// `$YEAR` interpolation.
+val ktlintVersion = libs.versions.ktlint.get()
+val licenseHeader = file("config/spotless/copyright.kt")
+
+subprojects {
+    apply(plugin = "com.diffplug.spotless")
+
+    extensions.configure<com.diffplug.gradle.spotless.SpotlessExtension> {
+        kotlin {
+            target("**/*.kt")
+            targetExclude("**/build/**", "**/generated/**")
+            ktlint(ktlintVersion)
+            licenseHeaderFile(licenseHeader)
+        }
+        kotlinGradle {
+            target("**/*.gradle.kts")
+            targetExclude("**/build/**")
+            ktlint(ktlintVersion)
+            // Default `package` delimiter doesn't apply to .gradle.kts files;
+            // use the first script-level construct as the marker instead.
+            licenseHeaderFile(licenseHeader, "(plugins|import|@file)")
+        }
+    }
 }

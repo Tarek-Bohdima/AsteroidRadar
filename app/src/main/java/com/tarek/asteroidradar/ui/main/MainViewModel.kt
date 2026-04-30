@@ -26,7 +26,6 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-
 package com.tarek.asteroidradar.ui.main
 
 import android.app.Application
@@ -45,7 +44,9 @@ import com.tarek.asteroidradar.repository.AsteroidRepository.AsteroidsFilter
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-class MainViewModel(application: Application) : AndroidViewModel(application) {
+class MainViewModel(
+    application: Application,
+) : AndroidViewModel(application) {
     private val database = getDatabase(application)
     private val repository = AsteroidRepository(database)
 
@@ -109,7 +110,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * Factory for constructing MainViewModel with parameter
      */
-    class Factory(val app: Application) : ViewModelProvider.Factory {
+    class Factory(
+        val app: Application,
+    ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
                 @Suppress("UNCHECKED_CAST")

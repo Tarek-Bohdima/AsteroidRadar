@@ -26,7 +26,6 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-
 package com.tarek.asteroidradar.database
 
 import androidx.lifecycle.LiveData
@@ -44,12 +43,14 @@ interface AsteroidDao {
     fun getTodayAsteroids(today: String): LiveData<List<DatabaseAsteroid>>
 
     @Query("SELECT * FROM asteroid_database WHERE closeApproachDate BETWEEN :startDate AND :endDate ORDER BY closeApproachDate ASC")
-    fun getWeeklyAsteroids(startDate: String, endDate: String): LiveData<List<DatabaseAsteroid>>
+    fun getWeeklyAsteroids(
+        startDate: String,
+        endDate: String,
+    ): LiveData<List<DatabaseAsteroid>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(vararg asteroids: DatabaseAsteroid)
 
     @Query("DELETE FROM asteroid_database WHERE closeApproachDate<:today")
     suspend fun deletePreviousAsteroid(today: String)
-
 }

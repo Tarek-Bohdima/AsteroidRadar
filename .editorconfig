@@ -1,0 +1,30 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+# ktlint rule customization for this project. Defaults are applied unless
+# overridden here. Spotless drives ktlint via these rules.
+
+# `standard:filename` is contentious for grouping-by-domain files like
+# DatabaseEntities.kt — disabled to avoid renames that hurt git history
+# more than they help readability.
+ktlint_standard_filename = disabled
+
+# Allow trailing-comma where multiline; enforces consistency without
+# adding noise. Default is `disabled`; turning on matches modern Kotlin
+# conventions and matches what the Phase 2 conversion already used.
+ij_kotlin_allow_trailing_comma = true
+ij_kotlin_allow_trailing_comma_on_call_site = true
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{yml,yaml}]
+indent_size = 2

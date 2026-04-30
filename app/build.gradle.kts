@@ -26,7 +26,6 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-
 import java.util.Properties
 
 // All plugin application + SDK levels + JVM toolchain + default test runner
@@ -53,13 +52,16 @@ val versionCodeMinSdk = 26
 // Modexa trick #7: read "X from environment, falling back to local.properties"
 // was inlined four times in the Groovy script. Centralized here so adding a new
 // secret in a later phase is a one-liner.
-val localProperties = Properties().apply {
-    val file = rootProject.file("local.properties")
-    if (file.exists()) file.inputStream().use(::load)
-}
+val localProperties =
+    Properties().apply {
+        val file = rootProject.file("local.properties")
+        if (file.exists()) file.inputStream().use(::load)
+    }
 
-fun env(name: String, default: String = ""): String =
-    System.getenv(name) ?: localProperties.getProperty(name, default)
+fun env(
+    name: String,
+    default: String = "",
+): String = System.getenv(name) ?: localProperties.getProperty(name, default)
 
 android {
     namespace = "com.tarek.asteroidradar"
