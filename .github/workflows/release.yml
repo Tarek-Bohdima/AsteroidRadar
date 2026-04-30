@@ -42,6 +42,13 @@ on:
     tags:
       - 'v*'           # triggers on v1.0.0, v1.2.3-beta, v2.0.0, etc.
 
+# Needs write access to create the GitHub Release at the end of the workflow.
+permissions:
+  contents: write
+
+# Third-party actions are pinned to commit SHAs (with the version tag in a
+# trailing comment) — see .github/workflows/build_pull_request.yml for the
+# rationale. Dependabot's `github-actions` ecosystem auto-bumps these weekly.
 jobs:
   release:
     name: Build & Release
@@ -50,13 +57,13 @@ jobs:
     steps:
       # ── 1. Checkout ──────────────────────────────────────────
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0       # full history needed for changelog generation
 
       # ── 2. Java setup ────────────────────────────────────────
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -65,7 +72,7 @@ jobs:
       #    Caches ~/.gradle between runs so dependencies aren't
       #    re-downloaded every time (same idea as Artifactory caching)
       - name: Cache Gradle packages
-        uses: actions/cache@v4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.gradle/caches
@@ -167,7 +174,7 @@ jobs:
       #    be sideloaded anyway. Download it from the Actions tab
       #    after the workflow runs, then upload to Google Play Console.
       - name: Upload AAB for Play Store
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-aab-${{ github.ref_name }}
           path: ${{ steps.locate.outputs.aab_path }}
@@ -197,12 +204,12 @@ jobs:
       #    directly to your Android phone for testing.
       #    AAB is NOT attached — it's in the workflow artifact above.
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         with:
           name: "${{ github.ref_name }}"
           body_path: changelog.md
           files: ${{ steps.locate.outputs.apk_path }}
           draft: false
-          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'INTERNAL') }}
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'INTERNAL') || contains(github.ref_name, 'rc') || contains(github.ref_name, 'RC') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

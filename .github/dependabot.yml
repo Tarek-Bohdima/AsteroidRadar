@@ -1,0 +1,59 @@
+version: 2
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+
+    ignore:
+      # AGP 9.x forces Gradle >= 9.4 and reshapes plugin requirements. Handle as
+      # a dedicated migration PR (Phase 4 in docs/IMPROVEMENT_PLAN.md), not a
+      # passive bot bump. Both the plugin id (referenced from [plugins] in any
+      # future libs.versions.toml) and the Maven coordinate (used on the
+      # build-logic classpath when the convention plugin lands) must be pinned.
+      - dependency-name: "com.android.application"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "com.android.library"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "com.android.tools.build:gradle"
+        update-types: ["version-update:semver-major"]
+
+    # Group related updates into single PRs so the review surface stays small.
+    groups:
+      androidx:
+        patterns:
+          - "androidx.*"
+          - "com.google.android.material:material"
+      kotlin-and-coroutines:
+        patterns:
+          - "org.jetbrains.kotlin.*"
+          - "org.jetbrains.kotlinx.*"
+      gradle-and-plugins:
+        patterns:
+          - "com.android.application"
+          - "com.android.library"
+          - "com.google.devtools.ksp"
+          - "androidx.navigation.safeargs.kotlin"
+      networking-libs:
+        patterns:
+          - "com.squareup.retrofit2:*"
+          - "com.squareup.moshi:*"
+          - "com.squareup.okhttp3:*"
+      testing-libs:
+        patterns:
+          - "junit:junit"
+          - "androidx.test.*"
+          - "androidx.test.espresso:espresso-core"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+      include: "scope"
