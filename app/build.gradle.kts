@@ -29,16 +29,12 @@
 
 import java.util.Properties
 
-// Plugin order matters: kotlin-android must be applied before
-// androidx.navigation.safeargs.kotlin (the safe-args plugin checks for the
-// kotlin plugin during apply and fails fast otherwise).
+// All plugin application + SDK levels + JVM toolchain + default test runner
+// + buildConfig flag come from the convention plugin in `build-logic/`. Only
+// app-specific config stays here (namespace, applicationId, version, signing,
+// buildTypes, sourceSets, dataBinding).
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.kapt)
-    alias(libs.plugins.kotlin.parcelize)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.androidx.navigation.safeargs)
+    id("asteroidradar.android.application")
 }
 
 // Version components — bump these (not versionCode / versionName directly) when
@@ -49,10 +45,10 @@ val versionMinor = 3
 val versionPatch = 5
 val versionClassifier = "INTERNAL"
 
-// SDK levels. Hoisted as named vals so they're easy to grep / bump.
-val asteroidMinSdk = 26
-val asteroidTargetSdk = 35
-val asteroidCompileSdk = 35
+// versionCode formula uses minSdk as a high digit so a future minSdk bump
+// auto-pushes versionCode forward without colliding with prior releases.
+// Mirrors the value the convention plugin sets for `defaultConfig.minSdk`.
+val versionCodeMinSdk = 26
 
 // Modexa trick #7: read "X from environment, falling back to local.properties"
 // was inlined four times in the Groovy script. Centralized here so adding a new
@@ -67,18 +63,14 @@ fun env(name: String, default: String = ""): String =
 
 android {
     namespace = "com.tarek.asteroidradar"
-    compileSdk = asteroidCompileSdk
 
     defaultConfig {
         applicationId = "com.tarek.asteroidradar"
-        minSdk = asteroidMinSdk
-        targetSdk = asteroidTargetSdk
-        versionCode = asteroidMinSdk * 1_000_000 +
+        versionCode = versionCodeMinSdk * 1_000_000 +
             versionMajor * 10_000 +
             versionMinor * 100 +
             versionPatch
         versionName = "$versionMajor.$versionMinor.$versionPatch-$versionClassifier"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -123,17 +115,7 @@ android {
     }
 
     buildFeatures {
-        buildConfig = true
         dataBinding = true
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 }
 

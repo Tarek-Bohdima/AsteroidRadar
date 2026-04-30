@@ -28,6 +28,12 @@
  */
 
 pluginManagement {
+    // Convention plugins live in `build-logic/`. Registering it here (rather
+    // than as a top-level `includeBuild`) means its precompiled script plugins
+    // are resolvable from any module's `plugins {}` block via
+    // `id("asteroidradar.android.application")`.
+    includeBuild("build-logic")
+
     repositories {
         google()
         mavenCentral()
