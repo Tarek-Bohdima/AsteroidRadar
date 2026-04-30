@@ -173,7 +173,7 @@ dependencies {
 
     // Picasso
     //noinspection GradleDependency
-    implementation 'com.squareup.picasso:picasso:2.8'
+    implementation 'com.squareup.picasso:picasso:2.71828'
 
     // Room database
     implementation "androidx.room:room-runtime:2.6.1"
