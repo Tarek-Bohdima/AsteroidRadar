@@ -52,6 +52,12 @@ jobs:
         # build steps so missing header or wrong indent fails fast.
         run: ./gradlew spotlessCheck
 
+      - name: Run Detekt
+        # Static analysis (cyclomatic complexity, magic numbers, naming, etc.).
+        # Existing violations are baselined in `config/detekt/baseline.xml`;
+        # new code is checked against defaults + `config/detekt.yml`.
+        run: ./gradlew detekt
+
       - name: Build debug APK
         run: ./gradlew assembleDebug
 
