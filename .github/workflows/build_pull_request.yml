@@ -36,8 +36,23 @@ jobs:
 
       - name: Detect non-docs changes
         id: filter
+        # `BASE_REF` is passed through `env` rather than interpolated directly
+        # into the script. Templated `${{ … }}` is expanded by the Actions
+        # engine before bash sees it, so any context value that ever contained
+        # shell metacharacters would become arbitrary command execution. Going
+        # via `env` makes it a regular shell variable that bash treats as data.
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")
+          set -euo pipefail
+          # Fail closed: if the diff itself fails for any reason, run the full
+          # build rather than silently skipping it. `set -e` doesn't trip on a
+          # failure inside `$(…)`, so check the exit status explicitly.
+          if ! changed=$(git diff --name-only "origin/${BASE_REF}...HEAD"); then
+            echo "git diff failed — defaulting to a full build run." >&2
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           echo "Changed files in this PR:"
           echo "$changed"
           if echo "$changed" | grep -qvE '\.md$|^docs/|^LICENSE$|^\.gitignore$'; then
