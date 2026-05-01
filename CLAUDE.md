@@ -80,7 +80,14 @@ The classifier suffix maps cleanly to Play tracks:
 
 Required GitHub secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`, `NASA_API_KEY`.
 
-PRs targeting `master` run `.github/workflows/build_pull_request.yml` (`assembleDebug` + `test`). Both workflows pin third-party Actions to commit SHAs (with the version tag in a trailing comment); Dependabot's `github-actions` ecosystem auto-bumps them weekly.
+PRs targeting `master` run `.github/workflows/build_pull_request.yml`. The workflow has two jobs:
+
+1. **`detect`** (~10s) — diffs the PR against its base ref and emits `code=true|false` based on whether anything outside the docs allowlist (`*.md`, `docs/`, `LICENSE`, `.gitignore`) changed.
+2. **`build`** — `needs: detect`, runs only when `code == 'true'`. Steps in order: `spotlessCheck` → `detekt` → `lintRelease` → `assembleDebug` → `test`. Fast checks first so signal arrives early. Always uploads lint + test reports as `build-reports` artifacts (`if: always()`).
+
+Docs-only PRs skip `build` — a skipped required check counts as "passing" for branch protection, so they merge without burning gradle minutes. If a new docs-only path is added later (e.g. `screenshots/`), update the regex in the `detect` job's `filter` step.
+
+Both workflows pin third-party Actions to commit SHAs (with the version tag in a trailing comment); Dependabot's `github-actions` ecosystem auto-bumps them weekly. The `detect` job's bash interpolates `github.base_ref` via `env: BASE_REF` (not `${{ … }}` directly into the script body) to avoid context-injection into shell.
 
 ## Branching, commits, issues
 

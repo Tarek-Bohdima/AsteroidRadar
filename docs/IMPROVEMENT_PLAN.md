@@ -9,12 +9,12 @@ shippable; pick them off in order — each one stacks on the last.
 
 | Phase | Theme | State |
 |---|---|---|
-| 0 | Repo hygiene (Dependabot, CI hardening, README, this doc) | **In progress** |
-| 1 | Gradle Kotlin DSL + version catalog | Pending |
-| 2 | Convention plugin (`build-logic/`) | Pending |
-| 3 | Code-quality plumbing (Spotless / Detekt / Lint) | Pending |
-| 4 | Toolchain modernization (Kotlin 2.x, AndroidX bumps, Picasso → Coil) | Done |
-| 5 | Hilt | Pending |
+| 0 | Repo hygiene (Dependabot, CI hardening, README, this doc) | Done |
+| 1 | Gradle Kotlin DSL + version catalog | Done (#52) |
+| 2 | Convention plugin (`build-logic/`) | Done (#54) |
+| 3 | Code-quality plumbing (Spotless / Detekt / Lint) | Done (#56, #58, #60) |
+| 4 | Toolchain modernization (Kotlin 2.x, AndroidX bumps, Picasso → Coil) | Done (#62, #64, #66) — manual device smoke pending |
+| 5 | Hilt | **Next** |
 | 6 | Production hardening (R8, fail-fast on missing API key) | Pending |
 | 7 | Tests + Kover | Pending |
 | 8 | Edge-to-edge | Pending |
@@ -126,42 +126,92 @@ Goal: enforce formatting, static analysis, and lint in CI before tests run.
 
 ## Phase 4 — Toolchain modernization
 
-The chunky one. Touches every dependency declaration; one PR, one device-tested
-release. Tag this as `v2.0.0-INTERNAL` — breaking for any fork.
+The chunky one. Shipped as three sub-PRs against the `feat/phase-4*` branch
+naming: Kotlin/coroutines bump, AndroidX bump, Picasso → Coil swap. Puts the
+project at `v2.0.0-INTERNAL` in `app/build.gradle.kts` (breaking for any
+fork — Kotlin major + dependency replacements). Tag is held under the
+revised release policy (CLAUDE.md → "ship-when-ready") until we're actually
+ready to publish a build.
 
-- **Kotlin 1.6.21 → 2.0.x** (or current stable). 1.6 is from 2022 and blocks
-  modern AndroidX bumps.
-- **Coroutines 1.6.4 → 1.8.x.**
-- **AndroidX bumps** — lifecycle 2.8+, fragment 1.8+, navigation 2.8+,
-  work-runtime 2.10+, room 2.7+ (already 2.6). Activity 1.10+.
-- **Picasso → Coil 2.x.** Picasso last released in 2018; Coil is the modern
-  Kotlin-native equivalent and works fine in the view system. Update
-  `BindingAdapters.kt` to use Coil's `load()` extension.
-- **Drop `kotlin-kapt` plugin application** — KSP is the only annotation
-  processor in this project (Room). The kapt plugin is currently applied but
-  unused.
-- Verify the app still works end-to-end on a device: NeoWs feed loads, APOD
-  loads, filter switching works, background WorkManager triggers a refresh.
+- **Kotlin 1.6.21 → 2.0.21** (#62). Plus coroutines 1.6.4 → 1.8.1 in the
+  same PR — they share the BOM-aligned bump.
+- **AndroidX bumps** (#64) — lifecycle 2.8+, fragment 1.8+, navigation 2.8+,
+  work-runtime 2.10+, activity 1.10+. Room was already on 2.6 and didn't
+  need this PR; the 2.7+ bump can ride along with Phase 5's Hilt work.
+- **Picasso → Coil 2.7.0** (#66). Updated `BindingAdapters.kt` to use Coil's
+  `imageView.load(uri) { … }` extension. Moved the `centerCrop` scale type
+  onto `fragment_main.xml` since Coil composes scaling on the view, not the
+  request. Dropped a Picasso-only `NotificationPermission` lint-baseline
+  entry.
+- **Drop `kotlin-kapt` plugin application — deferred.** AGP 8.3.0's Data
+  Binding compiler still discovers `@BindingAdapter` methods via kapt. Will
+  drop when we're on AGP 8.6+ (Data Binding moves to KSP); rolls into the
+  AGP-9 / Phase-6 vicinity rather than belonging here.
+
+**Open Phase 4 follow-up — manual device smoke.** Before tagging
+`v2.0.0-INTERNAL`, install the debug APK on a device and exercise the four
+flows: NeoWs feed loads (today/week/saved filters), APOD image renders
+through Coil's crossfade, navigation to detail + back, background
+`RefreshDataWorker` triggers (Charging + WiFi + idle). The instrumented
+`MainActivityCoilSmokeTest` (#66) is a downpayment on this but doesn't
+exercise the full happy path; it only asserts views render. Phase 7 will
+fold real Espresso coverage in.
 
 ## Phase 5 — Hilt
 
 Goal: introduce DI before feature work starts so feature modules slot in with
-`@HiltViewModel` / `@AndroidEntryPoint` already wired.
+`@HiltViewModel` / `@AndroidEntryPoint` already wired. Hilt 2.51+ requires
+Kotlin 2.0+, which is why this phase comes after the Phase 4 toolchain bump.
 
-- New convention plugin `asteroidradar.android.hilt` adds the hilt-gradle +
-  ksp plugins, `enableAggregatingTask = true`, `hilt-android` impl, and
-  `hilt-compiler` ksp.
-- `AsteroidRadarApplication` gets `@HiltAndroidApp`.
-- `MainActivity` + `MainFragment` + `DetailFragment` get `@AndroidEntryPoint`.
-- `MainViewModel` becomes `@HiltViewModel` with constructor-injected
-  `AsteroidRepository`. Its inner `Factory` class goes away.
-- `RefreshDataWorker` becomes `@HiltWorker` with constructor-injected
-  repository; the manual `getDatabase(context)` + repository construction
-  goes away.
-- The `getDatabase()` global singleton in `database/AsteroidDatabase.kt` gets
-  replaced by a `@Provides @Singleton` in a Hilt `Module`.
-- Hilt 2.51+ requires Kotlin 2.0+, which is why this phase comes after the
-  toolchain bump.
+### Sub-PR breakdown
+
+The phase splits cleanly into three sub-PRs because Hilt allows partial
+adoption — `@HiltAndroidApp` alone doesn't break anything until something
+asks Hilt for an injection. Branch naming: `feat/phase-5a-…` etc.
+
+- **5a — Plugin scaffolding (`feat/phase-5a-hilt-scaffold`).** New
+  convention plugin `asteroidradar.android.hilt` adds the hilt-gradle + ksp
+  plugins, sets `enableAggregatingTask = true`, declares `hilt-android` impl
+  and `hilt-compiler` ksp. Apply it to `:app`. Add `@HiltAndroidApp` to
+  `AsteroidRadarApplication`. **No behavior change** — app still uses the
+  manual `getDatabase()` + `MainViewModel.Factory` paths. Verifies the
+  build pipeline + Hilt-component generation works in isolation.
+- **5b — DB module + ViewModel migration (`feat/phase-5b-hilt-vm`).** New
+  `@Module @InstallIn(SingletonComponent::class)` providing
+  `AsteroidDatabase`, `AsteroidDao`, `AsteroidRepository` as
+  `@Provides @Singleton`. `MainActivity` / `MainFragment` /
+  `DetailFragment` get `@AndroidEntryPoint`. `MainViewModel` becomes
+  `@HiltViewModel` with a constructor-injected `AsteroidRepository`; the
+  inner `Factory` class is removed and `MainFragment` switches to
+  `by viewModels()` (or `hiltViewModel()`). The `getDatabase()` global is
+  *kept for now* — `RefreshDataWorker` still uses it.
+- **5c — Worker migration (`feat/phase-5c-hilt-worker`).** Add
+  `androidx.hilt:hilt-work` + the `androidx-hilt-compiler` ksp processor.
+  `RefreshDataWorker` becomes `@HiltWorker` with a constructor-injected
+  `AsteroidRepository`. Wire a `HiltWorkerFactory` into the application via
+  `Configuration.Provider` (so WorkManager picks up Hilt-managed workers).
+  Delete the `getDatabase()` global singleton from
+  `database/AsteroidDatabase.kt` and the `lateinit INSTANCE` machinery —
+  the Hilt module is now the only construction site.
+
+### Things to watch during Phase 5
+
+- **Data Binding still uses kapt** (Phase 4 deferred kapt removal). Hilt
+  uses ksp. Both should coexist fine — they have separate annotation sets.
+  If kapt and ksp clash on a generated source path, the
+  `sourceSets.main.java.srcDir 'build/generated/ksp/src/main/kotlin'` shim
+  in `app/build.gradle.kts` is the suspect.
+- **Worker construction is the riskiest delete.** `RefreshDataWorker` is
+  enqueued from `AsteroidRadarApplication.onCreate()`; if
+  `Configuration.Provider` isn't wired correctly, WorkManager falls back
+  to its default factory and Hilt-injected workers fail with
+  "could not instantiate" at runtime. Test on a device — the unit-test
+  classpath won't catch this.
+- **`MainViewModel.Factory`'s removal**. `MainFragment` currently
+  constructs `MainViewModel` via the inner `Factory` to pass `Application`
+  in for `getDatabase(application)`. Once the DB is `@Provides`-d,
+  `Application` doesn't need to flow through; just inject the repository
+  directly into `MainViewModel`.
 
 ## Phase 6 — Production hardening
 
