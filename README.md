@@ -34,7 +34,7 @@ Available on Google Play (internal track).
 | Networking | Retrofit + Moshi + OkHttp + a custom converter that picks scalar vs JSON per `@ScalarResponse` / `@JsonResponse` annotation |
 | Persistence | Room (compiled with KSP) |
 | Background | WorkManager (`PeriodicWorkRequest`, KEEP policy) |
-| Image loading | Picasso |
+| Image loading | Coil |
 | Logging | Timber |
 
 Architecture is a standard offline-first repo pattern (`domain` / `network` /

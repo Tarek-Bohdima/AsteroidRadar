@@ -13,7 +13,7 @@ shippable; pick them off in order — each one stacks on the last.
 | 1 | Gradle Kotlin DSL + version catalog | Pending |
 | 2 | Convention plugin (`build-logic/`) | Pending |
 | 3 | Code-quality plumbing (Spotless / Detekt / Lint) | Pending |
-| 4 | Toolchain modernization (Kotlin 2.x, AndroidX bumps, Picasso → Coil) | Pending |
+| 4 | Toolchain modernization (Kotlin 2.x, AndroidX bumps, Picasso → Coil) | Done |
 | 5 | Hilt | Pending |
 | 6 | Production hardening (R8, fail-fast on missing API key) | Pending |
 | 7 | Tests + Kover | Pending |

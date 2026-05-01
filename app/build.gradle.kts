@@ -142,9 +142,10 @@ dependencies {
 
     implementation(libs.androidx.work.runtime.ktx)
 
-    implementation(libs.picasso)
+    implementation(libs.coil)
     implementation(libs.timber)
 
     testImplementation(libs.junit)
+    testImplementation(libs.org.json)
     androidTestImplementation(libs.bundles.android.test)
 }
