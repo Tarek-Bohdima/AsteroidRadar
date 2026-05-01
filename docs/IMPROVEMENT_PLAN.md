@@ -27,10 +27,12 @@ the rough size; sub-bullets are the concrete deltas.
 ## Versioning and tags
 
 Tag/release policy lives in [`CLAUDE.md`](../CLAUDE.md#versioning-and-tags).
-Cut a tag at every phase boundary — don't accumulate three phases into one
-release. Phase 0 lands as a PATCH (`v1.3.6-INTERNAL`). The toolchain bump in
-Phase 4 is breaking for any fork (Kotlin major, dependency replacements) and
-ships as MAJOR (`v2.0.0-INTERNAL`).
+tl;dr: bump `versionMajor/Minor/Patch` in `app/build.gradle.kts` per phase
+that earns it, so the version-of-record stays honest, but only cut a tag
+(which triggers a release workflow run + Internal-track-eligible signed
+build) when there's an actual reason to ship. Phases can stack into a single
+tag. Phase 4's toolchain bump puts the project at `v2.0.0-INTERNAL` in the
+build script whether or not we tag immediately.
 
 ---
 

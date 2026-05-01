@@ -67,13 +67,14 @@ The classifier suffix maps cleanly to Play tracks:
 
 **Conventions:**
 
-- Tag at phase boundaries from `docs/IMPROVEMENT_PLAN.md`, not arbitrarily.
-- Every tag is a GitHub Release with auto-generated notes (the existing release workflow handles this).
+- Bump `versionMajor/Minor/Patch` in `app/build.gradle.kts` as part of the PR that earns the bump, so the version-of-record on `master` always reflects what's there. Doc/CI/dep-bump-only PRs skip the bump.
+- Cut a tag only when actually shipping a build — phases can stack into a single tag. e.g. Phases 4 + 5 + 6 ship as one `v2.0.0-INTERNAL` once the toolchain + DI + R8 rewrite is on a device, not three separate cuts. The version field tracks the work; the tag tracks shipments.
+- When we tag, the release workflow runs: signed APK + AAB build, GitHub Release with auto-generated notes, AAB attached as a workflow artifact (Play Store upload stays manual).
 - Tag names containing `INTERNAL`, `alpha`, `beta`, `rc`, or `RC` auto-flag as pre-release.
 
 `.github/workflows/release.yml` runs on tags matching `v*`:
 
-1. **Validates** that `vMAJOR.MINOR.PATCH` (classifier ignored) matches `versionMajor/Minor/Patch` in `app/build.gradle`. Mismatch fails the workflow before building. Always update `build.gradle` and commit before tagging.
+1. **Validates** that `vMAJOR.MINOR.PATCH` (classifier ignored) matches `versionMajor/Minor/Patch` in `app/build.gradle.kts`. Mismatch fails the workflow before building. Always update `build.gradle.kts` and commit before tagging.
 2. Runs unit tests, decodes `KEYSTORE_BASE64` to a temp `.jks`, builds signed APK + AAB.
 3. Attaches the APK to the GitHub Release; uploads the AAB as a workflow artifact (Play Store uploads are manual).
 
