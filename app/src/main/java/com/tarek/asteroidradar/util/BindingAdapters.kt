@@ -32,7 +32,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.net.toUri
 import androidx.databinding.BindingAdapter
-import com.squareup.picasso.Picasso
+import coil.load
 import com.tarek.asteroidradar.R
 
 @BindingAdapter("statusIcon")
@@ -98,13 +98,10 @@ fun bindImage(
                 .buildUpon()
                 .scheme("https")
                 .build()
-        Picasso
-            .get()
-            .load(imageUri)
-            .placeholder(R.drawable.placeholder_picture_of_day)
-            .error(R.drawable.ic_broken_image)
-            .fit()
-            .centerCrop()
-            .into(imageView)
+        imageView.load(imageUri) {
+            placeholder(R.drawable.placeholder_picture_of_day)
+            error(R.drawable.ic_broken_image)
+            crossfade(true)
+        }
     }
 }
