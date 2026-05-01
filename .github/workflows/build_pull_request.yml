@@ -19,7 +19,38 @@ concurrency:
 # tag can't silently swap behavior under us. Dependabot's `github-actions`
 # ecosystem auto-bumps these on a weekly cadence.
 jobs:
+  # Cheap (~10s) gate that decides whether the heavy `build` job runs. If a PR
+  # only touches docs (Markdown / docs/ / LICENSE / .gitignore), `build` is
+  # skipped — and a skipped required check counts as "passing" in branch
+  # protection, so docs PRs merge without burning gradle minutes. Update the
+  # regex below if a new docs-only path is added (e.g. screenshots/).
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Detect non-docs changes
+        id: filter
+        run: |
+          changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")
+          echo "Changed files in this PR:"
+          echo "$changed"
+          if echo "$changed" | grep -qvE '\.md$|^docs/|^LICENSE$|^\.gitignore$'; then
+            echo "code=true"  >> "$GITHUB_OUTPUT"
+            echo "Decision: code changes present — running build."
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+            echo "Decision: docs-only PR — skipping build."
+          fi
+
   build:
+    needs: detect
+    if: needs.detect.outputs.code == 'true'
     runs-on: ubuntu-latest
     env:
       NASA_API_KEY: ${{ secrets.NASA_API_KEY }}
