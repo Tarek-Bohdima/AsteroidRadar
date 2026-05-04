@@ -28,39 +28,10 @@
  */
 package com.tarek.asteroidradar.database
 
-import android.content.Context
 import androidx.room.Database
-import androidx.room.Room
 import androidx.room.RoomDatabase
 
-/**
- * A database that stores DatabaseAsteroid information.
- * And a global method to get access to the database.
- *
- * This pattern is pretty much the same for any database,
- * so you can reuse it.
- */
 @Database(entities = [DatabaseAsteroid::class], version = 1)
 abstract class AsteroidDatabase : RoomDatabase() {
-    /**
-     * Connects the database to the DAO.
-     */
     abstract val asteroidDao: AsteroidDao
-}
-
-private lateinit var instance: AsteroidDatabase
-
-fun getDatabase(context: Context): AsteroidDatabase {
-    synchronized(AsteroidDatabase::class.java) {
-        if (!::instance.isInitialized) {
-            instance =
-                Room
-                    .databaseBuilder(
-                        context.applicationContext,
-                        AsteroidDatabase::class.java,
-                        "asteroids",
-                    ).build()
-        }
-    }
-    return instance
 }

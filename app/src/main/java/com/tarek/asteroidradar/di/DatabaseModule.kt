@@ -29,9 +29,9 @@
 package com.tarek.asteroidradar.di
 
 import android.content.Context
+import androidx.room.Room
 import com.tarek.asteroidradar.database.AsteroidDao
 import com.tarek.asteroidradar.database.AsteroidDatabase
-import com.tarek.asteroidradar.database.getDatabase
 import com.tarek.asteroidradar.repository.AsteroidRepository
 import dagger.Module
 import dagger.Provides
@@ -40,11 +40,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-// Hilt module for database + repository graph. Phase 5b only — `getDatabase()`
-// is intentionally kept as the construction site so :app (via Hilt) and
-// `RefreshDataWorker` (still pre-Hilt this phase) share a single Room instance.
-// Phase 5c migrates the worker, deletes `getDatabase()`, and inlines
-// `Room.databaseBuilder(...)` here.
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
@@ -52,12 +47,18 @@ object DatabaseModule {
     @Singleton
     fun provideAsteroidDatabase(
         @ApplicationContext context: Context,
-    ): AsteroidDatabase = getDatabase(context)
+    ): AsteroidDatabase =
+        Room
+            .databaseBuilder(
+                context,
+                AsteroidDatabase::class.java,
+                "asteroids",
+            ).build()
 
     @Provides
     fun provideAsteroidDao(database: AsteroidDatabase): AsteroidDao = database.asteroidDao
 
     @Provides
     @Singleton
-    fun provideAsteroidRepository(database: AsteroidDatabase): AsteroidRepository = AsteroidRepository(database)
+    fun provideAsteroidRepository(asteroidDao: AsteroidDao): AsteroidRepository = AsteroidRepository(asteroidDao)
 }

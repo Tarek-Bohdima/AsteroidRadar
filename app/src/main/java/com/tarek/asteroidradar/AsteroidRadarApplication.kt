@@ -29,6 +29,8 @@
 package com.tarek.asteroidradar
 
 import android.app.Application
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
@@ -41,10 +43,25 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
 @HiltAndroidApp
-class AsteroidRadarApplication : Application() {
+class AsteroidRadarApplication :
+    Application(),
+    Configuration.Provider {
     private val applicationScope = CoroutineScope(Dispatchers.Default)
+
+    @Inject lateinit var workerFactory: HiltWorkerFactory
+
+    // The default WorkManagerInitializer is removed in the manifest so this
+    // is read by WorkManager.getInstance() lazily — after Hilt has populated
+    // workerFactory in onCreate. Reading it earlier would NPE the lateinit.
+    override val workManagerConfiguration: Configuration
+        get() =
+            Configuration
+                .Builder()
+                .setWorkerFactory(workerFactory)
+                .build()
 
     override fun onCreate() {
         super.onCreate()
