@@ -36,7 +36,7 @@ junit = "4.13.2"
 # org.json:json — Android's `org.json` ships in the Android runtime but isn't
 # on the JVM unit-test classpath; this brings the (API-compatible) library so
 # parser tests can run as plain JVM tests without Robolectric.
-orgJson = "20240303"
+orgJson = "20251224"
 
 # Code-quality tooling. Spotless 6.x is the last branch that runs cleanly on
 # Gradle 8.4 + Kotlin 1.6.x; Phase 4's toolchain bump can move to 7.x. ktlint
