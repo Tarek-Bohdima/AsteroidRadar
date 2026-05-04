@@ -14,8 +14,8 @@ shippable; pick them off in order — each one stacks on the last.
 | 2 | Convention plugin (`build-logic/`) | Done (#54) |
 | 3 | Code-quality plumbing (Spotless / Detekt / Lint) | Done (#56, #58, #60) |
 | 4 | Toolchain modernization (Kotlin 2.x, AndroidX bumps, Picasso → Coil) | Done (#62, #64, #66) — manual device smoke pending |
-| 5 | Hilt | **Next** |
-| 6 | Production hardening (R8, fail-fast on missing API key) | Pending |
+| 5 | Hilt | Done (#80, #82, #84) — manual device smoke pending |
+| 6 | Production hardening (R8, fail-fast on missing API key) | **Next** |
 | 7 | Tests + Kover | Pending |
 | 8 | Edge-to-edge | Pending |
 | 9 | Compose migration | Deferred |
