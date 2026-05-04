@@ -35,6 +35,7 @@ import java.util.Properties
 plugins {
     id("asteroidradar.android.application")
     id("asteroidradar.android.hilt")
+    alias(libs.plugins.kover)
 }
 
 // Version components — bump these (not versionCode / versionName directly) when
@@ -168,7 +169,7 @@ dependencies {
     implementation(libs.coil)
     implementation(libs.timber)
 
-    testImplementation(libs.junit)
+    testImplementation(libs.bundles.test.shared)
     testImplementation(libs.org.json)
     androidTestImplementation(libs.bundles.android.test)
 }

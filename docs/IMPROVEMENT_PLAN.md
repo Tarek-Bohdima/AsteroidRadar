@@ -15,8 +15,8 @@ shippable; pick them off in order — each one stacks on the last.
 | 3 | Code-quality plumbing (Spotless / Detekt / Lint) | Done (#56, #58, #60) |
 | 4 | Toolchain modernization (Kotlin 2.x, AndroidX bumps, Picasso → Coil) | Done (#62, #64, #66) — manual device smoke pending |
 | 5 | Hilt | Done (#80, #82, #84) |
-| 6 | Production hardening (R8, fail-fast on missing API key) | **In progress** — 6a (#85) lands fail-fast + slim proguard; 6b (#86) enables R8 alongside the AGP bump |
-| 7 | Tests + Kover | Pending |
+| 6 | Production hardening (R8, fail-fast on missing API key) | **In progress** — 6a (#87) shipped fail-fast + slim proguard; 6b (#86) enables R8 alongside the AGP bump |
+| 7 | Tests + Kover | **In progress** — 7a (#88) lands Kover infra + test-shared bundle; 7b/7c add real tests |
 | 8 | Edge-to-edge | Pending |
 | 9 | Compose migration | Deferred |
 | — | **Module split** lands with feature #2, not as a phase | — |
@@ -243,20 +243,30 @@ with the eventual AGP bump.
 Goal: replace the empty `Example*Test` shells with real coverage that doubles
 as documentation for "how to test in this repo."
 
-- **Kover plugin** in the convention plugin so every module is instrumented
-  by default. Aggregate task: `./gradlew koverHtmlReport`. CI uploads the
-  HTML + XML reports as artifacts (XML for any future Codecov/SonarCloud).
-- **No coverage gate at first.** After 2–3 PRs of real tests, set a soft
-  floor via `koverVerify` (start at 60%, ratchet up).
-- **Real tests to write:**
-  - `parseAsteroidsJsonResult` parser tests — feed it sample NeoWs payloads
-    incl. edge cases (missing fields, empty date buckets).
-  - `AsteroidDao` integration test using in-memory Room — `getAsteroids`,
-    `getTodayAsteroids`, `getWeeklyAsteroids`, `deletePreviousAsteroid`.
-  - `AsteroidRepository.getAsteroidSelection` filter mapping with a fake DAO.
-  - `MainViewModel` state transitions with Turbine + MockK + Truth.
-- Add bundle in `libs.versions.toml`: `test-shared` re-exports junit,
-  truth, mockk, turbine, coroutines-test, androidx-test-ext, espresso-core.
+### Sub-PR breakdown
+
+The phase splits into infrastructure-then-tests so the first PR doesn't have
+to defend coverage numbers, and the test PRs don't have to defend
+build-script changes.
+
+- **7a (`feat/phase-7a-kover-and-test-bundle`).** Kover plugin (HTML report
+  task `./gradlew :app:koverHtmlReport`); `test-shared` bundle in
+  `libs.versions.toml` (junit + truth + mockk + turbine + coroutines-test);
+  CI uploads the HTML report as a `kover-report` artifact alongside the
+  existing `build-reports`. **No new tests, no `koverVerify` gate.** The
+  existing `ParseAsteroidsJsonResultTest` is the smoke that confirms the
+  Kover wire-up.
+- **7b (`feat/phase-7b-jvm-tests`).** Real JVM tests on the new bundle:
+  `AsteroidRepository.getAsteroidSelection` filter mapping with a fake DAO
+  (the LoD fix in 5c made this trivially possible); `MainViewModel` state
+  transitions with Turbine + MockK + Truth; parser-test edge cases.
+- **7c (`feat/phase-7c-instrumented-tests`).** `AsteroidDao` integration
+  test using in-memory Room — `getAsteroids`, `getTodayAsteroids`,
+  `getWeeklyAsteroids`, `deletePreviousAsteroid`. Empty `Example*Test`
+  shells get deleted in this PR (truly replaced now).
+- **After 7c:** turn on `koverVerify` with a soft floor (60% per the plan),
+  ratchet up. XML report (Codecov / SonarCloud) is a future thing — still
+  a non-goal for the phase.
 
 ## Phase 8 — Edge-to-edge
 
