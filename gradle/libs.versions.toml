@@ -3,11 +3,11 @@
 # exactly; the toolchain bump in Phase 4 will move them in a coordinated PR.
 
 [versions]
-agp = "8.3.0"
+agp = "8.13.2"
 kotlin = "2.0.21"
 # KSP versions track the Kotlin compiler they were built against — must match.
-ksp = "2.0.21-1.0.27"
-androidxNavigation = "2.8.5"
+ksp = "2.3.7"
+androidxNavigation = "2.9.8"
 
 androidxAppcompat = "1.7.0"
 androidxConstraintlayout = "2.2.0"
