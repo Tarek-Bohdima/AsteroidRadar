@@ -64,6 +64,19 @@ fun env(
     default: String = "",
 ): String = System.getenv(name) ?: localProperties.getProperty(name, default)
 
+// Fail Gradle (after configure, before execute) when a release task is in the
+// graph and NASA_API_KEY is blank. Scoped to the task graph rather than the
+// release build-type block so `assembleDebug` / `test` / docs-only invocations
+// stay lenient — a missing key is only fatal when we're actually shipping.
+gradle.taskGraph.whenReady {
+    val releaseTasks = setOf("assembleRelease", "bundleRelease", "packageRelease")
+    if (allTasks.any { it.name in releaseTasks }) {
+        require(env("NASA_API_KEY").isNotBlank()) {
+            "NASA_API_KEY is required for release builds. Set it via env var or local.properties."
+        }
+    }
+}
+
 android {
     namespace = "com.tarek.asteroidradar"
 
@@ -97,6 +110,10 @@ android {
             buildConfigField("String", "NASA_API_KEY", "\"${env("NASA_API_KEY")}\"")
         }
         release {
+            // R8 + resource shrinking ride along with Phase 6b (the AGP bump);
+            // R8 from AGP 8.3.0 can't parse Kotlin 2.1 metadata that Retrofit
+            // 3.0+ ships with. Slim `proguard-rules.pro` lands now so the
+            // Phase 6b PR is just an `isMinifyEnabled` flip.
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

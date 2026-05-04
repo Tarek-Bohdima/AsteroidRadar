@@ -14,8 +14,8 @@ shippable; pick them off in order — each one stacks on the last.
 | 2 | Convention plugin (`build-logic/`) | Done (#54) |
 | 3 | Code-quality plumbing (Spotless / Detekt / Lint) | Done (#56, #58, #60) |
 | 4 | Toolchain modernization (Kotlin 2.x, AndroidX bumps, Picasso → Coil) | Done (#62, #64, #66) — manual device smoke pending |
-| 5 | Hilt | Done (#80, #82, #84) — manual device smoke pending |
-| 6 | Production hardening (R8, fail-fast on missing API key) | **Next** |
+| 5 | Hilt | Done (#80, #82, #84) |
+| 6 | Production hardening (R8, fail-fast on missing API key) | **In progress** — 6a (#85) lands fail-fast + slim proguard; 6b (#86) enables R8 alongside the AGP bump |
 | 7 | Tests + Kover | Pending |
 | 8 | Edge-to-edge | Pending |
 | 9 | Compose migration | Deferred |
@@ -218,19 +218,25 @@ asks Hilt for an injection. Branch naming: `feat/phase-5a-…` etc.
 Goal: a release build should fail fast on missing config, and ship a real
 minified APK.
 
-- `minifyEnabled true` + `shrinkResources true` for the release build type
-  (currently `minifyEnabled false`).
-- Slim starter `proguard-rules.pro` — `-keepattributes
-  SourceFile,LineNumberTable` + `-renamesourcefileattribute SourceFile` so
-  production crashes symbolicate via the AGP-emitted `mapping.txt`. AAR-shipped
-  consumer rules from Hilt, Room, Retrofit, Moshi cover the rest. Adopters add
-  reflective-keeps on demand. Use the [`r8-analyzer`](https://github.com/android/skills)
-  Claude Code skill for keep-rule debugging.
-- **Fail-fast on missing API key in release.** Currently a blank
-  `NASA_API_KEY` in release results in a runtime 403 rather than a build
-  failure. Add a check in the release build type's `buildConfigField` wiring.
-- Lint baseline regenerated post-toolchain-bump (Phase 4 will likely surface
-  new warnings).
+### Sub-PR breakdown
+
+The phase splits because R8 from AGP 8.3.0 can't parse the Kotlin 2.1
+metadata that Retrofit 3.0+ ships with — R8 enablement therefore rides
+with the eventual AGP bump.
+
+- **6a (`feat/phase-6a-fail-fast-and-slim-proguard`).** Configure-time
+  fail-fast on a blank `NASA_API_KEY` for any release task in the graph
+  (debug + tests stay lenient). `app/proguard-rules.pro` slimmed to
+  `-keepattributes SourceFile,LineNumberTable` +
+  `-renamesourcefileattribute SourceFile`; the old Glide / Gson /
+  broad-Serializable rules go away. R8 stays disabled — slim rules just
+  pre-stage 6b. Ships now.
+- **6b (`feat/phase-6b-enable-r8`).** Flip `isMinifyEnabled = true` +
+  `isShrinkResources = true`. Lint baseline regen if R8-related warnings
+  appear. Combine with the AGP bump (Room 2.8.x and ktlint/spotless 7.x
+  also wait on AGP ≥ 8.5) so the toolchain advances once. Use the
+  [`r8-analyzer`](https://github.com/android/skills) Claude Code skill for
+  keep-rule debugging if a release smoke surfaces a missing rule.
 
 ## Phase 7 — Tests + Kover
 
