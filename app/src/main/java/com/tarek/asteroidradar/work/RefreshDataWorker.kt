@@ -29,32 +29,35 @@
 package com.tarek.asteroidradar.work
 
 import android.content.Context
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.tarek.asteroidradar.database.getDatabase
 import com.tarek.asteroidradar.repository.AsteroidRepository
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import retrofit2.HttpException
 
-class RefreshDataWorker(
-    appContext: Context,
-    params: WorkerParameters,
-) : CoroutineWorker(
-        appContext,
-        params,
-    ) {
-    companion object {
-        const val WORK_NAME = "RefreshDataWorker"
-    }
-
-    override suspend fun doWork(): Result {
-        val database = getDatabase(applicationContext)
-        val repository = AsteroidRepository(database)
-        return try {
-            repository.deletePastAsteroids()
-            repository.refreshAsteroids()
-            Result.success()
-        } catch (e: HttpException) {
-            Result.retry()
+@HiltWorker
+class RefreshDataWorker
+    @AssistedInject
+    constructor(
+        @Assisted appContext: Context,
+        @Assisted params: WorkerParameters,
+        private val repository: AsteroidRepository,
+    ) : CoroutineWorker(
+            appContext,
+            params,
+        ) {
+        companion object {
+            const val WORK_NAME = "RefreshDataWorker"
         }
+
+        override suspend fun doWork(): Result =
+            try {
+                repository.deletePastAsteroids()
+                repository.refreshAsteroids()
+                Result.success()
+            } catch (e: HttpException) {
+                Result.retry()
+            }
     }
-}

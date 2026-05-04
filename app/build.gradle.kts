@@ -142,6 +142,11 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.androidx.work.runtime.ktx)
+    // androidx-hilt:hilt-work is a separate artifact group from the dagger-hilt
+    // ones (which the convention plugin wires); the matching compiler is also
+    // distinct and goes through KSP, not kapt.
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
 
     implementation(libs.coil)
     implementation(libs.timber)

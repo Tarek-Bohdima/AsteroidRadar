@@ -31,7 +31,7 @@ package com.tarek.asteroidradar.repository
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.map
 import com.tarek.asteroidradar.BuildConfig
-import com.tarek.asteroidradar.database.AsteroidDatabase
+import com.tarek.asteroidradar.database.AsteroidDao
 import com.tarek.asteroidradar.database.asDomainModel
 import com.tarek.asteroidradar.domain.Asteroid
 import com.tarek.asteroidradar.domain.PictureOfDay
@@ -46,7 +46,7 @@ import timber.log.Timber
 import java.time.LocalDate
 
 class AsteroidRepository(
-    private val database: AsteroidDatabase,
+    private val asteroidDao: AsteroidDao,
 ) {
     sealed class AsteroidsFilter {
         data object TODAY : AsteroidsFilter()
@@ -67,17 +67,17 @@ class AsteroidRepository(
     fun getAsteroidSelection(filter: AsteroidsFilter): LiveData<List<Asteroid>> =
         when (filter) {
             AsteroidsFilter.STORED ->
-                database.asteroidDao.getAsteroids().map {
+                asteroidDao.getAsteroids().map {
                     it.asDomainModel()
                 }
 
             AsteroidsFilter.WEEK ->
-                database.asteroidDao.getWeeklyAsteroids(startDate, endDate).map {
+                asteroidDao.getWeeklyAsteroids(startDate, endDate).map {
                     it.asDomainModel()
                 }
 
             AsteroidsFilter.TODAY ->
-                database.asteroidDao.getTodayAsteroids(startDate).map {
+                asteroidDao.getTodayAsteroids(startDate).map {
                     it.asDomainModel()
                 }
         }
@@ -95,7 +95,7 @@ class AsteroidRepository(
             try {
                 val asteroidsJson =
                     AsteroidApi.retrofitService.getAsteroids(API_KEY)
-                database.asteroidDao.insertAll(
+                asteroidDao.insertAll(
                     *parseAsteroidsJsonResult(JSONObject(asteroidsJson))
                         .asDatabaseModel(),
                 )
@@ -106,6 +106,6 @@ class AsteroidRepository(
     }
 
     suspend fun deletePastAsteroids() {
-        database.asteroidDao.deletePreviousAsteroid(startDate)
+        asteroidDao.deletePreviousAsteroid(startDate)
     }
 }
