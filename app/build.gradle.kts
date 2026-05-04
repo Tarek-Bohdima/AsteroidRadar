@@ -34,6 +34,7 @@ import java.util.Properties
 // buildTypes, sourceSets, dataBinding).
 plugins {
     id("asteroidradar.android.application")
+    id("asteroidradar.android.hilt")
 }
 
 // Version components — bump these (not versionCode / versionName directly) when

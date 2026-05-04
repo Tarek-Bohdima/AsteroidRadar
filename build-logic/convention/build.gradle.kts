@@ -43,4 +43,5 @@ dependencies {
     implementation(libs.kotlin.gradle.plugin)
     implementation(libs.ksp.gradle.plugin)
     implementation(libs.androidx.navigation.safeargs.gradle.plugin)
+    implementation(libs.hilt.gradle.plugin)
 }
