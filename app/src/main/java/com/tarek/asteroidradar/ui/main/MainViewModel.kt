@@ -28,97 +28,80 @@
  */
 package com.tarek.asteroidradar.ui.main
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewModelScope
-import com.tarek.asteroidradar.database.getDatabase
 import com.tarek.asteroidradar.domain.Asteroid
 import com.tarek.asteroidradar.domain.PictureOfDay
 import com.tarek.asteroidradar.repository.AsteroidRepository
 import com.tarek.asteroidradar.repository.AsteroidRepository.AsteroidsFilter
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
-class MainViewModel(
-    application: Application,
-) : AndroidViewModel(application) {
-    private val database = getDatabase(application)
-    private val repository = AsteroidRepository(database)
+@HiltViewModel
+class MainViewModel
+    @Inject
+    constructor(
+        private val repository: AsteroidRepository,
+    ) : ViewModel() {
+        private val _imageOfTheDay = MutableLiveData<PictureOfDay>()
+        val imageOfTheDay: LiveData<PictureOfDay>
+            get() = _imageOfTheDay
 
-    private val _imageOfTheDay = MutableLiveData<PictureOfDay>()
-    val imageOfTheDay: LiveData<PictureOfDay>
-        get() = _imageOfTheDay
+        private val _navigateToDetail = MutableLiveData<Asteroid?>()
+        val navigateToDetail
+            get() = _navigateToDetail
 
-    private val _navigateToDetail = MutableLiveData<Asteroid?>()
-    val navigateToDetail
-        get() = _navigateToDetail
+        private val _filter = MutableLiveData<AsteroidsFilter>()
+        val filter
+            get() = _filter
 
-    private val _filter = MutableLiveData<AsteroidsFilter>()
-    val filter
-        get() = _filter
-
-    val asteroids =
-        filter.switchMap {
-            repository.getAsteroidSelection(it)
-        }
-
-    init {
-        viewModelScope.launch {
-            getAsteroidList()
-            getImageOfTheDay()
-        }
-    }
-
-    private suspend fun getImageOfTheDay() {
-        try {
-            _imageOfTheDay.value = repository.getImageOfTheDay()
-        } catch (e: Exception) {
-            Timber.d("MainViewModel: getImageOfTheDay called : %s", e.message)
-        }
-    }
-
-    private suspend fun getAsteroidList() {
-        try {
-            repository.refreshAsteroids()
-        } catch (e: Exception) {
-            Timber.d("MainViewModel: getAsteroidList() called : %s", e.message)
-        }
-    }
-
-    fun onAsteroidClicked(asteroid: Asteroid) {
-        _navigateToDetail.value = asteroid
-    }
-
-    fun onAsteroidDetailNavigated() {
-        _navigateToDetail.value = null
-    }
-
-    /**
-     * Updates the data set filter for the web services by querying the data with the new filter
-     * by calling [getAsteroidList]
-     * @param filter the [AsteroidsFilter] that is sent as part of the web server request
-     */
-    fun updateFilters(filter: AsteroidsFilter) {
-        _filter.value = filter
-    }
-
-    /**
-     * Factory for constructing MainViewModel with parameter
-     */
-    class Factory(
-        val app: Application,
-    ) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
-                @Suppress("UNCHECKED_CAST")
-                return MainViewModel(app) as T
+        val asteroids =
+            filter.switchMap {
+                repository.getAsteroidSelection(it)
             }
-            throw IllegalArgumentException("Unable to construct viewmodel")
+
+        init {
+            viewModelScope.launch {
+                getAsteroidList()
+                getImageOfTheDay()
+            }
+        }
+
+        private suspend fun getImageOfTheDay() {
+            try {
+                _imageOfTheDay.value = repository.getImageOfTheDay()
+            } catch (e: Exception) {
+                Timber.d("MainViewModel: getImageOfTheDay called : %s", e.message)
+            }
+        }
+
+        private suspend fun getAsteroidList() {
+            try {
+                repository.refreshAsteroids()
+            } catch (e: Exception) {
+                Timber.d("MainViewModel: getAsteroidList() called : %s", e.message)
+            }
+        }
+
+        fun onAsteroidClicked(asteroid: Asteroid) {
+            _navigateToDetail.value = asteroid
+        }
+
+        fun onAsteroidDetailNavigated() {
+            _navigateToDetail.value = null
+        }
+
+        /**
+         * Updates the data set filter for the web services by querying the data with the new filter
+         * by calling [getAsteroidList]
+         * @param filter the [AsteroidsFilter] that is sent as part of the web server request
+         */
+        fun updateFilters(filter: AsteroidsFilter) {
+            _filter.value = filter
         }
     }
-}

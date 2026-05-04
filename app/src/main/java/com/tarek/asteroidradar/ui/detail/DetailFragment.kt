@@ -37,7 +37,9 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.tarek.asteroidradar.R
 import com.tarek.asteroidradar.databinding.FragmentDetailBinding
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class DetailFragment : Fragment() {
     private lateinit var binding: FragmentDetailBinding
 

@@ -44,16 +44,16 @@ import androidx.navigation.fragment.findNavController
 import com.tarek.asteroidradar.R
 import com.tarek.asteroidradar.databinding.FragmentMainBinding
 import com.tarek.asteroidradar.repository.AsteroidRepository
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 @Suppress("ktlint:standard:no-consecutive-comments")
 class MainFragment : Fragment() {
     @Suppress("ktlint:standard:backing-property-naming")
     private var _binding: FragmentMainBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: MainViewModel by viewModels {
-        MainViewModel.Factory(requireActivity().application)
-    }
+    private val viewModel: MainViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
