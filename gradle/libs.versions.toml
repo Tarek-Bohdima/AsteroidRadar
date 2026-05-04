@@ -43,7 +43,7 @@ orgJson = "20251224"
 # is pinned for reproducibility across machines.
 detekt = "1.23.8"
 ktlint = "1.5.0"
-spotless = "6.25.0"
+spotless = "8.4.0"
 
 [libraries]
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidxAppcompat" }
