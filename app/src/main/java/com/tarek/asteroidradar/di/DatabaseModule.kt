@@ -26,16 +26,38 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-package com.tarek.asteroidradar
+package com.tarek.asteroidradar.di
 
-import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
-import dagger.hilt.android.AndroidEntryPoint
+import android.content.Context
+import com.tarek.asteroidradar.database.AsteroidDao
+import com.tarek.asteroidradar.database.AsteroidDatabase
+import com.tarek.asteroidradar.database.getDatabase
+import com.tarek.asteroidradar.repository.AsteroidRepository
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 
-@AndroidEntryPoint
-class MainActivity : AppCompatActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-    }
+// Hilt module for database + repository graph. Phase 5b only — `getDatabase()`
+// is intentionally kept as the construction site so :app (via Hilt) and
+// `RefreshDataWorker` (still pre-Hilt this phase) share a single Room instance.
+// Phase 5c migrates the worker, deletes `getDatabase()`, and inlines
+// `Room.databaseBuilder(...)` here.
+@Module
+@InstallIn(SingletonComponent::class)
+object DatabaseModule {
+    @Provides
+    @Singleton
+    fun provideAsteroidDatabase(
+        @ApplicationContext context: Context,
+    ): AsteroidDatabase = getDatabase(context)
+
+    @Provides
+    fun provideAsteroidDao(database: AsteroidDatabase): AsteroidDao = database.asteroidDao
+
+    @Provides
+    @Singleton
+    fun provideAsteroidRepository(database: AsteroidDatabase): AsteroidRepository = AsteroidRepository(database)
 }
