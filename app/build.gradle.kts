@@ -34,6 +34,7 @@ import java.util.Properties
 // buildTypes, sourceSets, dataBinding).
 plugins {
     id("asteroidradar.android.application")
+    id("asteroidradar.android.compose")
     id("asteroidradar.android.hilt")
     alias(libs.plugins.kover)
 }
@@ -99,6 +100,10 @@ kover {
                     "com.tarek.asteroidradar.di",
                     // UI not covered by JVM tests — Phase 8+ Espresso territory.
                     "com.tarek.asteroidradar.ui.detail",
+                    // Phase 9a Compose smoke; 9b/9c will fold the surviving
+                    // Composables into the regular ui.detail / ui.main packages
+                    // and this entry can come out then.
+                    "com.tarek.asteroidradar.ui.compose",
                     "com.tarek.asteroidradar.util",
                     "com.tarek.asteroidradar.work",
                     // Hilt aggregator packages. Each is exact — no wildcard support in packages().
@@ -258,6 +263,18 @@ dependencies {
 
     implementation(libs.coil)
     implementation(libs.timber)
+
+    // Compose runtime: BOM aligns the androidx.compose.* artifacts; the bundle
+    // pulls in UI / Material 3 / activity-compose / lifecycle-runtime-compose /
+    // navigation-compose / hilt-navigation-compose / coil-compose. The
+    // ui-tooling sibling is debug-only (Layout Inspector + @Preview rendering).
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.bundles.compose)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+
+    // Mans0n compose-rules ruleset for detekt — Compose-specific checks
+    // (slot-table correctness, hoisting, parameter ordering, modifier handling).
+    detektPlugins(libs.detekt.compose.rules)
 
     testImplementation(libs.bundles.test.shared)
     // arch-core-testing brings InstantTaskExecutorRule for synchronous LiveData

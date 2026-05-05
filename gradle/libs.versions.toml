@@ -11,6 +11,10 @@ androidxNavigation = "2.8.5"
 
 androidxActivity = "1.10.1"
 androidxAppcompat = "1.7.0"
+# Compose BOM aligns the rest of the androidx.compose.* artifacts (Material 3,
+# UI, tooling). The activity/lifecycle/navigation/hilt-compose deps are
+# published outside the BOM and pin alongside their non-Compose siblings.
+androidxComposeBom = "2025.01.01"
 # androidx.arch.core:core-testing is the InstantTaskExecutorRule that swaps the
 # LiveData main-thread executor for a synchronous one. JVM-only test dep.
 androidxArchCoreTesting = "2.2.0"
@@ -52,6 +56,9 @@ truth = "1.4.5"
 turbine = "1.2.1"
 
 # Code-quality tooling. ktlint version pinned for reproducibility across machines.
+# Mans0n compose-rules ships a detekt-plugin variant for Compose-specific checks
+# (slot-table correctness, hoisting, parameter ordering, modifier handling).
+composeRules = "0.4.22"
 detekt = "1.23.8"
 # Kover 0.9.x supports Kotlin 2.0+; aligned with the project's Kotlin pin.
 kover = "0.9.2"
@@ -59,19 +66,31 @@ ktlint = "1.5.0"
 spotless = "8.4.0"
 
 [libraries]
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidxActivity" }
 androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "androidxActivity" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidxAppcompat" }
+# Compose BOM constraint — individual androidx.compose.* artifacts below omit
+# their version since the BOM aligns them. Apply via `platform(...)` in the
+# consuming module.
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "androidxComposeBom" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
+androidx-compose-ui = { module = "androidx.compose.ui:ui" }
+androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 androidx-arch-core-testing = { module = "androidx.arch.core:core-testing", version.ref = "androidxArchCoreTesting" }
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidxConstraintlayout" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
 androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "androidxFragment" }
 
 androidx-hilt-compiler = { module = "androidx.hilt:hilt-compiler", version.ref = "androidxHilt" }
+androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "androidxHilt" }
 androidx-hilt-work = { module = "androidx.hilt:hilt-work", version.ref = "androidxHilt" }
 
 androidx-lifecycle-livedata-ktx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "androidxLifecycle" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidxLifecycle" }
 androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "androidxLifecycle" }
 
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "androidxNavigation" }
 androidx-navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "androidxNavigation" }
 androidx-navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "androidxNavigation" }
 
@@ -95,6 +114,8 @@ retrofit-converter-scalars = { module = "com.squareup.retrofit2:converter-scalar
 retrofit-coroutines-adapter = { module = "com.jakewharton.retrofit:retrofit2-kotlin-coroutines-adapter", version.ref = "retrofitCoroutinesAdapter" }
 
 coil = { module = "io.coil-kt:coil", version.ref = "coil" }
+coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+detekt-compose-rules = { module = "io.nlopez.compose.rules:detekt", version.ref = "composeRules" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
@@ -114,6 +135,7 @@ turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 # intentionally `version.ref`'d to the same refs used in [plugins] above so
 # there's no opportunity for plugin id ↔ classpath drift.
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kotlin-compose-compiler-gradle-plugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 ksp-gradle-plugin = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
 androidx-navigation-safeargs-gradle-plugin = { module = "androidx.navigation:navigation-safe-args-gradle-plugin", version.ref = "androidxNavigation" }
@@ -133,6 +155,20 @@ lifecycle = [
 navigation = [
     "androidx-navigation-fragment-ktx",
     "androidx-navigation-ui-ktx",
+]
+# Compose runtime stack. Apply alongside `platform(libs.androidx.compose.bom)`
+# in the consuming module so the BOM aligns the androidx.compose.* artifacts.
+# `androidx-compose-ui-tooling` is a debug-only sibling and stays out of the
+# bundle (added as `debugImplementation` directly).
+compose = [
+    "androidx-activity-compose",
+    "androidx-compose-material3",
+    "androidx-compose-ui",
+    "androidx-compose-ui-tooling-preview",
+    "androidx-hilt-navigation-compose",
+    "androidx-lifecycle-runtime-compose",
+    "androidx-navigation-compose",
+    "coil-compose",
 ]
 # Retrofit + Moshi networking stack, including both response converters and
 # the Jake Wharton coroutines adapter that the legacy service uses.
@@ -168,6 +204,9 @@ test-shared = [
 android-application = { id = "com.android.application", version.ref = "agp" }
 androidx-navigation-safeargs = { id = "androidx.navigation.safeargs.kotlin", version.ref = "androidxNavigation" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+# The Kotlin Compose Compiler ships as a Kotlin plugin since Kotlin 2.0 — its
+# version tracks the Kotlin compiler pin, not a separate Compose Compiler ref.
+kotlin-compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 # kapt is still applied because the DataBinding compiler discovers
 # @BindingAdapter methods via kapt — AGP 8.7's DataBinding-via-KSP path is
 # still experimental and didn't pick up our adapters cleanly. Phase 9c drops

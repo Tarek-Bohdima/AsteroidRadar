@@ -20,29 +20,19 @@
  * SOFTWARE.
  */
 
+import com.android.build.api.dsl.ApplicationExtension
+
+// Phase 9a — Compose foundation. Apply on top of `asteroidradar.android.application`
+// in any module that hosts Composables. The Kotlin Compose Compiler ships as a
+// Kotlin plugin since 2.0 and its version tracks the Kotlin pin (no separate
+// Compose-Compiler ref). The androidx.compose.* artifact versions come from
+// `platform(libs.androidx.compose.bom)` in the consuming module's dependencies.
 plugins {
-    `kotlin-dsl`
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
-// Match the project JVM toolchain so the precompiled-script-plugin classes
-// load under the same Java version the rest of the build uses.
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
+extensions.configure<ApplicationExtension> {
+    buildFeatures {
+        compose = true
     }
-}
-
-// `implementation` (not `compileOnly`) because precompiled script plugins
-// resolve `id("com.android.application")` from the convention plugin's own
-// runtime classpath at apply time — `compileOnly` would satisfy the
-// type-safe-accessor compile step but leave Gradle unable to find the
-// plugin when a consuming module applies it. The AGP / Kotlin / KSP /
-// safe-args artifacts must be on `implementation` here.
-dependencies {
-    implementation(libs.android.gradle.plugin)
-    implementation(libs.kotlin.gradle.plugin)
-    implementation(libs.kotlin.compose.compiler.gradle.plugin)
-    implementation(libs.ksp.gradle.plugin)
-    implementation(libs.androidx.navigation.safeargs.gradle.plugin)
-    implementation(libs.hilt.gradle.plugin)
 }
