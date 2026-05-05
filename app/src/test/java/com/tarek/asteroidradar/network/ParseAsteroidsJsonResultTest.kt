@@ -30,9 +30,11 @@ package com.tarek.asteroidradar.network
 
 import com.tarek.asteroidradar.util.Constants
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.text.SimpleDateFormat
@@ -85,6 +87,92 @@ class ParseAsteroidsJsonResultTest {
             assertEquals(DEFAULT_VELOCITY_KM_PER_SEC, relativeVelocity, 0.0001)
             assertEquals(DEFAULT_MISS_AU, distanceFromEarth, 0.0001)
             assertTrue(isPotentiallyHazardous)
+        }
+    }
+
+    @Test
+    fun `parses multiple asteroids on the same date`() {
+        val dates = expectedDateWindow()
+        val today = dates.first()
+        val payload =
+            JSONObject().put(
+                "near_earth_objects",
+                JSONObject().apply {
+                    put(
+                        today,
+                        JSONArray()
+                            .put(populatedAsteroidJson(today, id = 1))
+                            .put(populatedAsteroidJson(today, id = 2))
+                            .put(populatedAsteroidJson(today, id = 3)),
+                    )
+                    dates.drop(1).forEach { put(it, JSONArray()) }
+                },
+            )
+
+        val parsed = parseAsteroidsJsonResult(payload)
+
+        assertEquals(3, parsed.size)
+        assertEquals(listOf(1L, 2L, 3L), parsed.map { it.id })
+        assertTrue(parsed.all { it.closeApproachDate == today })
+    }
+
+    @Test
+    fun `returns empty list when every date has no asteroids`() {
+        val dates = expectedDateWindow()
+        val payload =
+            JSONObject().put(
+                "near_earth_objects",
+                JSONObject().apply {
+                    dates.forEach { put(it, JSONArray()) }
+                },
+            )
+
+        val parsed = parseAsteroidsJsonResult(payload)
+
+        assertTrue(parsed.isEmpty())
+    }
+
+    @Test
+    fun `uses only the first close_approach_data entry`() {
+        // The API can return multiple close-approach windows per asteroid; the
+        // parser intentionally reads element 0 only. Lock that contract.
+        val dates = expectedDateWindow()
+        val today = dates.first()
+        val asteroid =
+            populatedAsteroidJson(today).apply {
+                val extraApproach =
+                    JSONObject().apply {
+                        put("close_approach_date", today)
+                        put(
+                            "relative_velocity",
+                            JSONObject().put("kilometers_per_second", 999.99),
+                        )
+                        put("miss_distance", JSONObject().put("astronomical", 999.99))
+                    }
+                getJSONArray("close_approach_data").put(extraApproach)
+            }
+        val payload =
+            JSONObject().put(
+                "near_earth_objects",
+                JSONObject().apply {
+                    put(today, JSONArray().put(asteroid))
+                    dates.drop(1).forEach { put(it, JSONArray()) }
+                },
+            )
+
+        val parsed = parseAsteroidsJsonResult(payload)
+
+        assertEquals(1, parsed.size)
+        assertEquals(DEFAULT_VELOCITY_KM_PER_SEC, parsed.first().relativeVelocity, 0.0001)
+        assertEquals(DEFAULT_MISS_AU, parsed.first().distanceFromEarth, 0.0001)
+    }
+
+    @Test
+    fun `throws JSONException when near_earth_objects is missing`() {
+        val payload = JSONObject()
+
+        assertThrows(JSONException::class.java) {
+            parseAsteroidsJsonResult(payload)
         }
     }
 
