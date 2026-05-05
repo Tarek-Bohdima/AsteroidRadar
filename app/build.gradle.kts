@@ -170,6 +170,10 @@ dependencies {
     implementation(libs.timber)
 
     testImplementation(libs.bundles.test.shared)
+    // arch-core-testing brings InstantTaskExecutorRule for synchronous LiveData
+    // tests; only the repo + ViewModel tests need it, so keep it out of the
+    // shared bundle.
+    testImplementation(libs.androidx.arch.core.testing)
     testImplementation(libs.org.json)
     androidTestImplementation(libs.bundles.android.test)
 }
