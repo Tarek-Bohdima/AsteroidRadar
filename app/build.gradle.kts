@@ -203,11 +203,8 @@ android {
             buildConfigField("String", "NASA_API_KEY", "\"${env("NASA_API_KEY")}\"")
         }
         release {
-            // R8 + resource shrinking ride along with Phase 6b (the AGP bump);
-            // R8 from AGP 8.3.0 can't parse Kotlin 2.1 metadata that Retrofit
-            // 3.0+ ships with. Slim `proguard-rules.pro` lands now so the
-            // Phase 6b PR is just an `isMinifyEnabled` flip.
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",

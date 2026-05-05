@@ -9,3 +9,9 @@
 # parcelize, and androidx-* cover the rest of the runtime-reflection surface.
 # Add reflective-keeps here only when a release smoke surfaces a missing one
 # — debug with the r8-analyzer Claude Code skill (https://github.com/android/skills).
+
+# Navigation safe-args resolves `app:argType="com.tarek.asteroidradar.domain.X"`
+# from the nav graph XML via Class.forName at NavInflater time — R8's class
+# renaming breaks that lookup. Keep the domain package's class names so
+# parcelable arg types stay resolvable.
+-keep class com.tarek.asteroidradar.domain.** { *; }
