@@ -15,10 +15,10 @@ shippable; pick them off in order — each one stacks on the last.
 | 3 | Code-quality plumbing (Spotless / Detekt / Lint) | Done (#56, #58, #60) |
 | 4 | Toolchain modernization (Kotlin 2.x, AndroidX bumps, Picasso → Coil) | Done (#62, #64, #66) — manual device smoke pending |
 | 5 | Hilt | Done (#80, #82, #84) |
-| 6 | Production hardening (R8, fail-fast on missing API key) | **In progress** — 6a (#87) shipped fail-fast + slim proguard; 6b (#86) enables R8 alongside the AGP bump |
+| 6 | Production hardening (R8, fail-fast on missing API key) | Done (#87, #100) — 6a fail-fast + slim proguard; 6b bundled AGP 8.3 → 8.7.3 + R8 + `shrinkResources` |
 | 7 | Tests + Kover | Done (#89, #91, #93) — `koverVerify` 60% INSTRUCTION floor wired in the post-7c follow-up (issue #94) |
 | 8 | Edge-to-edge | Done (#97) — included a NoActionBar + Toolbar migration that the issue's non-goal #4 had ruled out |
-| 9 | Compose migration | Pending — sequenced after Phase 6b |
+| 9 | Compose migration | Pending |
 | — | **Module split** lands with feature #2, not as a phase | — |
 
 Tick the table when phases land. Each phase below lists scope, rationale, and
