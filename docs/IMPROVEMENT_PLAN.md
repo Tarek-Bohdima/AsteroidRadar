@@ -16,7 +16,7 @@ shippable; pick them off in order — each one stacks on the last.
 | 4 | Toolchain modernization (Kotlin 2.x, AndroidX bumps, Picasso → Coil) | Done (#62, #64, #66) — manual device smoke pending |
 | 5 | Hilt | Done (#80, #82, #84) |
 | 6 | Production hardening (R8, fail-fast on missing API key) | **In progress** — 6a (#87) shipped fail-fast + slim proguard; 6b (#86) enables R8 alongside the AGP bump |
-| 7 | Tests + Kover | **In progress** — 7a (#88) lands Kover infra + test-shared bundle; 7b/7c add real tests |
+| 7 | Tests + Kover | **In progress** — 7a (#89) + 7b (#91) shipped; 7c (issue #92) adds the AsteroidDao instrumented test + deletes the `Example*Test` shells |
 | 8 | Edge-to-edge | Pending |
 | 9 | Compose migration | Deferred |
 | — | **Module split** lands with feature #2, not as a phase | — |

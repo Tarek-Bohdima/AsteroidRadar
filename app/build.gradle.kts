@@ -176,4 +176,12 @@ dependencies {
     testImplementation(libs.androidx.arch.core.testing)
     testImplementation(libs.org.json)
     androidTestImplementation(libs.bundles.android.test)
+    // AsteroidDao integration tests observe LiveData (InstantTaskExecutorRule),
+    // exercise a suspend `deletePreviousAsteroid` (runTest), and assert with
+    // Truth. Mirrors the testImplementation entries above on the instrumented
+    // classpath. Kept off the `android-test` bundle so the Espresso-only smoke
+    // tests don't pull deps they don't need.
+    androidTestImplementation(libs.androidx.arch.core.testing)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.truth)
 }
