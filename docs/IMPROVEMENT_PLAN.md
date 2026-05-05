@@ -18,7 +18,7 @@ shippable; pick them off in order — each one stacks on the last.
 | 6 | Production hardening (R8, fail-fast on missing API key) | **In progress** — 6a (#87) shipped fail-fast + slim proguard; 6b (#86) enables R8 alongside the AGP bump |
 | 7 | Tests + Kover | Done (#89, #91, #93) — `koverVerify` 60% INSTRUCTION floor wired in the post-7c follow-up (issue #94) |
 | 8 | Edge-to-edge | Done (#97) — included a NoActionBar + Toolbar migration that the issue's non-goal #4 had ruled out |
-| 9 | Compose migration | Deferred |
+| 9 | Compose migration | Pending — sequenced after Phase 6b |
 | — | **Module split** lands with feature #2, not as a phase | — |
 
 Tick the table when phases land. Each phase below lists scope, rationale, and
@@ -285,15 +285,95 @@ Code skill is a ready-made adoption guide — install when this phase starts.
 - Insets handled in fragment root layouts via `OnApplyWindowInsetsListener` or
   the AndroidX insets-compat APIs.
 
-## Phase 9 — Compose migration (deferred)
+## Phase 9 — Compose migration
 
-Goal: rewrite the UI in Jetpack Compose. Tracked here so it's not forgotten;
-**not committed to** as a near-term phase. View system + Data Binding works
-fine for this app and the migration is a several-PR effort.
+Goal: rewrite the UI in Jetpack Compose. View system + Data Binding works
+fine, but Compose is the long-term path — Android Studio templates, Google
+sample apps, and most modern Jetpack libraries (incl. the
+[`jetpack-compose`](https://github.com/android/skills) Claude Code skill)
+assume it. Phase 9 also pays down two incidental debts: it deletes every
+`@BindingAdapter`, which lets us drop the last `kotlin-kapt` user, and it
+replaces safe-args wiring with type-safe Compose Navigation routes.
 
-If/when it happens: introduce the `asteroidradar.android.compose` convention
-plugin, migrate `DetailFragment` first (simpler), then `MainFragment`. Use the
-[`jetpack-compose`](https://github.com/android/skills) Claude Code skill.
+**Sequencing.** Phase 9 lands **after Phase 6b** (R8 + AGP bump). Reasons:
+(a) keep-rule debugging is cleaner against the existing view-system surface
+than against a Compose-runtime-plus-view-system mix; (b) the AGP bump is
+what makes `kotlin-kapt` removal viable, and Phase 9c is the natural site
+for that cleanup since it deletes the last `@BindingAdapter`. Bumps the
+project to `v3.0.0-INTERNAL` (Compose rewrite is a breaking change for any
+fork); tag held until 9c lands and we device-smoke.
+
+### Sub-PR breakdown
+
+The phase splits into three sub-PRs because Compose allows partial adoption
+— a `ComposeView` inside a fragment is a normal interop point, so 9b can
+ship the smaller surface (Detail) without disrupting Main. Branch naming:
+`feat/phase-9a-…` etc.
+
+- **9a — Foundation (`feat/phase-9a-compose-foundation`).** New convention
+  plugin `asteroidradar.android.compose` enables `buildFeatures.compose =
+  true` and applies the `org.jetbrains.kotlin.plugin.compose` plugin (the
+  Compose Compiler ships as a Kotlin plugin since Kotlin 2.0 — no separate
+  compiler version pin). Catalog gains `androidx-compose-bom`,
+  `androidx-compose-ui`, `compose-ui-tooling-preview` (debug),
+  `compose-material3`, `androidx-activity-compose`,
+  `androidx-lifecycle-runtime-compose`, `androidx-hilt-navigation-compose`,
+  `androidx-navigation-compose`, `coil-compose`. New
+  `[bundles] compose = […]`. Apply convention to `:app`. Add the
+  [Mans0n Compose detekt rules](https://github.com/mrmans0n/compose-rules)
+  to the existing detekt config. **No user-visible change**; a single
+  throwaway `@Preview` Composable verifies the build pipeline.
+- **9b — DetailFragment → DetailScreen (`feat/phase-9b-compose-detail`).**
+  New `ui/detail/DetailScreen.kt` reproduces `fragment_detail.xml` in
+  Compose; help-button surfaces a Material 3 `AlertDialog`; status drawables
+  go through `coil-compose`'s `AsyncImage`. `DetailFragment` becomes a thin
+  `ComposeView` shim — Nav-Compose migration deferred to 9c so this PR is
+  scoped to one screen. Delete `fragment_detail.xml`; delete the four
+  Detail-only `@BindingAdapter`s after grep-confirming
+  `item_view_list_asteroids.xml` and `fragment_main.xml` don't use them.
+  Add `compose-ui-test-junit4` smoke against `DetailScreen`.
+- **9c — MainFragment → MainScreen + Nav-Compose
+  (`feat/phase-9c-compose-main`).** Convert `MainViewModel`'s `LiveData` to
+  `StateFlow`; UI collects via `collectAsStateWithLifecycle`. New
+  `ui/main/MainScreen.kt`: Material 3 `Scaffold` + `TopAppBar` overflow
+  (three filter items) + APOD header + `LazyColumn` with
+  `items(asteroids, key = { it.id })` (replaces `AsteroidAdapter` +
+  `DiffUtil`). Insets via `Modifier.windowInsetsPadding(...)` — reuses the
+  Phase 8 work. `MainActivity` becomes a `ComponentActivity` with
+  `setContent { … }` driving a Compose `NavHost` (Nav 2.8+ typed routes via
+  kotlinx-serialization, replacing safe-args). **Deletes**: `MainFragment`,
+  `DetailFragment` (the shim), `AsteroidAdapter`, `fragment_main.xml`,
+  `item_view_list_asteroids.xml`, `main_overflow_menu.xml`,
+  `main_nav_graph.xml`, `activity_main.xml`, `BindingAdapters.kt` (now
+  empty). **Build-script cleanup**: drop `dataBinding = true`, the
+  `kotlin-kapt` plugin, the `androidx.navigation.safeargs.kotlin` plugin,
+  the `build/generated/ksp/...` srcDir shim. **Catalog cleanup**: drop
+  `androidx-recyclerview`, `androidx-fragment-ktx`,
+  `androidx-navigation-fragment-ktx`, `androidx-navigation-ui-ktx`, the
+  safe-args Gradle plugin entry. Regenerate lint baseline once.
+
+### Things to watch during Phase 9
+
+- **Coil 2 vs Coil 3.** Phase 4 landed Coil 2.7.0. If a BOM bump pulls Coil
+  3 in, imports move to `coil3.compose.AsyncImage` and the artifact is
+  still `coil-compose`. Don't mix versions across `coil-kt` and
+  `coil-compose` artifacts.
+- **Hilt + Compose Navigation interop.** Use `hiltViewModel()` from
+  `androidx.hilt:hilt-navigation-compose`, not `viewModel()` —
+  `hiltViewModel()` scopes to the nav backstack entry, which is what we
+  want for `MainViewModel` per-graph singletonship.
+- **Edge-to-edge regressions.** Phase 8 used `WindowInsetsCompat`
+  listeners; Compose uses `Modifier.windowInsetsPadding`. Easy to forget
+  the bottom inset on a `LazyColumn` and lose access to the last row —
+  device-smoke on a gesture-nav handset before tagging.
+- **R8 keep rules.** Compose itself is well-rulebooked, but
+  `kotlinx-serialization` typed Nav routes need a serializer keep rule.
+  Phase 6b establishes the R8 baseline; 9c adds the first new keep surface
+  since.
+- **Test infra.** Existing JVM tests (repo, ViewModel, parser) don't
+  change. UI smoke moves from the empty `MainActivityCoilSmokeTest`
+  (#66 down-payment, never filled in) to `compose-ui-test-junit4` against
+  `MainScreen` / `DetailScreen`.
 
 ## Quality bets to consider (no phase yet)
 
