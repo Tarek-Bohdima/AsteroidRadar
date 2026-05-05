@@ -116,10 +116,13 @@ jobs:
       - name: Run unit tests
         run: ./gradlew test
 
-      - name: Generate Kover coverage report
-        # No coverage gate yet; report is informational until 7b/7c land real
-        # tests and `koverVerify` gets a soft floor (60% per the plan).
-        run: ./gradlew :app:koverHtmlReport
+      - name: Generate Kover coverage report and verify floor
+        # `koverVerify` enforces the 60% INSTRUCTION floor configured in
+        # `app/build.gradle.kts`. The HTML report runs in the same step so
+        # the artifact is available even when the verify gate fails — the
+        # uploader below has `if: always()` so a regression PR still gets
+        # the report attached for inspection.
+        run: ./gradlew :app:koverHtmlReport :app:koverVerify
 
       - name: Upload lint and test reports
         # Always upload — they're most useful when one of the gates above fails.

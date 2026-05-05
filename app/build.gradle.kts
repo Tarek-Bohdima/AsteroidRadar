@@ -78,6 +78,98 @@ gradle.taskGraph.whenReady {
     }
 }
 
+// Kover filters + verification floor. The 60% target lives in
+// docs/IMPROVEMENT_PLAN.md as the Phase 7 follow-up; the filters here scope
+// it to JVM-testable production code (parser, repo, domain, ViewModel).
+// Generated code (DataBinding, Hilt, Room *_Impl, safe-args) and pure-UI
+// classes (Activity / Fragments / Adapter / Worker / BindingAdapters) are
+// excluded — they need Espresso or on-device smoke, not unit tests, and
+// drown the signal at unfiltered totals (~11% instructions otherwise).
+kover {
+    reports {
+        filters {
+            excludes {
+                packages(
+                    // DataBinding scaffold packages (generated alongside the @{} expressions).
+                    "androidx.databinding",
+                    "androidx.databinding.library.baseAdapters",
+                    "com.tarek.asteroidradar.databinding",
+                    "com.tarek.asteroidradar.generated.callback",
+                    // DI bindings (DatabaseModule + generated). No logic to exercise.
+                    "com.tarek.asteroidradar.di",
+                    // UI not covered by JVM tests — Phase 8+ Espresso territory.
+                    "com.tarek.asteroidradar.ui.detail",
+                    "com.tarek.asteroidradar.util",
+                    "com.tarek.asteroidradar.work",
+                    // Hilt aggregator packages. Each is exact — no wildcard support in packages().
+                    "dagger.hilt.internal.aggregatedroot.codegen",
+                    "hilt_aggregated_deps",
+                )
+                classes(
+                    // Top-level Android entry points (in com.tarek.asteroidradar package alongside
+                    // subpackages, so listed by FQN rather than via packages()).
+                    "com.tarek.asteroidradar.AsteroidRadarApplication",
+                    "com.tarek.asteroidradar.AsteroidRadarApplication\$*",
+                    "com.tarek.asteroidradar.MainActivity",
+                    "com.tarek.asteroidradar.MainActivity\$*",
+                    "com.tarek.asteroidradar.DataBinderMapperImpl",
+                    "com.tarek.asteroidradar.DataBindingTriggerClass",
+                    // ui.main retains MainViewModel; everything else in the package is UI / generated.
+                    "com.tarek.asteroidradar.ui.main.MainFragment",
+                    "com.tarek.asteroidradar.ui.main.MainFragment\$*",
+                    "com.tarek.asteroidradar.ui.main.AsteroidAdapter",
+                    "com.tarek.asteroidradar.ui.main.AsteroidAdapter\$*",
+                    "com.tarek.asteroidradar.ui.main.AsteroidListener",
+                    // [sic] — typo in the source class name predates this PR.
+                    "com.tarek.asteroidradar.ui.main.AsteriodDiffCallback",
+                    // network: trim the un-unit-testable surfaces. The Retrofit service
+                    // interface, the converter factory, and the DTO/POJO file all need
+                    // MockWebServer or a wired Retrofit instance to exercise — out of scope
+                    // for the JVM test bundle. Parser (NetworkUtilsKt) stays in.
+                    "com.tarek.asteroidradar.network.AsteroidApi",
+                    "com.tarek.asteroidradar.network.AsteroidApi\$*",
+                    "com.tarek.asteroidradar.network.AsteroidApiService",
+                    "com.tarek.asteroidradar.network.HandleScalarAndJsonConverterFactory",
+                    "com.tarek.asteroidradar.network.HandleScalarAndJsonConverterFactory\$*",
+                    "com.tarek.asteroidradar.network.ScalarResponse",
+                    "com.tarek.asteroidradar.network.JsonResponse",
+                    "com.tarek.asteroidradar.network.ImageOfTheDay",
+                    "com.tarek.asteroidradar.network.DataTransferObjectsKt",
+                    // Generated code patterns. `**` matches any chars including dots so the
+                    // pattern catches cross-package classes; plain `*` only matches within a
+                    // single FQN segment in Kover's globs (which is why `Hilt_*` alone misses
+                    // `com.tarek.asteroidradar.Hilt_MainActivity`).
+                    "**_Factory",
+                    "**_Factory\$*",
+                    "**_HiltModules*",
+                    "**_HiltComponents*",
+                    "**Hilt_*",
+                    "**_GeneratedInjector",
+                    "**_MembersInjector",
+                    "**_Impl",
+                    "**_Impl\$*",
+                    "**BindingImpl",
+                    "**BindingImpl\$*",
+                    "**.BR",
+                    "**Args",
+                    "**Directions",
+                    "**.BuildConfig",
+                )
+            }
+        }
+        verify {
+            rule {
+                // INSTRUCTION is the most refactor-resilient coverage metric
+                // (line counts shift with formatting; method/class are too coarse).
+                bound {
+                    minValue = 60
+                    coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.INSTRUCTION
+                }
+            }
+        }
+    }
+}
+
 android {
     namespace = "com.tarek.asteroidradar"
 
