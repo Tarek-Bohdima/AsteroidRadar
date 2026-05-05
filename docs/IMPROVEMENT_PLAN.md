@@ -17,7 +17,7 @@ shippable; pick them off in order — each one stacks on the last.
 | 5 | Hilt | Done (#80, #82, #84) |
 | 6 | Production hardening (R8, fail-fast on missing API key) | **In progress** — 6a (#87) shipped fail-fast + slim proguard; 6b (#86) enables R8 alongside the AGP bump |
 | 7 | Tests + Kover | Done (#89, #91, #93) — `koverVerify` 60% INSTRUCTION floor wired in the post-7c follow-up (issue #94) |
-| 8 | Edge-to-edge | Pending |
+| 8 | Edge-to-edge | Done (#97) — included a NoActionBar + Toolbar migration that the issue's non-goal #4 had ruled out |
 | 9 | Compose migration | Deferred |
 | — | **Module split** lands with feature #2, not as a phase | — |
 
