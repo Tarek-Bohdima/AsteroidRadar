@@ -16,7 +16,7 @@ shippable; pick them off in order — each one stacks on the last.
 | 4 | Toolchain modernization (Kotlin 2.x, AndroidX bumps, Picasso → Coil) | Done (#62, #64, #66) — manual device smoke pending |
 | 5 | Hilt | Done (#80, #82, #84) |
 | 6 | Production hardening (R8, fail-fast on missing API key) | **In progress** — 6a (#87) shipped fail-fast + slim proguard; 6b (#86) enables R8 alongside the AGP bump |
-| 7 | Tests + Kover | **In progress** — 7a (#89) + 7b (#91) shipped; 7c (issue #92) adds the AsteroidDao instrumented test + deletes the `Example*Test` shells |
+| 7 | Tests + Kover | Done (#89, #91, #93) — `koverVerify` 60% INSTRUCTION floor wired in the post-7c follow-up (issue #94) |
 | 8 | Edge-to-edge | Pending |
 | 9 | Compose migration | Deferred |
 | — | **Module split** lands with feature #2, not as a phase | — |
@@ -264,9 +264,14 @@ build-script changes.
   test using in-memory Room — `getAsteroids`, `getTodayAsteroids`,
   `getWeeklyAsteroids`, `deletePreviousAsteroid`. Empty `Example*Test`
   shells get deleted in this PR (truly replaced now).
-- **After 7c:** turn on `koverVerify` with a soft floor (60% per the plan),
-  ratchet up. XML report (Codecov / SonarCloud) is a future thing — still
-  a non-goal for the phase.
+- **After 7c — done.** `koverVerify` enforces a 60% INSTRUCTION floor on a
+  filtered scope (parser, repo, domain, ViewModel, DAO entities). Generated
+  code (DataBinding, Hilt, Room `*_Impl`, safe-args) and pure-UI surfaces
+  (Application/Activity/Fragments/Adapter/Worker/BindingAdapters) are
+  excluded — they need Espresso or on-device smoke, not unit tests. Filter
+  list lives in `app/build.gradle.kts`. Ratchet up the floor when future
+  test PRs raise the actual coverage. XML report (Codecov / SonarCloud) is
+  still a non-goal for the phase.
 
 ## Phase 8 — Edge-to-edge
 
