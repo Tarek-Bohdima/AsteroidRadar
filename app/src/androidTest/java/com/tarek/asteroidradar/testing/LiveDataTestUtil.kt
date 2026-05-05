@@ -26,25 +26,39 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-package com.tarek.asteroidradar
+package com.tarek.asteroidradar.testing
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
-import org.junit.Assert.assertEquals
-import org.junit.Test
-import org.junit.runner.RunWith
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
-/**
- * Instrumented test, which will execute on an Android device.
- *
- * See [testing documentation](http://d.android.com/tools/testing).
- */
-@RunWith(AndroidJUnit4::class)
-class ExampleInstrumentedTest {
-    @Test
-    fun useAppContext() {
-        // Context of the app under test.
-        val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.tarek.asteroidradar", appContext.packageName)
+// Mirror of the JVM-side helper at app/src/test/.../testing/LiveDataTestUtil.kt.
+// Duplicated rather than shared because the project has no `sharedTest` source
+// set; introducing one for one helper isn't worth the build-script surface area.
+fun <T> LiveData<T>.getOrAwaitValue(
+    time: Long = 2,
+    unit: TimeUnit = TimeUnit.SECONDS,
+): T {
+    var data: T? = null
+    val latch = CountDownLatch(1)
+    val observer =
+        object : Observer<T> {
+            override fun onChanged(value: T) {
+                data = value
+                latch.countDown()
+                this@getOrAwaitValue.removeObserver(this)
+            }
+        }
+    observeForever(observer)
+    try {
+        if (!latch.await(time, unit)) {
+            throw TimeoutException("LiveData value was never set within $time $unit")
+        }
+    } finally {
+        removeObserver(observer)
     }
+    @Suppress("UNCHECKED_CAST")
+    return data as T
 }
