@@ -34,6 +34,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.fragment.app.Fragment
 import com.tarek.asteroidradar.R
 import com.tarek.asteroidradar.databinding.FragmentDetailBinding
@@ -51,6 +54,8 @@ class DetailFragment : Fragment() {
         binding = FragmentDetailBinding.inflate(inflater, container, false)
         binding.lifecycleOwner = viewLifecycleOwner
 
+        applyWindowInsets(binding.root)
+
         val asteroid = DetailFragmentArgs.fromBundle(requireArguments()).selectedAsteroid
 
         binding.asteroid = asteroid
@@ -60,6 +65,21 @@ class DetailFragment : Fragment() {
         }
 
         return binding.root
+    }
+
+    // Top inset is left to the AppCompat ActionBar, which already accounts for
+    // the status bar. We only pad sides (landscape cutouts) and bottom (gesture
+    // pill / nav bar) so the last ScrollView row stays reachable.
+    private fun applyWindowInsets(root: View) {
+        ViewCompat.setOnApplyWindowInsetsListener(root) { v, windowInsets ->
+            val insets =
+                windowInsets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() or
+                        WindowInsetsCompat.Type.displayCutout(),
+                )
+            v.updatePadding(left = insets.left, right = insets.right, bottom = insets.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
     }
 
     private fun displayAstronomicalUnitExplanationDialog() {

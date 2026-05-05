@@ -235,6 +235,7 @@ android {
 dependencies {
     implementation(fileTree("libs") { include("*.jar") })
 
+    implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
