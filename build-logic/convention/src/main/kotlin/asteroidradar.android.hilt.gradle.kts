@@ -27,10 +27,6 @@ import org.gradle.api.artifacts.VersionCatalogsExtension
 // in :app today; future feature/library modules can opt into DI by adding this
 // plugin alone (their `*.android.library` convention will bring KSP).
 //
-// `enableAggregatingTask = true` has been Hilt's default since 2.45 — kept
-// explicit so the intent travels with the plugin rather than relying on an
-// upstream default that could flip.
-//
 // KSP is re-declared here even though the application convention already
 // applies it; Gradle's plugin manager dedupes by id, and keeping it here makes
 // this convention work in a module that doesn't bring KSP itself.
@@ -44,13 +40,26 @@ plugins {
     id("com.google.dagger.hilt.android")
 }
 
+// `enableAggregatingTask` defaults to `true` in Hilt 2.52 — turning it off
+// disables the per-variant `hiltAggregateDeps*` worker, which on this
+// toolchain combo (kapt + DataBinding gone, JavaPoet 1.10 leaking onto the
+// daemon classloader from AGP) NoSuchMethodErrors on `ClassName.canonicalName()`.
+// Aggregation falls back to per-module annotation processing — fine for a
+// single-module app. Re-enable when the Hilt + Gradle metadata versions
+// realign and the JavaPoet leak is resolved.
 configure<HiltExtension> {
-    enableAggregatingTask = true
+    enableAggregatingTask = false
 }
+
+// Hilt's compiler runs through kapt rather than KSP — see the
+// asteroidradar.android.application convention plugin for the JavaPoet
+// workaround context. KSP-based Hilt aggregation still hits the same
+// NoSuchMethodError. The matching `kapt(libs.hilt.compiler)` declaration
+// lives in :app/build.gradle.kts so the catalog accessor stays type-safe.
 
 private val libs = extensions.getByType(VersionCatalogsExtension::class.java).named("libs")
 
 dependencies {
     "implementation"(libs.findLibrary("hilt-android").get())
-    "ksp"(libs.findLibrary("hilt-compiler").get())
 }
+

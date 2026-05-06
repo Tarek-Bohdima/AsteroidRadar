@@ -15,23 +15,22 @@ androidxAppcompat = "1.7.0"
 # UI, tooling). The activity/lifecycle/navigation/hilt-compose deps are
 # published outside the BOM and pin alongside their non-Compose siblings.
 androidxComposeBom = "2025.01.01"
-# androidx.arch.core:core-testing is the InstantTaskExecutorRule that swaps the
-# LiveData main-thread executor for a synchronous one. JVM-only test dep.
-androidxArchCoreTesting = "2.2.0"
 androidxConstraintlayout = "2.2.0"
 androidxCore = "1.15.0"
-androidxFragment = "1.8.5"
 # androidx.hilt:* (hilt-work, hilt-compiler) is a separate artifact group from
 # com.google.dagger:hilt-*; KSP-supported since 1.2.0.
 androidxHilt = "1.2.0"
 androidxLifecycle = "2.8.7"
-androidxRecyclerview = "1.4.0"
 androidxRoom = "2.8.0"
 androidxWork = "2.10.0"
 
 # Coroutines core + android unified on a single ref now that they're part of
 # the same toolchain bump. Phase 4a goal.
 kotlinxCoroutines = "1.8.1"
+# kotlinx-serialization-json — typed Nav-Compose routes (Phase 9c) encode
+# Asteroid via Json.encodeToString. The Kotlin Serialization Gradle plugin
+# version-tracks the Kotlin pin, so it doesn't need its own ref.
+kotlinxSerialization = "1.7.3"
 
 coil = "2.7.0"
 # Hilt 2.51+ supports Kotlin 2.x via KSP, which is why DI lands after Phase 4's
@@ -84,24 +83,17 @@ androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling
 # only sees it in debug builds.
 androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
-androidx-arch-core-testing = { module = "androidx.arch.core:core-testing", version.ref = "androidxArchCoreTesting" }
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidxConstraintlayout" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
-androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "androidxFragment" }
 
 androidx-hilt-compiler = { module = "androidx.hilt:hilt-compiler", version.ref = "androidxHilt" }
 androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "androidxHilt" }
 androidx-hilt-work = { module = "androidx.hilt:hilt-work", version.ref = "androidxHilt" }
 
-androidx-lifecycle-livedata-ktx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "androidxLifecycle" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidxLifecycle" }
 androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "androidxLifecycle" }
 
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "androidxNavigation" }
-androidx-navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "androidxNavigation" }
-androidx-navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "androidxNavigation" }
-
-androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "androidxRecyclerview" }
 
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "androidxRoom" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "androidxRoom" }
@@ -111,6 +103,7 @@ androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version
 
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 
 moshi = { module = "com.squareup.moshi:moshi", version.ref = "moshi" }
 moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshi" }
@@ -144,25 +137,12 @@ turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 kotlin-compose-compiler-gradle-plugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+# Kotlin Serialization Gradle plugin — version-tracks the Kotlin compiler pin.
+kotlin-serialization-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
 ksp-gradle-plugin = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
-androidx-navigation-safeargs-gradle-plugin = { module = "androidx.navigation:navigation-safe-args-gradle-plugin", version.ref = "androidxNavigation" }
 hilt-gradle-plugin = { module = "com.google.dagger:hilt-android-gradle-plugin", version.ref = "hilt" }
 
 [bundles]
-# Lifecycle-related libs that travel together (Modexa trick #6). When adding a
-# new lifecycle-runtime-ktx in Phase 4, append to this bundle rather than the
-# module dependencies block.
-lifecycle = [
-    "androidx-fragment-ktx",
-    "androidx-lifecycle-livedata-ktx",
-    "androidx-lifecycle-viewmodel-ktx",
-]
-# Navigation client-side runtime libs. The safe-args Gradle plugin is applied
-# separately via [plugins].
-navigation = [
-    "androidx-navigation-fragment-ktx",
-    "androidx-navigation-ui-ktx",
-]
 # Compose runtime stack. Apply alongside `platform(libs.androidx.compose.bom)`
 # in the consuming module so the BOM aligns the androidx.compose.* artifacts.
 # `androidx-compose-ui-tooling` is a debug-only sibling and stays out of the
@@ -209,17 +189,15 @@ test-shared = [
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-androidx-navigation-safeargs = { id = "androidx.navigation.safeargs.kotlin", version.ref = "androidxNavigation" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 # The Kotlin Compose Compiler ships as a Kotlin plugin since Kotlin 2.0 — its
 # version tracks the Kotlin compiler pin, not a separate Compose Compiler ref.
 kotlin-compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-# kapt is still applied because the DataBinding compiler discovers
-# @BindingAdapter methods via kapt — AGP 8.7's DataBinding-via-KSP path is
-# still experimental and didn't pick up our adapters cleanly. Phase 9c drops
-# DataBinding entirely; kapt goes with it.
 kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
+# kotlinx-serialization compiler plugin — version-tracks Kotlin. Required for
+# the @Serializable Asteroid that Nav-Compose typed routes encode.
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 # Kover (Kotlin coverage). Generates HTML reports under app/build/reports/kover/html.

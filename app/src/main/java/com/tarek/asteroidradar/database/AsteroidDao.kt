@@ -28,25 +28,25 @@
  */
 package com.tarek.asteroidradar.database
 
-import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AsteroidDao {
     @Query("SELECT * FROM asteroid_database ORDER BY closeApproachDate ASC")
-    fun getAsteroids(): LiveData<List<DatabaseAsteroid>>
+    fun getAsteroids(): Flow<List<DatabaseAsteroid>>
 
     @Query("SELECT * FROM asteroid_database WHERE closeApproachDate=:today ORDER BY closeApproachDate ASC")
-    fun getTodayAsteroids(today: String): LiveData<List<DatabaseAsteroid>>
+    fun getTodayAsteroids(today: String): Flow<List<DatabaseAsteroid>>
 
     @Query("SELECT * FROM asteroid_database WHERE closeApproachDate BETWEEN :startDate AND :endDate ORDER BY closeApproachDate ASC")
     fun getWeeklyAsteroids(
         startDate: String,
         endDate: String,
-    ): LiveData<List<DatabaseAsteroid>>
+    ): Flow<List<DatabaseAsteroid>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(vararg asteroids: DatabaseAsteroid)

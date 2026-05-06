@@ -31,7 +31,7 @@ import java.util.Properties
 // All plugin application + SDK levels + JVM toolchain + default test runner
 // + buildConfig flag come from the convention plugin in `build-logic/`. Only
 // app-specific config stays here (namespace, applicationId, version, signing,
-// buildTypes, sourceSets, dataBinding).
+// buildTypes).
 plugins {
     id("asteroidradar.android.application")
     id("asteroidradar.android.compose")
@@ -42,9 +42,9 @@ plugins {
 // Version components — bump these (not versionCode / versionName directly) when
 // cutting a release. Classifier choices: INTERNAL, ALPHA, BETA, RC, RELEASE.
 // .github/workflows/release.yml greps these names, so don't rename them.
-val versionMajor = 1
-val versionMinor = 3
-val versionPatch = 5
+val versionMajor = 3
+val versionMinor = 0
+val versionPatch = 0
 val versionClassifier = "INTERNAL"
 
 // versionCode formula uses minSdk as a high digit so a future minSdk bump
@@ -82,31 +82,24 @@ gradle.taskGraph.whenReady {
 // Kover filters + verification floor. The 60% target lives in
 // docs/IMPROVEMENT_PLAN.md as the Phase 7 follow-up; the filters here scope
 // it to JVM-testable production code (parser, repo, domain, ViewModel).
-// Generated code (DataBinding, Hilt, Room *_Impl, safe-args) and pure-UI
-// classes (Activity / Fragments / Adapter / Worker / BindingAdapters) are
-// excluded — they need Espresso or on-device smoke, not unit tests, and
-// drown the signal at unfiltered totals (~11% instructions otherwise).
+// Generated Hilt/Room code and pure-UI classes (Activity / Composables /
+// Worker) are excluded — they need on-device smoke, not unit tests, and
+// drown the signal at unfiltered totals otherwise.
 kover {
     reports {
         filters {
             excludes {
                 packages(
-                    // DataBinding scaffold packages (generated alongside the @{} expressions).
-                    "androidx.databinding",
-                    "androidx.databinding.library.baseAdapters",
-                    "com.tarek.asteroidradar.databinding",
-                    "com.tarek.asteroidradar.generated.callback",
                     // DI bindings (DatabaseModule + generated). No logic to exercise.
                     "com.tarek.asteroidradar.di",
-                    // UI not covered by JVM tests — Phase 8+ Espresso /
-                    // Compose UI test territory. Phase 9b folded the surviving
-                    // Composables into ui.detail; the temporary ui.compose
-                    // package from 9a is gone.
+                    // UI not covered by JVM tests — Compose UI test territory.
                     "com.tarek.asteroidradar.ui.detail",
+                    "com.tarek.asteroidradar.ui.theme",
                     "com.tarek.asteroidradar.util",
                     "com.tarek.asteroidradar.work",
                     // Hilt aggregator packages. Each is exact — no wildcard support in packages().
                     "dagger.hilt.internal.aggregatedroot.codegen",
+                    "dagger.hilt.internal.processedrootsentinel.codegen",
                     "hilt_aggregated_deps",
                 )
                 classes(
@@ -116,16 +109,27 @@ kover {
                     "com.tarek.asteroidradar.AsteroidRadarApplication\$*",
                     "com.tarek.asteroidradar.MainActivity",
                     "com.tarek.asteroidradar.MainActivity\$*",
-                    "com.tarek.asteroidradar.DataBinderMapperImpl",
-                    "com.tarek.asteroidradar.DataBindingTriggerClass",
-                    // ui.main retains MainViewModel; everything else in the package is UI / generated.
-                    "com.tarek.asteroidradar.ui.main.MainFragment",
-                    "com.tarek.asteroidradar.ui.main.MainFragment\$*",
-                    "com.tarek.asteroidradar.ui.main.AsteroidAdapter",
-                    "com.tarek.asteroidradar.ui.main.AsteroidAdapter\$*",
-                    "com.tarek.asteroidradar.ui.main.AsteroidListener",
-                    // [sic] — typo in the source class name predates this PR.
-                    "com.tarek.asteroidradar.ui.main.AsteriodDiffCallback",
+                    // Phase 9c typed Nav-Compose routes — kotlinx-serialization synthesises
+                    // a companion + `$serializer` per @Serializable, inflating instruction
+                    // count without a JVM-unit-testable surface. Round-trip is exercised on
+                    // device by MainScreenTest + DetailScreenTest.
+                    "com.tarek.asteroidradar.MainRoute",
+                    "com.tarek.asteroidradar.MainRoute\$*",
+                    "com.tarek.asteroidradar.DetailRoute",
+                    "com.tarek.asteroidradar.DetailRoute\$*",
+                    // ui.main retains MainViewModel; MainScreen + the typed-route NavType are
+                    // Compose-only surfaces. Each @Composable / anonymous object emits inner
+                    // classes (`*Kt$Foo$1`, `ComposableSingletons$*Kt`, NavType anon subclass)
+                    // that the bare-FQN exclude misses — wildcard the children.
+                    "com.tarek.asteroidradar.ui.main.MainScreenKt",
+                    "com.tarek.asteroidradar.ui.main.MainScreenKt\$*",
+                    "com.tarek.asteroidradar.ui.main.ComposableSingletons\$MainScreenKt",
+                    "com.tarek.asteroidradar.ui.main.ComposableSingletons\$MainScreenKt\$*",
+                    "com.tarek.asteroidradar.ui.main.AsteroidNavTypeKt",
+                    "com.tarek.asteroidradar.ui.main.AsteroidNavTypeKt\$*",
+                    // Compose's lambda-singleton holder for MainActivity's setContent block.
+                    "com.tarek.asteroidradar.ComposableSingletons",
+                    "com.tarek.asteroidradar.ComposableSingletons\$*",
                     // network: trim the un-unit-testable surfaces. The Retrofit service
                     // interface, the converter factory, and the DTO/POJO file all need
                     // MockWebServer or a wired Retrofit instance to exercise — out of scope
@@ -147,16 +151,16 @@ kover {
                     "**_Factory\$*",
                     "**_HiltModules*",
                     "**_HiltComponents*",
+                    "**_ComponentTreeDeps",
                     "**Hilt_*",
                     "**_GeneratedInjector",
                     "**_MembersInjector",
                     "**_Impl",
                     "**_Impl\$*",
-                    "**BindingImpl",
-                    "**BindingImpl\$*",
-                    "**.BR",
-                    "**Args",
-                    "**Directions",
+                    // kotlinx-serialization synthesises a `$$serializer` per @Serializable
+                    // class — pure descriptor + encode/decode bytecode, no JVM-testable
+                    // surface (round-trip is exercised by the on-device DetailScreenTest).
+                    "**\$\$serializer",
                     "**.BuildConfig",
                 )
             }
@@ -218,18 +222,8 @@ android {
         }
     }
 
-    sourceSets {
-        named("main") {
-            java.srcDir("build/generated/ksp/src/main/kotlin")
-        }
-    }
-
     androidResources {
         generateLocaleConfig = true
-    }
-
-    buildFeatures {
-        dataBinding = true
     }
 }
 
@@ -238,16 +232,15 @@ dependencies {
 
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.recyclerview)
 
-    implementation(libs.bundles.lifecycle)
-    implementation(libs.bundles.navigation)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+
     implementation(libs.bundles.networking)
 
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime)
@@ -259,6 +252,14 @@ dependencies {
     // distinct and goes through KSP, not kapt.
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
+
+    // Hilt's main compiler runs through kapt — see the convention plugin
+    // comment for the JavaPoet/aggregator-task workaround this preserves.
+    // The dagger-hilt compiler comes from the convention plugin's `ksp(...)`
+    // declaration and is overridden here by the kapt path Hilt prefers when
+    // both are present. Drop both this kapt dep and the kapt plugin once
+    // Hilt + Gradle metadata versions realign.
+    kapt(libs.hilt.compiler)
 
     implementation(libs.coil)
     implementation(libs.timber)
@@ -280,18 +281,13 @@ dependencies {
     detektPlugins(libs.detekt.compose.rules)
 
     testImplementation(libs.bundles.test.shared)
-    // arch-core-testing brings InstantTaskExecutorRule for synchronous LiveData
-    // tests; only the repo + ViewModel tests need it, so keep it out of the
-    // shared bundle.
-    testImplementation(libs.androidx.arch.core.testing)
     testImplementation(libs.org.json)
     androidTestImplementation(libs.bundles.android.test)
-    // AsteroidDao integration tests observe LiveData (InstantTaskExecutorRule),
-    // exercise a suspend `deletePreviousAsteroid` (runTest), and assert with
-    // Truth. Mirrors the testImplementation entries above on the instrumented
-    // classpath. Kept off the `android-test` bundle so the Espresso-only smoke
-    // tests don't pull deps they don't need.
-    androidTestImplementation(libs.androidx.arch.core.testing)
+    // AsteroidDao integration tests collect Flow (`first()`), exercise a
+    // suspend `deletePreviousAsteroid` (runTest), and assert with Truth.
+    // Mirrors the testImplementation entries above on the instrumented
+    // classpath. Kept off the `android-test` bundle so the Espresso-only
+    // smoke tests don't pull deps they don't need.
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.truth)
     // Compose UI tests — BOM-aligned, applied alongside the platform() pin so

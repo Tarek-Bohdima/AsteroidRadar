@@ -26,22 +26,32 @@ import com.android.build.api.dsl.ApplicationExtension
 // application lives here so feature module #2 can opt in with
 // `plugins { id("asteroidradar.android.application") }` and skip 30 lines of
 // boilerplate. Module-specific config (namespace, applicationId, version,
-// signing, buildTypes, sourceSets, dataBinding) stays in the consuming script.
+// signing, buildTypes) stays in the consuming script.
 //
-// Plugin order matters: kotlin-android must precede
-// androidx.navigation.safeargs.kotlin (safe-args fails fast otherwise).
+// Phase 9c retired Data Binding + `androidx.navigation.safeargs.kotlin`
+// (replaced by Nav-Compose typed routes). The kotlinx-serialization compiler
+// plugin is the new entry — required by the @Serializable Asteroid that
+// Nav-Compose encodes into route arguments.
 //
-// `kotlin-kapt` is applied because the DataBinding compiler still discovers
-// @BindingAdapter methods via kapt at AGP 8.7 — the AGP 8.6+ DataBinding-via-
-// KSP path is still experimental and didn't pick up our adapters cleanly.
-// Phase 9c retires DataBinding entirely; kapt goes with it.
+// `kotlin-kapt` stays applied even though no @BindingAdapter survives, so
+// that `kapt(libs.hilt.compiler)` in :app routes Hilt's aggregating step
+// through kapt instead of the broken Gradle worker. Hilt 2.52's KSP
+// aggregator (`hiltAggregateDeps*`) hits a NoSuchMethodError on
+// `ClassName.canonicalName()` once kapt isn't there to pin JavaPoet 1.13
+// indirectly: AGP brings JavaPoet 1.10 onto the daemon classloader, Gradle's
+// classloader-resolution race lets 1.10 win, and Hilt's bytecode (compiled
+// against 1.13) blows up. Hilt's switch to Palantir's javapoet fork lands in
+// 2.55, but the 2.55+ classes ship with Kotlin 2.1 metadata that even Gradle
+// 8.13's embedded Kotlin (2.0.21) won't read. Until that toolchain bump is
+// taken as its own scoped step, kapt's presence quietly steers Hilt around
+// the bug — there are no other kapt users left, so this is otherwise a no-op.
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.kapt")
     id("org.jetbrains.kotlin.plugin.parcelize")
+    id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.devtools.ksp")
-    id("androidx.navigation.safeargs.kotlin")
 }
 
 extensions.configure<ApplicationExtension> {

@@ -28,8 +28,6 @@
  */
 package com.tarek.asteroidradar.repository
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.map
 import com.tarek.asteroidradar.BuildConfig
 import com.tarek.asteroidradar.database.AsteroidDao
 import com.tarek.asteroidradar.database.asDomainModel
@@ -40,6 +38,8 @@ import com.tarek.asteroidradar.network.asDatabaseModel
 import com.tarek.asteroidradar.network.asDomainModel
 import com.tarek.asteroidradar.network.parseAsteroidsJsonResult
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import timber.log.Timber
@@ -64,7 +64,7 @@ class AsteroidRepository(
 
     private val endDate = LocalDate.now().plusDays(7).toString()
 
-    fun getAsteroidSelection(filter: AsteroidsFilter): LiveData<List<Asteroid>> =
+    fun getAsteroidSelection(filter: AsteroidsFilter): Flow<List<Asteroid>> =
         when (filter) {
             AsteroidsFilter.STORED ->
                 asteroidDao.getAsteroids().map {

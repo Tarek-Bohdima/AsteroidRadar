@@ -28,24 +28,20 @@
  */
 package com.tarek.asteroidradar.repository
 
-import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import com.google.common.truth.Truth.assertThat
 import com.tarek.asteroidradar.database.AsteroidDao
 import com.tarek.asteroidradar.database.DatabaseAsteroid
 import com.tarek.asteroidradar.database.asDomainModel
 import com.tarek.asteroidradar.repository.AsteroidRepository.AsteroidsFilter
-import com.tarek.asteroidradar.testing.getOrAwaitValue
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import java.time.LocalDate
 
 class AsteroidRepositoryTest {
-    @get:Rule
-    val instantTaskExecutorRule = InstantTaskExecutorRule()
-
     private lateinit var dao: FakeAsteroidDao
     private lateinit var repository: AsteroidRepository
 
@@ -56,42 +52,45 @@ class AsteroidRepositoryTest {
     }
 
     @Test
-    fun `STORED filter observes getAsteroids and maps to domain`() {
-        val entities = listOf(asteroidEntity(id = 1L), asteroidEntity(id = 2L))
-        dao.allLive.value = entities
+    fun `STORED filter observes getAsteroids and maps to domain`() =
+        runTest {
+            val entities = listOf(asteroidEntity(id = 1L), asteroidEntity(id = 2L))
+            dao.allFlow.value = entities
 
-        val result = repository.getAsteroidSelection(AsteroidsFilter.STORED).getOrAwaitValue()
+            val result = repository.getAsteroidSelection(AsteroidsFilter.STORED).first()
 
-        assertThat(result).isEqualTo(entities.asDomainModel())
-    }
-
-    @Test
-    fun `WEEK filter observes getWeeklyAsteroids with a 7-day window`() {
-        val entities = listOf(asteroidEntity(id = 1L))
-        dao.weeklyLive.value = entities
-
-        val result = repository.getAsteroidSelection(AsteroidsFilter.WEEK).getOrAwaitValue()
-
-        assertThat(result).isEqualTo(entities.asDomainModel())
-        val captured = checkNotNull(dao.getWeeklyCalledWith)
-        val start = LocalDate.parse(captured.first)
-        val end = LocalDate.parse(captured.second)
-        assertThat(start.plusDays(7)).isEqualTo(end)
-    }
+            assertThat(result).isEqualTo(entities.asDomainModel())
+        }
 
     @Test
-    fun `TODAY filter observes getTodayAsteroids with today's date`() {
-        val entities = listOf(asteroidEntity(id = 1L))
-        dao.todayLive.value = entities
+    fun `WEEK filter observes getWeeklyAsteroids with a 7-day window`() =
+        runTest {
+            val entities = listOf(asteroidEntity(id = 1L))
+            dao.weeklyFlow.value = entities
 
-        val result = repository.getAsteroidSelection(AsteroidsFilter.TODAY).getOrAwaitValue()
+            val result = repository.getAsteroidSelection(AsteroidsFilter.WEEK).first()
 
-        assertThat(result).isEqualTo(entities.asDomainModel())
-        val captured = checkNotNull(dao.getTodayCalledWith)
-        // Repository captures `LocalDate.now()` at construction time; the test
-        // runs in the same process moments later, so the values must agree.
-        assertThat(LocalDate.parse(captured)).isEqualTo(LocalDate.now())
-    }
+            assertThat(result).isEqualTo(entities.asDomainModel())
+            val captured = checkNotNull(dao.getWeeklyCalledWith)
+            val start = LocalDate.parse(captured.first)
+            val end = LocalDate.parse(captured.second)
+            assertThat(start.plusDays(7)).isEqualTo(end)
+        }
+
+    @Test
+    fun `TODAY filter observes getTodayAsteroids with today's date`() =
+        runTest {
+            val entities = listOf(asteroidEntity(id = 1L))
+            dao.todayFlow.value = entities
+
+            val result = repository.getAsteroidSelection(AsteroidsFilter.TODAY).first()
+
+            assertThat(result).isEqualTo(entities.asDomainModel())
+            val captured = checkNotNull(dao.getTodayCalledWith)
+            // Repository captures `LocalDate.now()` at construction time; the test
+            // runs in the same process moments later, so the values must agree.
+            assertThat(LocalDate.parse(captured)).isEqualTo(LocalDate.now())
+        }
 
     private fun asteroidEntity(
         id: Long,
@@ -110,28 +109,28 @@ class AsteroidRepositoryTest {
 }
 
 private class FakeAsteroidDao : AsteroidDao {
-    val allLive = MutableLiveData<List<DatabaseAsteroid>>()
-    val todayLive = MutableLiveData<List<DatabaseAsteroid>>()
-    val weeklyLive = MutableLiveData<List<DatabaseAsteroid>>()
+    val allFlow = MutableStateFlow<List<DatabaseAsteroid>>(emptyList())
+    val todayFlow = MutableStateFlow<List<DatabaseAsteroid>>(emptyList())
+    val weeklyFlow = MutableStateFlow<List<DatabaseAsteroid>>(emptyList())
 
     var getTodayCalledWith: String? = null
         private set
     var getWeeklyCalledWith: Pair<String, String>? = null
         private set
 
-    override fun getAsteroids(): LiveData<List<DatabaseAsteroid>> = allLive
+    override fun getAsteroids(): Flow<List<DatabaseAsteroid>> = allFlow
 
-    override fun getTodayAsteroids(today: String): LiveData<List<DatabaseAsteroid>> {
+    override fun getTodayAsteroids(today: String): Flow<List<DatabaseAsteroid>> {
         getTodayCalledWith = today
-        return todayLive
+        return todayFlow
     }
 
     override fun getWeeklyAsteroids(
         startDate: String,
         endDate: String,
-    ): LiveData<List<DatabaseAsteroid>> {
+    ): Flow<List<DatabaseAsteroid>> {
         getWeeklyCalledWith = startDate to endDate
-        return weeklyLive
+        return weeklyFlow
     }
 
     override fun insertAll(vararg asteroids: DatabaseAsteroid) {

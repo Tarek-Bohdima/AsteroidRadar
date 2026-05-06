@@ -26,32 +26,33 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-package com.tarek.asteroidradar
+package com.tarek.asteroidradar.ui.theme
 
-import androidx.test.core.app.ActivityScenario
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
-import androidx.test.espresso.matcher.ViewMatchers.withId
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Test
-import org.junit.runner.RunWith
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 
-// Lightweight golden-path test: launches the activity and asserts the
-// MainFragment view tree is up. Catches binding-adapter regressions and
-// missing-dependency crashes from the Picasso → Coil swap (e.g.,
-// NoClassDefFoundError, ClassCastException on imageView.load(...)). Does
-// NOT assert that the network image actually loaded — manual screenshots
-// + Phase 7 Espresso idling cover that.
-@RunWith(AndroidJUnit4::class)
-class MainActivityCoilSmokeTest {
-    @Test
-    fun mainFragment_displaysImageOfDayAndRecycler() {
-        ActivityScenario.launch(MainActivity::class.java).use {
-            onView(withId(R.id.activity_main_image_of_the_day))
-                .check(matches(isDisplayed()))
-            onView(withId(R.id.asteroid_recycler))
-                .check(matches(isDisplayed()))
-        }
-    }
+// Minimal Material 3 dark-only theme keyed off the existing palette
+// (`@color/app_background`, `@color/default_text_color`, etc.) so the post-9c
+// Compose surface stays visually consistent with the post-Phase-8 view-system
+// look. A proper Material 3 colour-tokens migration is its own phase.
+private val AsteroidColorScheme =
+    darkColorScheme(
+        primary = Color(0xFFFF8282),
+        onPrimary = Color(0xFF010613),
+        background = Color(0xFF010613),
+        onBackground = Color(0xFFFFFFFF),
+        surface = Color(0xFF010613),
+        onSurface = Color(0xFFFFFFFF),
+        surfaceVariant = Color(0xFF1A2030),
+        onSurfaceVariant = Color(0xFFD2D2D2),
+    )
+
+@Composable
+fun AsteroidRadarTheme(content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = AsteroidColorScheme,
+        content = content,
+    )
 }

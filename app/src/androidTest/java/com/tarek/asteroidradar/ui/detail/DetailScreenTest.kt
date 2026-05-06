@@ -61,7 +61,7 @@ class DetailScreenTest {
 
     @Test
     fun rendersAllSectionTitles() {
-        composeTestRule.setContent { DetailScreen(asteroid = sampleAsteroid) }
+        composeTestRule.setContent { DetailScreen(asteroid = sampleAsteroid, onBack = {}) }
 
         composeTestRule.onNodeWithText(string(R.string.close_approach_data_title)).assertIsDisplayed()
         composeTestRule.onNodeWithText(string(R.string.absolute_magnitude_title)).assertIsDisplayed()
@@ -72,14 +72,14 @@ class DetailScreenTest {
 
     @Test
     fun rendersCloseApproachDateValue() {
-        composeTestRule.setContent { DetailScreen(asteroid = sampleAsteroid) }
+        composeTestRule.setContent { DetailScreen(asteroid = sampleAsteroid, onBack = {}) }
 
         composeTestRule.onNodeWithText(sampleAsteroid.closeApproachDate).assertIsDisplayed()
     }
 
     @Test
     fun helpButtonOpensAstronomicalUnitDialog() {
-        composeTestRule.setContent { DetailScreen(asteroid = sampleAsteroid) }
+        composeTestRule.setContent { DetailScreen(asteroid = sampleAsteroid, onBack = {}) }
 
         // Dialog text isn't on screen until the help button is tapped.
         val explanation = string(R.string.astronomical_unit_explanation)

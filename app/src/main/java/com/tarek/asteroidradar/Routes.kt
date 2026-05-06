@@ -26,33 +26,19 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-package com.tarek.asteroidradar.ui.detail
+package com.tarek.asteroidradar
 
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.ViewCompositionStrategy
-import androidx.fragment.app.Fragment
-import dagger.hilt.android.AndroidEntryPoint
+import com.tarek.asteroidradar.domain.Asteroid
+import kotlinx.serialization.Serializable
 
-// Phase 9b ComposeView shim. Safe-args still feeds the asteroid in; 9c will
-// retire fragment-based navigation and host DetailScreen as a Nav-Compose
-// destination instead.
-@AndroidEntryPoint
-class DetailFragment : Fragment() {
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?,
-    ): View {
-        val asteroid = DetailFragmentArgs.fromBundle(requireArguments()).selectedAsteroid
-        return ComposeView(requireContext()).apply {
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent {
-                DetailScreen(asteroid = asteroid)
-            }
-        }
-    }
-}
+// Nav-Compose typed-route definitions. Replaces the safe-args main_nav_graph.xml
+// from the view-system era — kotlinx-serialization renders these to URI args
+// (Asteroid via AsteroidNavType, primitives natively).
+
+@Serializable
+data object MainRoute
+
+@Serializable
+data class DetailRoute(
+    val asteroid: Asteroid,
+)

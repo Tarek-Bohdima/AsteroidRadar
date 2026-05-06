@@ -28,42 +28,49 @@
  */
 package com.tarek.asteroidradar.ui.main
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewModelScope
-import com.tarek.asteroidradar.domain.Asteroid
 import com.tarek.asteroidradar.domain.PictureOfDay
 import com.tarek.asteroidradar.repository.AsteroidRepository
 import com.tarek.asteroidradar.repository.AsteroidRepository.AsteroidsFilter
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
+private const val SUBSCRIPTION_TIMEOUT_MS = 5_000L
+
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class MainViewModel
     @Inject
     constructor(
         private val repository: AsteroidRepository,
     ) : ViewModel() {
-        private val _imageOfTheDay = MutableLiveData<PictureOfDay>()
-        val imageOfTheDay: LiveData<PictureOfDay>
-            get() = _imageOfTheDay
+        private val _imageOfTheDay = MutableStateFlow<PictureOfDay?>(null)
+        val imageOfTheDay: StateFlow<PictureOfDay?> = _imageOfTheDay.asStateFlow()
 
-        private val _navigateToDetail = MutableLiveData<Asteroid?>()
-        val navigateToDetail
-            get() = _navigateToDetail
+        private val _filter = MutableStateFlow<AsteroidsFilter>(AsteroidsFilter.STORED)
+        val filter: StateFlow<AsteroidsFilter> = _filter.asStateFlow()
 
-        private val _filter = MutableLiveData<AsteroidsFilter>()
-        val filter
-            get() = _filter
-
-        val asteroids =
-            filter.switchMap {
-                repository.getAsteroidSelection(it)
-            }
+        // Re-evaluates the DAO query whenever the filter flips. WhileSubscribed
+        // with a 5s grace handles configuration-change hand-off without
+        // resubscribing the underlying Room flow on every recomposition.
+        val asteroids: StateFlow<List<com.tarek.asteroidradar.domain.Asteroid>> =
+            _filter
+                .flatMapLatest { repository.getAsteroidSelection(it) }
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(SUBSCRIPTION_TIMEOUT_MS),
+                    initialValue = emptyList(),
+                )
 
         init {
             viewModelScope.launch {
@@ -88,19 +95,6 @@ class MainViewModel
             }
         }
 
-        fun onAsteroidClicked(asteroid: Asteroid) {
-            _navigateToDetail.value = asteroid
-        }
-
-        fun onAsteroidDetailNavigated() {
-            _navigateToDetail.value = null
-        }
-
-        /**
-         * Updates the data set filter for the web services by querying the data with the new filter
-         * by calling [getAsteroidList]
-         * @param filter the [AsteroidsFilter] that is sent as part of the web server request
-         */
         fun updateFilters(filter: AsteroidsFilter) {
             _filter.value = filter
         }

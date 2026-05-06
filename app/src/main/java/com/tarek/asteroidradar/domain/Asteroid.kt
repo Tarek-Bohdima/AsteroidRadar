@@ -30,8 +30,13 @@ package com.tarek.asteroidradar.domain
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.Serializable
 
+// @Serializable lets the Phase 9c Nav-Compose typed routes encode this class
+// as a route argument via Json.encodeToString (see AsteroidNavType). @Parcelize
+// stays for compatibility with Bundle marshalling on the nav backstack.
 @Parcelize
+@Serializable
 data class Asteroid(
     val id: Long,
     val codename: String,
