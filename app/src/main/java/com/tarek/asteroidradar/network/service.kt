@@ -28,11 +28,11 @@
  */
 package com.tarek.asteroidradar.network
 
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.tarek.asteroidradar.util.Constants
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
+import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
@@ -42,7 +42,7 @@ import retrofit2.http.Query
  *
  * `getAsteroids` returns the raw JSON body as `String` (the `/neo/rest/v1/feed`
  * payload is parsed manually in `parseAsteroidsJsonResult` because of its
- * nested-by-date shape). `getImageOfDay` returns a Moshi-decoded
+ * nested-by-date shape). `getImageOfDay` returns a kotlinx-serialization-decoded
  * [ImageOfTheDay].
  */
 interface AsteroidService {
@@ -57,25 +57,23 @@ interface AsteroidService {
     ): ImageOfTheDay
 }
 
-private val moshi =
-    Moshi
-        .Builder()
-        .add(KotlinJsonAdapterFactory())
-        .build()
+// `ignoreUnknownKeys = true` lets the APOD response evolve (NASA frequently
+// adds fields like `copyright`, `date`, `explanation`, `hdurl`, `service_version`)
+// without us recompiling — only the three fields we annotate on `ImageOfTheDay`
+// are required to be present.
+private val json = Json { ignoreUnknownKeys = true }
 
-// Register Scalars before Moshi: Retrofit walks factories in order; Scalars
-// matches `String` returns and yields the raw response body, while Moshi
-// handles everything else (`ImageOfTheDay`). The earlier custom
-// `HandleScalarAndJsonConverterFactory` dispatched by per-method annotation
-// (`@ScalarResponse` / `@JsonResponse`) but had a non-local-return bug and
-// was fragile under R8 minification — issue #113 replaced it with this
-// stock Retrofit pattern.
+// Register Scalars before the kotlinx-serialization converter: Retrofit walks
+// factories in order; Scalars matches `String` returns and yields the raw
+// response body, while kotlinx-serialization handles `@Serializable` DTOs
+// (`ImageOfTheDay`). Phase 11 replaced Moshi here — single serialization
+// library across nav routes (Phase 9c) and HTTP, fully reflection-free.
 private val retrofit =
     Retrofit
         .Builder()
         .baseUrl(Constants.BASE_URL)
         .addConverterFactory(ScalarsConverterFactory.create())
-        .addConverterFactory(MoshiConverterFactory.create(moshi))
+        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
 
 object AsteroidApi {
