@@ -98,12 +98,11 @@ kover {
                     "com.tarek.asteroidradar.generated.callback",
                     // DI bindings (DatabaseModule + generated). No logic to exercise.
                     "com.tarek.asteroidradar.di",
-                    // UI not covered by JVM tests — Phase 8+ Espresso territory.
+                    // UI not covered by JVM tests — Phase 8+ Espresso /
+                    // Compose UI test territory. Phase 9b folded the surviving
+                    // Composables into ui.detail; the temporary ui.compose
+                    // package from 9a is gone.
                     "com.tarek.asteroidradar.ui.detail",
-                    // Phase 9a Compose smoke; 9b/9c will fold the surviving
-                    // Composables into the regular ui.detail / ui.main packages
-                    // and this entry can come out then.
-                    "com.tarek.asteroidradar.ui.compose",
                     "com.tarek.asteroidradar.util",
                     "com.tarek.asteroidradar.work",
                     // Hilt aggregator packages. Each is exact — no wildcard support in packages().
@@ -271,6 +270,10 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.bundles.compose)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    // ui-test-manifest hosts the empty test activity Compose tests render
+    // into; lives on debugImplementation so it's only present on
+    // androidTestDebug, never in release.
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     // Mans0n compose-rules ruleset for detekt — Compose-specific checks
     // (slot-table correctness, hoisting, parameter ordering, modifier handling).
@@ -291,4 +294,9 @@ dependencies {
     androidTestImplementation(libs.androidx.arch.core.testing)
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.truth)
+    // Compose UI tests — BOM-aligned, applied alongside the platform() pin so
+    // the `ui-test-junit4` artifact stays in lockstep with the rest of the
+    // androidx.compose.* dependencies.
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 }

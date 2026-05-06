@@ -16,6 +16,11 @@ complexity:
     # Room entities and DTO copy(...) calls naturally have many params.
     functionThreshold: 8
     constructorThreshold: 10
+  LongMethod:
+    # @Composable functions are essentially declarative markup; per-section
+    # extraction (DetailSection, ContentColumn, …) makes screens harder to
+    # follow than a single linear top-level Composable.
+    ignoreAnnotated: ['Composable']
   TooManyFunctions:
     # Default 11 is tight for ViewModels / Fragments.
     thresholdInClasses: 18
@@ -32,3 +37,15 @@ style:
   WildcardImport:
     # Already enforced by ktlint via Spotless; redundant here.
     active: false
+  UnusedPrivateMember:
+    # @Preview composables are referenced by the IDE, not the source code, so
+    # the rule otherwise flags every private preview function.
+    ignoreAnnotated: ['Preview']
+
+naming:
+  FunctionNaming:
+    # @Composable functions use PascalCase by convention; the rule otherwise
+    # flags every Composable in the project. Mans0n compose-rules ships its
+    # own composable-aware checks (slot-table correctness, hoisting, etc.) —
+    # this exemption is only for the function-name casing.
+    ignoreAnnotated: ['Composable']

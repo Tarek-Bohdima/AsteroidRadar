@@ -32,71 +32,27 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AlertDialog
-import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.updatePadding
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
-import com.tarek.asteroidradar.R
-import com.tarek.asteroidradar.databinding.FragmentDetailBinding
 import dagger.hilt.android.AndroidEntryPoint
 
+// Phase 9b ComposeView shim. Safe-args still feeds the asteroid in; 9c will
+// retire fragment-based navigation and host DetailScreen as a Nav-Compose
+// destination instead.
 @AndroidEntryPoint
 class DetailFragment : Fragment() {
-    private lateinit var binding: FragmentDetailBinding
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View {
-        binding = FragmentDetailBinding.inflate(inflater, container, false)
-        binding.lifecycleOwner = viewLifecycleOwner
-
-        applyWindowInsets(binding.root)
-
         val asteroid = DetailFragmentArgs.fromBundle(requireArguments()).selectedAsteroid
-
-        binding.asteroid = asteroid
-
-        binding.helpButton.setOnClickListener {
-            displayAstronomicalUnitExplanationDialog()
+        return ComposeView(requireContext()).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                DetailScreen(asteroid = asteroid)
+            }
         }
-
-        return binding.root
-    }
-
-    // Top inset is left to the AppCompat ActionBar, which already accounts for
-    // the status bar. We only pad sides (landscape cutouts) and bottom (gesture
-    // pill / nav bar) so the last ScrollView row stays reachable.
-    private fun applyWindowInsets(root: View) {
-        ViewCompat.setOnApplyWindowInsetsListener(root) { v, windowInsets ->
-            val insets =
-                windowInsets.getInsets(
-                    WindowInsetsCompat.Type.systemBars() or
-                        WindowInsetsCompat.Type.displayCutout(),
-                )
-            v.updatePadding(left = insets.left, right = insets.right, bottom = insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
-    }
-
-    private fun displayAstronomicalUnitExplanationDialog() {
-        val dialog =
-            AlertDialog
-                .Builder(requireActivity(), R.style.AlertDialogCustom)
-                .setMessage(getString(R.string.astronomical_unit_explanation))
-                .setPositiveButton(android.R.string.ok, null)
-                .create()
-
-        dialog.setOnShowListener {
-            // Change the OK button's background
-            val okButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            okButton.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.buttonBackground)) // Use your own color
-            okButton.setTextColor(ContextCompat.getColor(requireContext(), R.color.highContrastText)) // Use your text color for contrast
-        }
-
-        dialog.show()
     }
 }
