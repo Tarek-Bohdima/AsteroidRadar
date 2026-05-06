@@ -230,19 +230,17 @@ android {
 dependencies {
     implementation(fileTree("libs") { include("*.jar") })
 
-    implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.core.ktx)
-
-    implementation(libs.androidx.lifecycle.viewmodel.ktx)
 
     implementation(libs.bundles.networking)
 
-    implementation(libs.kotlinx.coroutines.android)
+    // kotlinx-coroutines-android is the Dispatchers.Main Android impl, loaded
+    // by ServiceLoader at runtime — no compile-time symbols are referenced
+    // (Dispatchers.Main resolves through kotlinx-coroutines-core).
+    runtimeOnly(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
 
-    implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)
 
@@ -261,7 +259,6 @@ dependencies {
     // Hilt + Gradle metadata versions realign.
     kapt(libs.hilt.compiler)
 
-    implementation(libs.coil)
     implementation(libs.timber)
 
     // Compose runtime: BOM aligns the androidx.compose.* artifacts; the bundle
@@ -272,9 +269,10 @@ dependencies {
     implementation(libs.bundles.compose)
     debugImplementation(libs.androidx.compose.ui.tooling)
     // ui-test-manifest hosts the empty test activity Compose tests render
-    // into; lives on debugImplementation so it's only present on
-    // androidTestDebug, never in release.
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
+    // into; lives on debugRuntimeOnly because it's a manifest contributor
+    // (no symbols are referenced from code) and shouldn't be on the compile
+    // classpath.
+    debugRuntimeOnly(libs.androidx.compose.ui.test.manifest)
 
     // Mans0n compose-rules ruleset for detekt — Compose-specific checks
     // (slot-table correctness, hoisting, parameter ordering, modifier handling).

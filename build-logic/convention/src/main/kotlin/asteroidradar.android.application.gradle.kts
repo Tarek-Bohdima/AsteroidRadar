@@ -47,6 +47,7 @@ import com.android.build.api.dsl.ApplicationExtension
 // the bug — there are no other kapt users left, so this is otherwise a no-op.
 plugins {
     id("com.android.application")
+    id("com.autonomousapps.dependency-analysis")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.kapt")
     id("org.jetbrains.kotlin.plugin.parcelize")
