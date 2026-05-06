@@ -23,6 +23,14 @@ ktlint_standard_filename = disabled
 ij_kotlin_allow_trailing_comma = true
 ij_kotlin_allow_trailing_comma_on_call_site = true
 
+# UI-package overrides for ktlint. The `standard:function-naming` rule flags
+# PascalCase function names, which @Composable + @Preview functions use by
+# convention. Scoping by path because the per-annotation key
+# (`ktlint_function_naming_ignore_when_annotated_with`) isn't honored by
+# ktlint 1.5.0 — see the Phase 9a smoke notes (#103).
+[**/ui/**.{kt,kts}]
+ktlint_standard_function-naming = disabled
+
 [*.md]
 trim_trailing_whitespace = false
 
