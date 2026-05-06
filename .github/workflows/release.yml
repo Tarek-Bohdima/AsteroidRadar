@@ -10,14 +10,21 @@
 #   2. Runs unit tests (fail fast — no broken releases)
 #   3. Decodes the keystore from base64 and sets env vars
 #   4. Builds & signs a release APK  → attached to GitHub Release
-#   5. Builds & signs a release AAB  → saved as workflow artifact for Play Store
-#   6. Creates a GitHub Release with the APK attached + auto-generated changelog
+#   5. Builds & signs a release AAB  → attached to GitHub Release (for Play
+#      Store internal-testing upload — drag-and-drop into Play Console)
+#   6. Attaches `mapping.txt` (R8 deobfuscation symbols) to the Release.
+#      AAB embeds the map automatically since AGP 4.1, so Play Console
+#      deobfuscates crashes without extra steps; this attachment is for
+#      local `retrace` use on out-of-Play stack traces.
+#   7. Creates a GitHub Release with all three files + auto-generated changelog.
 #
-# WHY APK FOR GITHUB, AAB FOR PLAY STORE?
-#   APK = self-contained, installs directly on any Android device.
-#         Perfect for sideloading old versions for testing.
-#   AAB = smaller, optimised per-device by Play Store. Google requires
-#         this format for new apps since Aug 2021. Cannot be sideloaded.
+# WHY THREE FILES ON THE RELEASE?
+#   AAB     = the upload format Play Store wants for new apps since Aug 2021
+#             (and required by Play App Signing). Drag this into the Console.
+#   APK     = self-contained, installs directly on any Android device for
+#             sideload smoke tests when you don't want to go through Play.
+#   MAPPING = R8/ProGuard symbol map. Play Console gets it from inside the
+#             AAB automatically; this copy is for manual `retrace` only.
 #
 # HOW SIGNING WORKS HERE:
 #   Your build.gradle already reads signing config from env vars:
@@ -163,26 +170,20 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       # ── 10. Locate built artifacts ───────────────────────────
-      - name: Locate APK and AAB
+      #    `mapping.txt` is produced by R8 when isMinifyEnabled = true
+      #    (Phase 6b enabled this on release). Path is the AGP default:
+      #    app/build/outputs/mapping/release/mapping.txt.
+      - name: Locate APK, AAB, and mapping
         id: locate
         run: |
           APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
           AAB=$(find app/build/outputs/bundle/release -name "*.aab" | head -1)
+          MAPPING=$(find app/build/outputs/mapping/release -name "mapping.txt" | head -1)
           echo "apk_path=$APK" >> $GITHUB_OUTPUT
           echo "aab_path=$AAB" >> $GITHUB_OUTPUT
+          echo "mapping_path=$MAPPING" >> $GITHUB_OUTPUT
 
-      # ── 11. Upload AAB as workflow artifact ──────────────────
-      #    The AAB is NOT attached to the GitHub Release — it can't
-      #    be sideloaded anyway. Download it from the Actions tab
-      #    after the workflow runs, then upload to Google Play Console.
-      - name: Upload AAB for Play Store
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: release-aab-${{ github.ref_name }}
-          path: ${{ steps.locate.outputs.aab_path }}
-          retention-days: 30
-
-      # ── 12. Auto-generate changelog ──────────────────────────
+      # ── 11. Auto-generate changelog ──────────────────────────
       #    Collects all commits between this tag and the previous one.
       - name: Generate changelog
         run: |
@@ -201,16 +202,24 @@ jobs:
           >> changelog.md
           cat changelog.md
 
-      # ── 13. Create GitHub Release ────────────────────────────
-      #    APK is attached — download and sideload any old version
-      #    directly to your Android phone for testing.
-      #    AAB is NOT attached — it's in the workflow artifact above.
+      # ── 12. Create GitHub Release ────────────────────────────
+      #    All three artifacts attached:
+      #      *.aab       — drag into Play Console → Internal testing.
+      #      *.apk       — sideload smoke build (no Play Store needed).
+      #      mapping.txt — manual stack-trace `retrace` material.
+      #
+      #    `softprops/action-gh-release` accepts a multiline `files:` block
+      #    where each line is a glob; trailing whitespace and empty lines
+      #    are tolerated.
       - name: Create GitHub Release
         uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         with:
           name: "${{ github.ref_name }}"
           body_path: changelog.md
-          files: ${{ steps.locate.outputs.apk_path }}
+          files: |
+            ${{ steps.locate.outputs.aab_path }}
+            ${{ steps.locate.outputs.apk_path }}
+            ${{ steps.locate.outputs.mapping_path }}
           draft: false
           prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'INTERNAL') || contains(github.ref_name, 'rc') || contains(github.ref_name, 'RC') }}
         env:
