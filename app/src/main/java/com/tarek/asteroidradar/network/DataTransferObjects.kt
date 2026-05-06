@@ -28,15 +28,15 @@
  */
 package com.tarek.asteroidradar.network
 
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
 import com.tarek.asteroidradar.database.DatabaseAsteroid
 import com.tarek.asteroidradar.domain.Asteroid
 import com.tarek.asteroidradar.domain.PictureOfDay
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 data class ImageOfTheDay(
-    @Json(name = "media_type")
+    @SerialName("media_type")
     val mediaType: String,
     val title: String,
     val url: String,

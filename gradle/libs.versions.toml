@@ -36,7 +36,6 @@ coil = "2.7.0"
 # Kotlin bump. `enableAggregatingTask = true` (the default since 2.45) is kept
 # explicit in the convention plugin.
 hilt = "2.52"
-moshi = "1.15.2"
 retrofit = "3.0.0"
 timber = "5.0.1"
 
@@ -101,16 +100,11 @@ kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 
-moshi = { module = "com.squareup.moshi:moshi", version.ref = "moshi" }
-moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshi" }
-# Compile-time `@JsonClass(generateAdapter = true)` adapter generator (KSP).
-# Without this processor the annotation is a no-op, Moshi falls back to
-# reflection, and R8 strips kotlin-reflect aggressively → release builds
-# fail with "Unable to create converter for class …" (issue #113).
-moshi-kotlin-codegen = { module = "com.squareup.moshi:moshi-kotlin-codegen", version.ref = "moshi" }
-
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
-retrofit-converter-moshi = { module = "com.squareup.retrofit2:converter-moshi", version.ref = "retrofit" }
+# Phase 11 replaced Moshi with kotlinx-serialization. Retrofit 3 ships an
+# official converter that calls `Json.encodeToString` / `decodeFromString`
+# under the hood — no codegen processor or reflection required.
+retrofit-converter-kotlinx-serialization = { module = "com.squareup.retrofit2:converter-kotlinx-serialization", version.ref = "retrofit" }
 retrofit-converter-scalars = { module = "com.squareup.retrofit2:converter-scalars", version.ref = "retrofit" }
 
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
@@ -159,14 +153,14 @@ compose = [
     "androidx-navigation-compose",
     "coil-compose",
 ]
-# Retrofit + Moshi networking stack — both response converters; the Jake
-# Wharton kotlin-coroutines-adapter was dropped in Phase 10 (Retrofit 3 has
-# native suspend support, no longer using Deferred returns).
+# Retrofit networking stack — Scalars converter for the raw-string NeoWs
+# feed and the kotlinx-serialization converter for `@Serializable` DTOs.
+# Phase 10 dropped the Jake Wharton coroutines adapter (Retrofit 3 has
+# native suspend support); Phase 11 replaced Moshi with kotlinx-serialization
+# (single serialization library, fully reflection-free, no codegen processor).
 networking = [
-    "moshi",
-    "moshi-kotlin",
     "retrofit",
-    "retrofit-converter-moshi",
+    "retrofit-converter-kotlinx-serialization",
     "retrofit-converter-scalars",
 ]
 # Instrumented-test libs that go on the androidTest classpath together.
