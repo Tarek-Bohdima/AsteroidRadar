@@ -13,12 +13,13 @@ shippable; pick them off in order — each one stacks on the last.
 | 1 | Gradle Kotlin DSL + version catalog | Done (#52) |
 | 2 | Convention plugin (`build-logic/`) | Done (#54) |
 | 3 | Code-quality plumbing (Spotless / Detekt / Lint) | Done (#56, #58, #60) |
-| 4 | Toolchain modernization (Kotlin 2.x, AndroidX bumps, Picasso → Coil) | Done (#62, #64, #66) — manual device smoke pending |
+| 4 | Toolchain modernization (Kotlin 2.x, AndroidX bumps, Picasso → Coil) | Done (#62, #64, #66) — v2.0.0-INTERNAL tag held; superseded by v3.0.0-INTERNAL device smoke under Phase 9c |
 | 5 | Hilt | Done (#80, #82, #84) |
 | 6 | Production hardening (R8, fail-fast on missing API key) | Done (#87, #100) — 6a fail-fast + slim proguard; 6b bundled AGP 8.3 → 8.7.3 + R8 + `shrinkResources` |
 | 7 | Tests + Kover | Done (#89, #91, #93) — `koverVerify` 60% INSTRUCTION floor wired in the post-7c follow-up (issue #94) |
 | 8 | Edge-to-edge | Done (#97) — included a NoActionBar + Toolbar migration that the issue's non-goal #4 had ruled out |
-| 9 | Compose migration | **In progress** — 9a (#103) wires the convention plugin + BOM + bundle; 9b (#104) ports `DetailFragment` to a `ComposeView`-hosted `DetailScreen` |
+| 9 | Compose migration | Done (#103, #105, #107) — 9a convention plugin + BOM + bundle; 9b `DetailFragment` → `DetailScreen` via `ComposeView`; 9c `MainFragment` → `MainScreen` + Nav-Compose typed routes (drops Data Binding + safe-args) |
+| 10 | Dependency-analysis (`buildHealth` gate) | **Up next** — issue #108 |
 | — | **Module split** lands with feature #2, not as a phase | — |
 
 Tick the table when phases land. Each phase below lists scope, rationale, and
@@ -377,8 +378,6 @@ ship the smaller surface (Detail) without disrupting Main. Branch naming:
 
 ## Quality bets to consider (no phase yet)
 
-- **`dependency-analysis-android-gradle-plugin`** — flag unused / misplaced
-  dependencies. Highest signal once we have multiple modules.
 - **Baseline profiles + a macrobenchmark module** for cold-start
   performance. Worthwhile after Phase 5 / Hilt landed (DI graph affects
   startup).
