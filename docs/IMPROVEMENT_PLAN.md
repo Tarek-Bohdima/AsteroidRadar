@@ -13,17 +13,66 @@ shippable; pick them off in order — each one stacks on the last.
 | 1 | Gradle Kotlin DSL + version catalog | Done (#52) |
 | 2 | Convention plugin (`build-logic/`) | Done (#54) |
 | 3 | Code-quality plumbing (Spotless / Detekt / Lint) | Done (#56, #58, #60) |
-| 4 | Toolchain modernization (Kotlin 2.x, AndroidX bumps, Picasso → Coil) | Done (#62, #64, #66) — v2.0.0-INTERNAL tag held; superseded by v3.0.0-INTERNAL device smoke under Phase 9c |
+| 4 | Toolchain modernization (Kotlin 2.x, AndroidX bumps, Picasso → Coil) | Done (#62, #64, #66) — v2.0.0-INTERNAL tag held; superseded by the v3.0.x device smoke under Phase 9c + the v3.0.1 hotfix |
 | 5 | Hilt | Done (#80, #82, #84) |
 | 6 | Production hardening (R8, fail-fast on missing API key) | Done (#87, #100) — 6a fail-fast + slim proguard; 6b bundled AGP 8.3 → 8.7.3 + R8 + `shrinkResources` |
 | 7 | Tests + Kover | Done (#89, #91, #93) — `koverVerify` 60% INSTRUCTION floor wired in the post-7c follow-up (issue #94) |
 | 8 | Edge-to-edge | Done (#97) — included a NoActionBar + Toolbar migration that the issue's non-goal #4 had ruled out |
 | 9 | Compose migration | Done (#103, #105, #107) — 9a convention plugin + BOM + bundle; 9b `DetailFragment` → `DetailScreen` via `ComposeView`; 9c `MainFragment` → `MainScreen` + Nav-Compose typed routes (drops Data Binding + safe-args) |
-| 10 | Dependency-analysis (`buildHealth` gate) | **Up next** — issue #108 |
+| — | v3.0.0-INTERNAL release-only crash | Hotfix #114 → **v3.0.1-INTERNAL** verified clean. Bad converter-factory loop + Moshi codegen wasn't wired up; details in issue #113. |
+| 10 | Dependency-analysis (`buildHealth` gate) | Done (#110) |
+| 11 | Moshi → kotlinx.serialization (drop runtime reflection) | Done (#117) — single serialization library across nav routes (Phase 9c) and HTTP (Phase 11). Released as **v3.0.2-INTERNAL**, verified clean. |
+| 12 | Persistent APOD + Coil disk cache | **Up next** — issue #116. Addresses the cold-start image latency users have flagged on every v3.x verification. |
 | — | **Module split** lands with feature #2, not as a phase | — |
 
 Tick the table when phases land. Each phase below lists scope, rationale, and
 the rough size; sub-bullets are the concrete deltas.
+
+## Current shipping state
+
+Snapshot for whoever opens this repo next (likely future-you). Reflects the
+state at the close of the v3.0.2 release cycle.
+
+- **Live on Play Internal**: `v3.0.2-INTERNAL` — verified on Pixel 7 Pro
+  (clean install through Play Store update), 2026-05-07. Both endpoints
+  (NeoWs feed + APOD) load; rotation, navigation, filters all work.
+- **v3.x release timeline**:
+  - `v3.0.0-INTERNAL` — Phase 9c Compose rewrite. **Broken on real devices**
+    via release-only converter-factory regression. Never roll this back to.
+  - `v3.0.1-INTERNAL` — hotfix (#114). Fixed a non-local-return loop bug
+    in the custom Retrofit factory + wired up `moshi-kotlin-codegen`.
+    Verified clean.
+  - `v3.0.2-INTERNAL` — Phase 11 (#117). Replaced Moshi with
+    kotlinx.serialization end-to-end. Single serialization library across
+    nav routes and network. Reflection-free runtime. Verified clean.
+- **Next pickup**: issue #116 — persistent APOD cache + Coil disk cache.
+  Pre-emptively shows yesterday's image instantly while today's loads in
+  parallel; addresses a cold-start latency users have flagged on every
+  v3.x verification. Self-contained (Room entity + DAO + Repository +
+  ViewModel), Phase-9c-Detail-sized.
+- **Backlog**: issue #112 (NDK debug symbols, build-only fix to silence a
+  Play Console warning — five lines under `buildTypes.release { ndk { … } }`).
+
+## Watchpoints for future sessions
+
+- **R8 release-only regressions are a known risk in this codebase.** v3.0.0
+  shipped a release-only crash that debug builds couldn't reproduce. Phase
+  11 closed the *category* (no runtime reflection in our code anymore), but
+  any new dependency that uses Class.forName / KCallable / kotlin-reflect
+  needs a release-build smoke before tagging. Run `./gradlew assembleRelease`
+  + `adb install` on the AVD before pushing any tag, not just `installDebug`.
+- **R8 fallback option**: the user has flagged that they would drop R8
+  entirely (`isMinifyEnabled = false`) if a *third* R8-only bug surfaces.
+  Phase 11 should make this less likely, but the option stays on the table.
+- **Tag-driven release**: pushing any `v*` tag fires the release workflow,
+  which builds + signs + publishes a GitHub Release with AAB / APK /
+  mapping.txt. The user uploads the AAB to Play Console manually. Don't
+  push tags autonomously even with explicit "go ahead" — re-verify
+  pre-conditions (version-of-record matches tag, secrets configured,
+  master has the merged target PR) first.
+- **Issues-first.** Every non-trivial change opens a GitHub issue before
+  the PR. Doc, typo, and dep-bump PRs are exempt. Hotfixes still get an
+  issue. See [`CLAUDE.md`](../CLAUDE.md#branching-commits-issues).
 
 ## Versioning and tags
 
@@ -376,11 +425,46 @@ ship the smaller surface (Detail) without disrupting Main. Branch naming:
   (#66 down-payment, never filled in) to `compose-ui-test-junit4` against
   `MainScreen` / `DetailScreen`.
 
+## Phase 10 — Dependency-analysis (`buildHealth` gate)
+
+Goal: wire Tony Robalik's [dependency-analysis-gradle-plugin](https://github.com/autonomousapps/dependency-analysis-gradle-plugin) (DAGP) so unused / misplaced dependencies fail CI before they survive into another release.
+
+- DAGP applied via the `asteroidradar.android.application` convention plugin (root-only application doesn't reach subprojects whose Android plugin is applied via a precompiled script plugin); root keeps `:buildHealth` as the aggregator.
+- Issue-severity overrides in root `build.gradle.kts` silence "use transitive deps directly" — the Compose BOM is the version-of-record for the whole `compose.*` tree. Whitelists `androidx.work:work-runtime-ktx` from "unused" because DAGP misses inline-reified `PeriodicWorkRequestBuilder<T>` usage.
+- First DAGP run flagged 8 unused deps — fixed in-place rather than baselined: dropped `androidx-activity-ktx`, `androidx-core-ktx`, `androidx-lifecycle-viewmodel-ktx`, `androidx-room-ktx` (`viewModelScope` is in `lifecycle-viewmodel` since 2.5+; no `withTransaction` usage), `coil` non-compose, `retrofit-coroutines-adapter` (Retrofit 3 has native suspend), `androidx-espresso-core` and `androidx-test-core-ktx` (no Espresso / `ActivityScenario` survived 9c).
+- Reclassified `kotlinx-coroutines-android` `implementation` → `runtimeOnly` (`Dispatchers.Main` resolves through `coroutines-core`; the Android impl loads via `ServiceLoader`); `compose-ui-test-manifest` `debugImplementation` → `debugRuntimeOnly`.
+- New CI step `Run dependency-analysis (buildHealth)` after `lintRelease`, before `assembleDebug`. Report attached as a workflow artifact.
+
+## Phase 11 — Moshi → kotlinx.serialization
+
+Goal: single serialization library across the codebase, fully reflection-free at runtime. Phase 9c already added `kotlinx-serialization-json` for Nav-Compose typed routes; Phase 11 reaps that investment by routing the network JSON path through it as well.
+
+Forced by the v3.0.0 release-only crash (issue #113 / #114): Moshi's reflection adapter (`KotlinJsonAdapterFactory`) is fragile under R8 because R8 strips most of `kotlin-reflect`. The hotfix wired `moshi-kotlin-codegen` as a band-aid; Phase 11 removed the *category* by deleting Moshi entirely.
+
+- `network/DataTransferObjects.kt` — `ImageOfTheDay` flips from `@JsonClass(generateAdapter = true)` + `@Json(name = "media_type")` to `@Serializable` + `@SerialName("media_type")`.
+- `network/service.kt` — drops `Moshi.Builder() + KotlinJsonAdapterFactory + MoshiConverterFactory`; uses `Json { ignoreUnknownKeys = true }.asConverterFactory("application/json".toMediaType())` from the official `retrofit2-converter-kotlinx-serialization`. Builder order unchanged: Scalars first (raw `String` body for `getAsteroids`), kotlinx-serialization second (`@Serializable` DTOs).
+- Catalog: drop `moshi`, `moshi-kotlin`, `moshi-kotlin-codegen`, `retrofit-converter-moshi` + the `moshi` version pin; add `retrofit-converter-kotlinx-serialization`.
+- `domain/PictureOfDay.kt` cleaned up — dead `@Json` annotation removed (domain models don't carry serialization annotations; the conversion happens in `asDomainModel()`).
+- Bumps to `v3.0.2-INTERNAL`. Verified post-merge end-to-end through Play Internal Testing on a Pixel 7 Pro, 2026-05-07.
+
+**Out of scope** — migrating `parseAsteroidsJsonResult` (the `org.json.JSONObject`-based parser of the nested-by-date NeoWs feed) to kotlinx.serialization. Doable with a `JsonTransformingSerializer`; small surface, captured as a possible Phase 11b if appetite remains.
+
+## Phase 12 — Persistent APOD + Coil disk cache
+
+Goal: kill the cold-start APOD-image latency that users have flagged on every v3.x verification. Two serial network round-trips (APOD endpoint → URL, then URL → image bytes) make the APOD visibly later than the asteroid list. Tracked in issue #116.
+
+- **Room**: add `picture_of_day` table (one row, replace-on-conflict) — `id` (constant 0), `mediaType`, `title`, `url`. Mirrors `network.ImageOfTheDay`.
+- **Repository**: `getPictureOfDay(): Flow<PictureOfDay?>` reads from the new DAO; existing `getImageOfTheDay()` becomes the network-write half (call after the response, persist via `insertPictureOfDay(...)`).
+- **MainViewModel**: `imageOfTheDay: StateFlow<PictureOfDay?>` is sourced from the database, not the one-shot network call. `init` triggers `refreshPictureOfDay()` alongside `refreshAsteroids()`. On launch, the UI gets yesterday's APOD instantly from the cache; today's swaps in via Coil's `crossfade(true)` once the network call returns.
+- **Coil disk cache**: confirm or explicitly configure `ImageLoader { … diskCache(…) … }` so the same URL hits cache on the second cold start of the same day. Coil's default should already cover this; verify with a cold-start-twice smoke test.
+
+Verification on the second cold-start: image renders before the asteroid list. On a fresh install: same as today (one-time slow path).
+
 ## Quality bets to consider (no phase yet)
 
 - **Baseline profiles + a macrobenchmark module** for cold-start
   performance. Worthwhile after Phase 5 / Hilt landed (DI graph affects
-  startup).
+  startup); compounds nicely with Phase 12.
 - **Gradle build scans** if a Develocity instance becomes available.
 - **Jacoco merge** — alternative coverage backend if Kover blocks on a Kotlin
   bump.
