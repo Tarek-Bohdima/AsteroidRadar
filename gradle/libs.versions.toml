@@ -103,6 +103,11 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 
 moshi = { module = "com.squareup.moshi:moshi", version.ref = "moshi" }
 moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshi" }
+# Compile-time `@JsonClass(generateAdapter = true)` adapter generator (KSP).
+# Without this processor the annotation is a no-op, Moshi falls back to
+# reflection, and R8 strips kotlin-reflect aggressively → release builds
+# fail with "Unable to create converter for class …" (issue #113).
+moshi-kotlin-codegen = { module = "com.squareup.moshi:moshi-kotlin-codegen", version.ref = "moshi" }
 
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 retrofit-converter-moshi = { module = "com.squareup.retrofit2:converter-moshi", version.ref = "retrofit" }

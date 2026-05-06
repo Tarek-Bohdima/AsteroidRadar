@@ -31,7 +31,7 @@ Available on Google Play (internal track).
 | Language | Kotlin |
 | UI | Fragments + Data Binding + Navigation Component (safe-args) |
 | Async | Kotlin Coroutines |
-| Networking | Retrofit + Moshi + OkHttp + a custom converter that picks scalar vs JSON per `@ScalarResponse` / `@JsonResponse` annotation |
+| Networking | Retrofit + Moshi + OkHttp; Scalars and Moshi converter factories registered in order so `String` returns get the raw body and `@JsonClass`-annotated returns get the codegen-generated adapter |
 | Persistence | Room (compiled with KSP) |
 | Background | WorkManager (`PeriodicWorkRequest`, KEEP policy) |
 | Image loading | Coil |
