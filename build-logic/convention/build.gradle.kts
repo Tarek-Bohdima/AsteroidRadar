@@ -37,12 +37,12 @@ java {
 // runtime classpath at apply time — `compileOnly` would satisfy the
 // type-safe-accessor compile step but leave Gradle unable to find the
 // plugin when a consuming module applies it. The AGP / Kotlin / KSP /
-// safe-args artifacts must be on `implementation` here.
+// Compose / serialization / Hilt artifacts must be on `implementation` here.
 dependencies {
     implementation(libs.android.gradle.plugin)
     implementation(libs.kotlin.gradle.plugin)
     implementation(libs.kotlin.compose.compiler.gradle.plugin)
+    implementation(libs.kotlin.serialization.gradle.plugin)
     implementation(libs.ksp.gradle.plugin)
-    implementation(libs.androidx.navigation.safeargs.gradle.plugin)
     implementation(libs.hilt.gradle.plugin)
 }

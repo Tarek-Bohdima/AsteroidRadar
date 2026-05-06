@@ -28,22 +28,19 @@
  */
 package com.tarek.asteroidradar.ui.main
 
-import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.Observer
+import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import com.tarek.asteroidradar.domain.Asteroid
 import com.tarek.asteroidradar.domain.PictureOfDay
 import com.tarek.asteroidradar.repository.AsteroidRepository
 import com.tarek.asteroidradar.repository.AsteroidRepository.AsteroidsFilter
-import com.tarek.asteroidradar.testing.getOrAwaitValue
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -51,14 +48,10 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModelTest {
-    @get:Rule
-    val instantTaskExecutorRule = InstantTaskExecutorRule()
-
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var repository: AsteroidRepository
 
@@ -70,7 +63,7 @@ class MainViewModelTest {
         // test owner only stubs what they care about.
         coEvery { repository.refreshAsteroids() } returns Unit
         coEvery { repository.getImageOfTheDay() } returns SAMPLE_IMAGE
-        every { repository.getAsteroidSelection(any()) } returns MutableLiveData(emptyList())
+        every { repository.getAsteroidSelection(any()) } returns MutableStateFlow(emptyList())
     }
 
     @After
@@ -86,11 +79,11 @@ class MainViewModelTest {
 
             coVerify(exactly = 1) { repository.refreshAsteroids() }
             coVerify(exactly = 1) { repository.getImageOfTheDay() }
-            assertThat(viewModel.imageOfTheDay.getOrAwaitValue()).isEqualTo(SAMPLE_IMAGE)
+            assertThat(viewModel.imageOfTheDay.value).isEqualTo(SAMPLE_IMAGE)
         }
 
     @Test
-    fun `getImageOfTheDay error path is swallowed and leaves no value`() =
+    fun `getImageOfTheDay error path is swallowed and leaves null`() =
         runTest(testDispatcher) {
             coEvery { repository.getImageOfTheDay() } throws RuntimeException("boom")
 
@@ -101,48 +94,39 @@ class MainViewModelTest {
         }
 
     @Test
-    fun `updateFilters propagates to filter and asteroids switchMap`() =
+    fun `updateFilters propagates to filter and re-subscribes asteroids`() =
         runTest(testDispatcher) {
-            val today = MutableLiveData<List<Asteroid>>(emptyList())
-            val week = MutableLiveData<List<Asteroid>>(emptyList())
+            val today = MutableStateFlow<List<Asteroid>>(emptyList())
+            val week = MutableStateFlow<List<Asteroid>>(emptyList())
+            val stored = MutableStateFlow<List<Asteroid>>(emptyList())
+            every { repository.getAsteroidSelection(AsteroidsFilter.STORED) } returns stored
             every { repository.getAsteroidSelection(AsteroidsFilter.TODAY) } returns today
             every { repository.getAsteroidSelection(AsteroidsFilter.WEEK) } returns week
 
             val viewModel = MainViewModel(repository)
             advanceUntilIdle()
 
-            // The asteroids switchMap is lazy — it only re-evaluates while it has
-            // an active observer. Keep one attached for the duration of the
-            // filter changes so each updateFilters re-triggers the mapping.
-            val asteroidsObserver = Observer<List<Asteroid>> { /* drain emissions */ }
-            viewModel.asteroids.observeForever(asteroidsObserver)
-            try {
+            // Collect the StateFlow so flatMapLatest re-evaluates on each filter
+            // flip — the upstream stays unsubscribed otherwise. Turbine's `test`
+            // takes care of subscribe/unsubscribe lifecycle.
+            viewModel.asteroids.test {
+                assertThat(awaitItem()).isEmpty()
+
                 viewModel.updateFilters(AsteroidsFilter.TODAY)
+                today.value = listOf(SAMPLE_ASTEROID)
+                advanceUntilIdle()
                 assertThat(viewModel.filter.value).isEqualTo(AsteroidsFilter.TODAY)
-                assertThat(viewModel.asteroids.value).isEmpty()
+                assertThat(awaitItem()).containsExactly(SAMPLE_ASTEROID)
 
                 viewModel.updateFilters(AsteroidsFilter.WEEK)
+                week.value = emptyList()
+                advanceUntilIdle()
                 assertThat(viewModel.filter.value).isEqualTo(AsteroidsFilter.WEEK)
-                assertThat(viewModel.asteroids.value).isEmpty()
-            } finally {
-                viewModel.asteroids.removeObserver(asteroidsObserver)
+                // flatMapLatest emits the new flow's first value on switch.
+                assertThat(awaitItem()).isEmpty()
+
+                cancelAndIgnoreRemainingEvents()
             }
-
-            verify(exactly = 1) { repository.getAsteroidSelection(AsteroidsFilter.TODAY) }
-            verify(exactly = 1) { repository.getAsteroidSelection(AsteroidsFilter.WEEK) }
-        }
-
-    @Test
-    fun `onAsteroidClicked sets navigateToDetail and onAsteroidDetailNavigated clears it`() =
-        runTest(testDispatcher) {
-            val viewModel = MainViewModel(repository)
-            advanceUntilIdle()
-
-            viewModel.onAsteroidClicked(SAMPLE_ASTEROID)
-            assertThat(viewModel.navigateToDetail.getOrAwaitValue()).isEqualTo(SAMPLE_ASTEROID)
-
-            viewModel.onAsteroidDetailNavigated()
-            assertThat(viewModel.navigateToDetail.value).isNull()
         }
 
     private companion object {

@@ -39,5 +39,8 @@
     <color name="highContrastText">#DE000000</color> <!-- A dark grey for contrast -->
     <color name="yourDialogBackground">#FFFFFF</color> <!-- This is white; change if you want a different dialog background -->
     <color name="buttonBackground">#FFBB86FC</color>  <!-- Example background color -->
+    <!-- 33% black scrim under the APOD caption text — preserves legibility
+         over light NASA imagery. Mirrors fragment_main.xml's "#55010613". -->
+    <color name="image_of_day_caption_scrim">#55010613</color>
 
 </resources>

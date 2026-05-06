@@ -33,22 +33,21 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,94 +64,116 @@ import androidx.compose.ui.unit.dp
 import com.tarek.asteroidradar.R
 import com.tarek.asteroidradar.domain.Asteroid
 
-// Compose port of fragment_detail.xml (Phase 9b). Hosted by DetailFragment via
-// ComposeView until 9c rewires navigation to Nav-Compose. Top inset is left to
-// the AppCompat ActionBar (matches Phase 8's fragment-side insets handling) —
-// only horizontal + bottom safe-drawing insets are padded here.
+// Compose port of fragment_detail.xml. Phase 9c hosts this in the Compose
+// NavHost (replacing the 9b ComposeView shim) so the screen owns its own
+// TopAppBar — there's no AppCompat ActionBar above it any more.
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
     asteroid: Asteroid,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showAstronomicalUnitDialog by remember { mutableStateOf(false) }
 
-    Column(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .background(colorResource(R.color.app_background))
-                .windowInsetsPadding(
-                    WindowInsets.safeDrawing.only(
-                        WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.app_name)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_arrow_back),
+                            contentDescription = stringResource(R.string.back),
+                        )
+                    }
+                },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = colorResource(R.color.colorPrimary),
+                        titleContentColor = colorResource(R.color.default_text_color),
+                        navigationIconContentColor = colorResource(R.color.default_text_color),
                     ),
-                ).verticalScroll(rememberScrollState()),
-    ) {
-        // Hazard banner — local drawable selected by the Asteroid's flag.
-        // Replaces the asteroidStatusImage @BindingAdapter that 9b deletes.
-        Image(
-            painter =
-                painterResource(
-                    if (asteroid.isPotentiallyHazardous) {
-                        R.drawable.asteroid_hazardous
-                    } else {
-                        R.drawable.asteroid_safe
-                    },
-                ),
-            contentDescription = stringResource(R.string.content_description_hazard_indicator),
-            contentScale = ContentScale.FillWidth,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        Column(modifier = Modifier.padding(16.dp)) {
-            DetailSection(
-                title = stringResource(R.string.close_approach_data_title),
-                value = asteroid.closeApproachDate,
+            )
+        },
+        containerColor = colorResource(R.color.app_background),
+    ) { padding ->
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .background(colorResource(R.color.app_background))
+                    .verticalScroll(rememberScrollState()),
+        ) {
+            // Hazard banner — local drawable selected by the Asteroid's flag.
+            // Replaces the asteroidStatusImage @BindingAdapter that 9b deleted.
+            Image(
+                painter =
+                    painterResource(
+                        if (asteroid.isPotentiallyHazardous) {
+                            R.drawable.asteroid_hazardous
+                        } else {
+                            R.drawable.asteroid_safe
+                        },
+                    ),
+                contentDescription = stringResource(R.string.content_description_hazard_indicator),
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier.fillMaxWidth(),
             )
 
-            Spacer(Modifier.height(16.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 DetailSection(
-                    title = stringResource(R.string.absolute_magnitude_title),
+                    title = stringResource(R.string.close_approach_data_title),
+                    value = asteroid.closeApproachDate,
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    DetailSection(
+                        title = stringResource(R.string.absolute_magnitude_title),
+                        value =
+                            stringResource(
+                                R.string.astronomical_unit_format,
+                                asteroid.absoluteMagnitude,
+                            ),
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(onClick = { showAstronomicalUnitDialog = true }) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_help_circle),
+                            contentDescription =
+                                stringResource(
+                                    R.string.astronomical_unit_explanation_button,
+                                ),
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+                DetailSection(
+                    title = stringResource(R.string.estimated_diameter_title),
+                    value = stringResource(R.string.km_unit_format, asteroid.estimatedDiameter),
+                )
+
+                Spacer(Modifier.height(16.dp))
+                DetailSection(
+                    title = stringResource(R.string.relative_velocity_title),
+                    value = stringResource(R.string.km_s_unit_format, asteroid.relativeVelocity),
+                )
+
+                Spacer(Modifier.height(16.dp))
+                DetailSection(
+                    title = stringResource(R.string.distance_from_earth_title),
                     value =
                         stringResource(
                             R.string.astronomical_unit_format,
-                            asteroid.absoluteMagnitude,
+                            asteroid.distanceFromEarth,
                         ),
-                    modifier = Modifier.weight(1f),
                 )
-                IconButton(onClick = { showAstronomicalUnitDialog = true }) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_help_circle),
-                        contentDescription =
-                            stringResource(
-                                R.string.astronomical_unit_explanation_button,
-                            ),
-                    )
-                }
             }
-
-            Spacer(Modifier.height(16.dp))
-            DetailSection(
-                title = stringResource(R.string.estimated_diameter_title),
-                value = stringResource(R.string.km_unit_format, asteroid.estimatedDiameter),
-            )
-
-            Spacer(Modifier.height(16.dp))
-            DetailSection(
-                title = stringResource(R.string.relative_velocity_title),
-                value = stringResource(R.string.km_s_unit_format, asteroid.relativeVelocity),
-            )
-
-            Spacer(Modifier.height(16.dp))
-            DetailSection(
-                title = stringResource(R.string.distance_from_earth_title),
-                value =
-                    stringResource(
-                        R.string.astronomical_unit_format,
-                        asteroid.distanceFromEarth,
-                    ),
-            )
         }
     }
 
@@ -200,6 +221,7 @@ private fun DetailScreenPreview() {
                 distanceFromEarth = 0.0924,
                 isPotentiallyHazardous = false,
             ),
+        onBack = {},
     )
 }
 
@@ -218,5 +240,6 @@ private fun DetailScreenHazardousPreview() {
                 distanceFromEarth = 0.0034,
                 isPotentiallyHazardous = true,
             ),
+        onBack = {},
     )
 }

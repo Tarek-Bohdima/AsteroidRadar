@@ -26,39 +26,35 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-package com.tarek.asteroidradar.testing
+package com.tarek.asteroidradar.ui.main
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.Observer
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
+import android.net.Uri
+import android.os.Bundle
+import androidx.navigation.NavType
+import com.tarek.asteroidradar.domain.Asteroid
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
-// Mirror of the JVM-side helper at app/src/test/.../testing/LiveDataTestUtil.kt.
-// Duplicated rather than shared because the project has no `sharedTest` source
-// set; introducing one for one helper isn't worth the build-script surface area.
-fun <T> LiveData<T>.getOrAwaitValue(
-    time: Long = 2,
-    unit: TimeUnit = TimeUnit.SECONDS,
-): T {
-    var data: T? = null
-    val latch = CountDownLatch(1)
-    val observer =
-        object : Observer<T> {
-            override fun onChanged(value: T) {
-                data = value
-                latch.countDown()
-                this@getOrAwaitValue.removeObserver(this)
-            }
+// Custom NavType for the @Serializable Asteroid passed on the Detail route.
+// Nav-Compose 2.8 typed routes accept primitives natively but need a NavType
+// for any complex argument; the encoded JSON rides the route URI under
+// `serializeAsValue` and decodes back via `parseValue` on resume.
+val AsteroidNavType: NavType<Asteroid> =
+    object : NavType<Asteroid>(isNullableAllowed = false) {
+        override fun put(
+            bundle: Bundle,
+            key: String,
+            value: Asteroid,
+        ) {
+            bundle.putString(key, Json.encodeToString(value))
         }
-    observeForever(observer)
-    try {
-        if (!latch.await(time, unit)) {
-            throw TimeoutException("LiveData value was never set within $time $unit")
-        }
-    } finally {
-        removeObserver(observer)
+
+        override fun get(
+            bundle: Bundle,
+            key: String,
+        ): Asteroid? = bundle.getString(key)?.let { Json.decodeFromString<Asteroid>(it) }
+
+        override fun parseValue(value: String): Asteroid = Json.decodeFromString(Uri.decode(value))
+
+        override fun serializeAsValue(value: Asteroid): String = Uri.encode(Json.encodeToString(value))
     }
-    @Suppress("UNCHECKED_CAST")
-    return data as T
-}

@@ -28,24 +28,19 @@
  */
 package com.tarek.asteroidradar.database
 
-import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
-import com.tarek.asteroidradar.testing.getOrAwaitValue
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AsteroidDaoTest {
-    @get:Rule
-    val instantTaskExecutorRule = InstantTaskExecutorRule()
-
     private lateinit var db: AsteroidDatabase
     private lateinit var dao: AsteroidDao
 
@@ -53,7 +48,7 @@ class AsteroidDaoTest {
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         // allowMainThreadQueries() is fine for tests — instrumented tests run on
-        // the main thread and the DAO methods we exercise are LiveData / suspend,
+        // the main thread and the DAO methods we exercise are Flow / suspend,
         // not blocking. Production code never sees this builder.
         db =
             Room
@@ -69,60 +64,64 @@ class AsteroidDaoTest {
     }
 
     @Test
-    fun getAsteroids_returnsAllRowsOrderedByCloseApproachDateAsc() {
-        val later = asteroid(id = 1L, date = "2026-05-10")
-        val earliest = asteroid(id = 2L, date = "2026-05-01")
-        val middle = asteroid(id = 3L, date = "2026-05-05")
-        dao.insertAll(later, earliest, middle)
+    fun getAsteroids_returnsAllRowsOrderedByCloseApproachDateAsc() =
+        runTest {
+            val later = asteroid(id = 1L, date = "2026-05-10")
+            val earliest = asteroid(id = 2L, date = "2026-05-01")
+            val middle = asteroid(id = 3L, date = "2026-05-05")
+            dao.insertAll(later, earliest, middle)
 
-        val result = dao.getAsteroids().getOrAwaitValue()
+            val result = dao.getAsteroids().first()
 
-        assertThat(result.map { it.id }).containsExactly(2L, 3L, 1L).inOrder()
-    }
-
-    @Test
-    fun getTodayAsteroids_returnsOnlyRowsMatchingToday() {
-        val today = "2026-05-05"
-        dao.insertAll(
-            asteroid(id = 1L, date = today),
-            asteroid(id = 2L, date = today),
-            asteroid(id = 3L, date = "2026-05-04"),
-            asteroid(id = 4L, date = "2026-05-06"),
-        )
-
-        val result = dao.getTodayAsteroids(today).getOrAwaitValue()
-
-        assertThat(result.map { it.id }).containsExactly(1L, 2L)
-    }
+            assertThat(result.map { it.id }).containsExactly(2L, 3L, 1L).inOrder()
+        }
 
     @Test
-    fun getWeeklyAsteroids_isInclusiveOnBothBounds() {
-        val start = "2026-05-05"
-        val end = "2026-05-12"
-        dao.insertAll(
-            asteroid(id = 1L, date = "2026-05-04"), // before window
-            asteroid(id = 2L, date = start), // inclusive lower bound
-            asteroid(id = 3L, date = "2026-05-08"), // mid-window
-            asteroid(id = 4L, date = end), // inclusive upper bound
-            asteroid(id = 5L, date = "2026-05-13"), // after window
-        )
+    fun getTodayAsteroids_returnsOnlyRowsMatchingToday() =
+        runTest {
+            val today = "2026-05-05"
+            dao.insertAll(
+                asteroid(id = 1L, date = today),
+                asteroid(id = 2L, date = today),
+                asteroid(id = 3L, date = "2026-05-04"),
+                asteroid(id = 4L, date = "2026-05-06"),
+            )
 
-        val result = dao.getWeeklyAsteroids(start, end).getOrAwaitValue()
+            val result = dao.getTodayAsteroids(today).first()
 
-        assertThat(result.map { it.id }).containsExactly(2L, 3L, 4L).inOrder()
-    }
+            assertThat(result.map { it.id }).containsExactly(1L, 2L)
+        }
 
     @Test
-    fun insertAll_replacesRowOnConflictingPrimaryKey() {
-        dao.insertAll(asteroid(id = 1L, codename = "first", date = "2026-05-05"))
-        dao.insertAll(asteroid(id = 1L, codename = "second", date = "2026-05-06"))
+    fun getWeeklyAsteroids_isInclusiveOnBothBounds() =
+        runTest {
+            val start = "2026-05-05"
+            val end = "2026-05-12"
+            dao.insertAll(
+                asteroid(id = 1L, date = "2026-05-04"), // before window
+                asteroid(id = 2L, date = start), // inclusive lower bound
+                asteroid(id = 3L, date = "2026-05-08"), // mid-window
+                asteroid(id = 4L, date = end), // inclusive upper bound
+                asteroid(id = 5L, date = "2026-05-13"), // after window
+            )
 
-        val result = dao.getAsteroids().getOrAwaitValue()
+            val result = dao.getWeeklyAsteroids(start, end).first()
 
-        assertThat(result).hasSize(1)
-        assertThat(result.single().codename).isEqualTo("second")
-        assertThat(result.single().closeApproachDate).isEqualTo("2026-05-06")
-    }
+            assertThat(result.map { it.id }).containsExactly(2L, 3L, 4L).inOrder()
+        }
+
+    @Test
+    fun insertAll_replacesRowOnConflictingPrimaryKey() =
+        runTest {
+            dao.insertAll(asteroid(id = 1L, codename = "first", date = "2026-05-05"))
+            dao.insertAll(asteroid(id = 1L, codename = "second", date = "2026-05-06"))
+
+            val result = dao.getAsteroids().first()
+
+            assertThat(result).hasSize(1)
+            assertThat(result.single().codename).isEqualTo("second")
+            assertThat(result.single().closeApproachDate).isEqualTo("2026-05-06")
+        }
 
     @Test
     fun deletePreviousAsteroid_removesOnlyRowsStrictlyBeforeToday() =
@@ -137,7 +136,7 @@ class AsteroidDaoTest {
 
             dao.deletePreviousAsteroid(today)
 
-            val result = dao.getAsteroids().getOrAwaitValue()
+            val result = dao.getAsteroids().first()
             assertThat(result.map { it.id }).containsExactly(3L, 4L).inOrder()
         }
 

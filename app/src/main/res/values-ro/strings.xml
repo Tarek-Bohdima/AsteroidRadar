@@ -46,5 +46,7 @@
     <string name="nasa_picture_of_day_content_description_format">Imaginea zilei de la NASA: %s</string>
     <string name="content_description_hazard_indicator">Indicator de pericol</string>
     <string name="asteroid_recycler_description">Lista de asteroizi din fluxul NeoW al NASA</string>
+    <string name="overflow_menu_description">Filtrează asteroizii</string>
+    <string name="back">Înapoi</string>
 
 </resources>

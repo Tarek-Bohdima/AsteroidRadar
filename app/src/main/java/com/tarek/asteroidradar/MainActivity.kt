@@ -29,35 +29,52 @@
 package com.tarek.asteroidradar
 
 import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.updatePadding
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
+import com.tarek.asteroidradar.domain.Asteroid
+import com.tarek.asteroidradar.ui.detail.DetailScreen
+import com.tarek.asteroidradar.ui.main.AsteroidNavType
+import com.tarek.asteroidradar.ui.main.MainScreen
+import com.tarek.asteroidradar.ui.theme.AsteroidRadarTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlin.reflect.typeOf
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity() {
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         // Must run before super.onCreate per AndroidX Activity contract.
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        val toolbar = findViewById<Toolbar>(R.id.toolbar)
-        setSupportActionBar(toolbar)
-
-        // Edge-to-edge draws content under the status bar; pad the toolbar so
-        // its title clears the system bar (and any landscape display cutout).
-        ViewCompat.setOnApplyWindowInsetsListener(toolbar) { v, windowInsets ->
-            val insets =
-                windowInsets.getInsets(
-                    WindowInsetsCompat.Type.systemBars() or
-                        WindowInsetsCompat.Type.displayCutout(),
-                )
-            v.updatePadding(top = insets.top)
-            windowInsets
+        setContent {
+            AsteroidRadarTheme {
+                val navController = rememberNavController()
+                NavHost(navController = navController, startDestination = MainRoute) {
+                    composable<MainRoute> {
+                        MainScreen(
+                            onAsteroidClick = { asteroid ->
+                                navController.navigate(DetailRoute(asteroid))
+                            },
+                        )
+                    }
+                    composable<DetailRoute>(
+                        // Nav-Compose typed routes need a typeMap entry for any
+                        // non-primitive @Serializable argument; AsteroidNavType
+                        // encodes via Json.encodeToString.
+                        typeMap = mapOf(typeOf<Asteroid>() to AsteroidNavType),
+                    ) { entry ->
+                        val route: DetailRoute = entry.toRoute()
+                        DetailScreen(
+                            asteroid = route.asteroid,
+                            onBack = { navController.popBackStack() },
+                        )
+                    }
+                }
+            }
         }
     }
 }

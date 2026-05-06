@@ -10,8 +10,24 @@
 # Add reflective-keeps here only when a release smoke surfaces a missing one
 # — debug with the r8-analyzer Claude Code skill (https://github.com/android/skills).
 
-# Navigation safe-args resolves `app:argType="com.tarek.asteroidradar.domain.X"`
-# from the nav graph XML via Class.forName at NavInflater time — R8's class
-# renaming breaks that lookup. Keep the domain package's class names so
-# parcelable arg types stay resolvable.
--keep class com.tarek.asteroidradar.domain.** { *; }
+# kotlinx-serialization typed Nav-Compose routes encode `Asteroid` (and any
+# future @Serializable route argument) via Json.encodeToString. R8 strips
+# the synthetic `Companion.serializer()` accessor unless we keep the class
+# + its companion. Phase 9c is the first new R8 keep surface since 6b.
+-if @kotlinx.serialization.Serializable class **
+-keepclasseswithmembers class <1> {
+    static <1>$Companion Companion;
+}
+-if @kotlinx.serialization.Serializable class ** {
+    static **$* *;
+}
+-keepclassmembers class <1>$<3> {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-if @kotlinx.serialization.Serializable class ** {
+    public static ** INSTANCE;
+}
+-keepclassmembers class <1> {
+    public static <1> INSTANCE;
+    kotlinx.serialization.KSerializer serializer(...);
+}

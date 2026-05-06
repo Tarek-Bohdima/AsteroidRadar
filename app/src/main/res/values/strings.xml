@@ -50,4 +50,6 @@
     <string name="nasa_picture_of_day_content_description_format">NASA\'s picture of day: %s</string>
     <string name="content_description_hazard_indicator">Hazard Indicator</string>
     <string name="asteroid_recycler_description">List of asteroids from NASA\'s NeoW feed</string>
+    <string name="overflow_menu_description">Filter asteroids</string>
+    <string name="back">Back</string>
 </resources>
