@@ -44,7 +44,7 @@ plugins {
 // .github/workflows/release.yml greps these names, so don't rename them.
 val versionMajor = 3
 val versionMinor = 0
-val versionPatch = 0
+val versionPatch = 1
 val versionClassifier = "INTERNAL"
 
 // versionCode formula uses minSdk as a high digit so a future minSdk bump
@@ -136,12 +136,13 @@ kover {
                     // for the JVM test bundle. Parser (NetworkUtilsKt) stays in.
                     "com.tarek.asteroidradar.network.AsteroidApi",
                     "com.tarek.asteroidradar.network.AsteroidApi\$*",
-                    "com.tarek.asteroidradar.network.AsteroidApiService",
-                    "com.tarek.asteroidradar.network.HandleScalarAndJsonConverterFactory",
-                    "com.tarek.asteroidradar.network.HandleScalarAndJsonConverterFactory\$*",
-                    "com.tarek.asteroidradar.network.ScalarResponse",
-                    "com.tarek.asteroidradar.network.JsonResponse",
+                    "com.tarek.asteroidradar.network.AsteroidService",
                     "com.tarek.asteroidradar.network.ImageOfTheDay",
+                    // Moshi codegen-generated adapter (issue #113 hotfix). Pure
+                    // synthetic JSON parser bytecode, equivalent of @JsonClass
+                    // metadata — no JVM-testable surface, exercised by the
+                    // on-device APOD render path.
+                    "com.tarek.asteroidradar.network.ImageOfTheDayJsonAdapter",
                     "com.tarek.asteroidradar.network.DataTransferObjectsKt",
                     // Generated code patterns. `**` matches any chars including dots so the
                     // pattern catches cross-package classes; plain `*` only matches within a
@@ -243,6 +244,12 @@ dependencies {
 
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)
+
+    // Generates `ImageOfTheDayJsonAdapter` from `@JsonClass(generateAdapter = true)`.
+    // Codegen avoids the reflection path (which R8 strips kotlin-reflect from in
+    // release builds), so MoshiConverterFactory finds the generated adapter at
+    // runtime via Class.forName instead of reflecting over the data class.
+    ksp(libs.moshi.kotlin.codegen)
 
     implementation(libs.androidx.work.runtime.ktx)
     // androidx-hilt:hilt-work is a separate artifact group from the dagger-hilt

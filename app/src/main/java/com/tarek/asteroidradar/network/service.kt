@@ -30,102 +30,54 @@ package com.tarek.asteroidradar.network
 
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import com.tarek.asteroidradar.domain.Asteroid
 import com.tarek.asteroidradar.util.Constants
-import okhttp3.ResponseBody
-import retrofit2.Converter
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
-import java.lang.reflect.Type
 
 /**
- * A public interface that exposes the [getAsteroids] method
+ * Retrofit service for the NASA NEO + APOD endpoints.
+ *
+ * `getAsteroids` returns the raw JSON body as `String` (the `/neo/rest/v1/feed`
+ * payload is parsed manually in `parseAsteroidsJsonResult` because of its
+ * nested-by-date shape). `getImageOfDay` returns a Moshi-decoded
+ * [ImageOfTheDay].
  */
 interface AsteroidService {
-    /**
-     * Returns a Coroutine [List] of [Asteroid] which can be fetched with await() if in a Coroutine scope.
-     * The @GET annotation indicates that the "neo/rest/v1/feed" endpoint will be requested with the GET
-     * HTTP method
-     */
-    @ScalarResponse
     @GET("neo/rest/v1/feed")
     suspend fun getAsteroids(
         @Query(Constants.PARAMETER_API_KEY) key: String,
     ): String
 
-    @JsonResponse
     @GET("planetary/apod")
     suspend fun getImageOfDay(
         @Query(Constants.PARAMETER_API_KEY) key: String,
     ): ImageOfTheDay
 }
 
-/**
- * Build the Moshi object that Retrofit will be using, making sure to add the Kotlin adapter for
- * full Kotlin compatibility.
- */
 private val moshi =
     Moshi
         .Builder()
         .add(KotlinJsonAdapterFactory())
         .build()
 
-/**
- * Use the Retrofit builder to build a retrofit object using a Moshi converter with our Moshi
- * object.
- */
+// Register Scalars before Moshi: Retrofit walks factories in order; Scalars
+// matches `String` returns and yields the raw response body, while Moshi
+// handles everything else (`ImageOfTheDay`). The earlier custom
+// `HandleScalarAndJsonConverterFactory` dispatched by per-method annotation
+// (`@ScalarResponse` / `@JsonResponse`) but had a non-local-return bug and
+// was fragile under R8 minification — issue #113 replaced it with this
+// stock Retrofit pattern.
 private val retrofit =
     Retrofit
         .Builder()
         .baseUrl(Constants.BASE_URL)
-        .addConverterFactory(HandleScalarAndJsonConverterFactory.create())
+        .addConverterFactory(ScalarsConverterFactory.create())
+        .addConverterFactory(MoshiConverterFactory.create(moshi))
         .build()
 
-/**
- * A public Api object that exposes the lazy-initialized Retrofit service
- */
 object AsteroidApi {
     val retrofitService: AsteroidService by lazy { retrofit.create(AsteroidService::class.java) }
-}
-
-// credits to : https://stackoverflow.com/a/33459073/8899344
-// & https://www.py4u.net/discuss/645695
-@MustBeDocumented
-@Target(AnnotationTarget.FUNCTION)
-@Retention(AnnotationRetention.RUNTIME)
-annotation class ScalarResponse
-
-@MustBeDocumented
-@Target(AnnotationTarget.FUNCTION)
-@Retention(AnnotationRetention.RUNTIME)
-annotation class JsonResponse
-
-class HandleScalarAndJsonConverterFactory : Converter.Factory() {
-    override fun responseBodyConverter(
-        type: Type,
-        annotations: Array<Annotation>,
-        retrofit: Retrofit,
-    ): Converter<ResponseBody, *>? {
-        annotations.forEach { annotation ->
-            return when (annotation) {
-                is ScalarResponse ->
-                    ScalarsConverterFactory
-                        .create()
-                        .responseBodyConverter(type, annotations, retrofit)
-                is JsonResponse ->
-                    MoshiConverterFactory
-                        .create(moshi)
-                        .responseBodyConverter(type, annotations, retrofit)
-                else -> null
-            }
-        }
-        return null
-    }
-
-    companion object {
-        fun create() = HandleScalarAndJsonConverterFactory()
-    }
 }
