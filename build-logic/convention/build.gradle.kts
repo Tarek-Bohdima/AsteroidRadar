@@ -40,6 +40,7 @@ java {
 // Compose / serialization / Hilt artifacts must be on `implementation` here.
 dependencies {
     implementation(libs.android.gradle.plugin)
+    implementation(libs.dependency.analysis.gradle.plugin)
     implementation(libs.kotlin.gradle.plugin)
     implementation(libs.kotlin.compose.compiler.gradle.plugin)
     implementation(libs.kotlin.serialization.gradle.plugin)

@@ -29,6 +29,10 @@
 
 // Top-level build file. Plugins are declared here and applied per-module so
 // that subprojects compose them via aliases without re-resolving versions.
+// DAGP is the exception — its `:buildHealth` aggregator lives at the root,
+// while per-subproject application happens through the convention plugin
+// (root-only application doesn't reach subprojects whose Android plugin is
+// applied via a precompiled script plugin).
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.detekt) apply false
@@ -38,6 +42,29 @@ plugins {
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.spotless) apply false
+    alias(libs.plugins.dependency.analysis)
+}
+
+// DAGP configuration. The "unused" / "runtime-only" / "compile-only" findings
+// remain at fail severity (default); the "use transitive directly" finding is
+// silenced because the Compose BOM is the version-of-record for the entire
+// androidx.compose.* tree — declaring each transitive Compose internal
+// individually would split versions away from the BOM. Same logic for the
+// AndroidX / Hilt / Coil / kotlinx transitive layers that AGP pulls in.
+dependencyAnalysis {
+    issues {
+        all {
+            onUsedTransitiveDependencies {
+                severity("ignore")
+            }
+            onUnusedDependencies {
+                // PeriodicWorkRequestBuilder<T> is the inline-reified Kotlin
+                // builder from work-runtime-ktx, used in AsteroidRadarApplication
+                // — DAGP's bytecode walk doesn't see inline-reified call sites.
+                exclude("androidx.work:work-runtime-ktx")
+            }
+        }
+    }
 }
 
 // Spotless applied across every subproject so formatting + license-header
