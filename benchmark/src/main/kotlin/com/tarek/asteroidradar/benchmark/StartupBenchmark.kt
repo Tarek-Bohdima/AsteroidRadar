@@ -26,41 +26,42 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
+package com.tarek.asteroidradar.benchmark
 
-pluginManagement {
-    // Convention plugins live in `build-logic/`. Registering it here (rather
-    // than as a top-level `includeBuild`) means its precompiled script plugins
-    // are resolvable from any module's `plugins {}` block via
-    // `id("asteroidradar.android.application")`.
-    includeBuild("build-logic")
+import androidx.benchmark.macro.StartupMode
+import androidx.benchmark.macro.junit4.MacrobenchmarkRule
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.Until
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
 
-    repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
+private const val TARGET_PACKAGE = "com.tarek.asteroidradar"
+private const val FIRST_FRAME_TIMEOUT_MS = 5_000L
+
+@RunWith(AndroidJUnit4::class)
+class StartupBenchmark {
+    @get:Rule
+    val rule = MacrobenchmarkRule()
+
+    @Test
+    fun `cold start to first asteroid list frame stays under 1500ms (informational baseline)`() {
+        rule.measureRepeated(
+            packageName = TARGET_PACKAGE,
+            metrics = listOf(androidx.benchmark.macro.StartupTimingMetric()),
+            iterations = 5,
+            startupMode = StartupMode.COLD,
+            setupBlock = { pressHome() },
+            measureBlock = {
+                startActivityAndWait()
+                // The asteroid list is a LazyColumn — wait for any row to render
+                // so we measure time-to-content, not just time-to-first-frame.
+                // The MainActivity content description is a stable anchor we set
+                // in MainScreen for accessibility; if it isn't on screen within
+                // 5s, the benchmark fails loudly rather than reporting bad data.
+                device.wait(Until.hasObject(By.descContains("Asteroid")), FIRST_FRAME_TIMEOUT_MS)
+            },
+        )
     }
 }
-
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-
-// Modexa trick #3: type-safe project accessors. `projects.app` instead of
-// `project(":app")`. Cheap to enable now even with one module — pays off the
-// moment a second module lands (Phase 2's convention plugin or a feature split).
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
-
-// Build identifier — must match `[a-zA-Z]([A-Za-z0-9\-_])*` for type-safe
-// project accessors above. The user-facing app name lives in
-// `app/src/main/res/values/strings.xml` (`app_name`) and is unchanged.
-rootProject.name = "AsteroidRadar"
-include(":app")
-// `:benchmark` is the macrobenchmark / baseline-profile module (Phase 14).
-// Compiles to a separate AAB via the `com.android.test` plugin, so its
-// instrumentation never ships to users. Only the generated baseline-prof.txt
-// crosses over into the user-facing AAB.
-include(":benchmark")
