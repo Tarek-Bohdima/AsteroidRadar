@@ -22,7 +22,7 @@ shippable; pick them off in order — each one stacks on the last.
 | — | v3.0.0-INTERNAL release-only crash | Hotfix #114 → **v3.0.1-INTERNAL** verified clean. Bad converter-factory loop + Moshi codegen wasn't wired up; details in issue #113. |
 | 10 | Dependency-analysis (`buildHealth` gate) | Done (#110) |
 | 11 | Moshi → kotlinx.serialization (drop runtime reflection) | Done (#117) — single serialization library across nav routes (Phase 9c) and HTTP (Phase 11). Released as **v3.0.2-INTERNAL**, verified clean. |
-| 12 | Persistent APOD + Coil disk cache | In progress — issue #116, branch `feat/persistent-apod-cache`. Addresses the cold-start image latency users have flagged on every v3.x verification. |
+| 12 | Persistent APOD + Coil disk cache | **Up next** — issue #116. Addresses the cold-start image latency users have flagged on every v3.x verification. |
 | — | **Module split** lands with feature #2, not as a phase | — |
 
 Tick the table when phases land. Each phase below lists scope, rationale, and
@@ -45,12 +45,11 @@ state at the close of the v3.0.2 release cycle.
   - `v3.0.2-INTERNAL` — Phase 11 (#117). Replaced Moshi with
     kotlinx.serialization end-to-end. Single serialization library across
     nav routes and network. Reflection-free runtime. Verified clean.
-- **In progress**: Phase 12 — persistent APOD cache (issue #116, branch
-  `feat/persistent-apod-cache`). Room entity + DAO + DB migration 1→2 +
-  Repository Flow getter + ViewModel sources `imageOfTheDay` from the DB
-  instead of the one-shot network call. Bumps version-of-record to
-  `v3.0.3-INTERNAL`. Tag held for device smoke (force-stop-and-relaunch
-  to confirm the cached image paints before the asteroid list).
+- **Next pickup**: issue #116 — persistent APOD cache + Coil disk cache.
+  Pre-emptively shows yesterday's image instantly while today's loads in
+  parallel; addresses a cold-start latency users have flagged on every
+  v3.x verification. Self-contained (Room entity + DAO + Repository +
+  ViewModel), Phase-9c-Detail-sized.
 - **Backlog**: issue #112 (NDK debug symbols, build-only fix to silence a
   Play Console warning — five lines under `buildTypes.release { ndk { … } }`).
 
@@ -452,23 +451,14 @@ Forced by the v3.0.0 release-only crash (issue #113 / #114): Moshi's reflection 
 
 ## Phase 12 — Persistent APOD + Coil disk cache
 
-Goal: kill the cold-start APOD-image latency that users have flagged on every v3.x verification. Two serial network round-trips (APOD endpoint → URL, then URL → image bytes) make the APOD visibly later than the asteroid list. Tracked in issue #116. Bumps to `v3.0.3-INTERNAL` (patch — internal refactor with a UX win, no new screen/filter/data-source).
+Goal: kill the cold-start APOD-image latency that users have flagged on every v3.x verification. Two serial network round-trips (APOD endpoint → URL, then URL → image bytes) make the APOD visibly later than the asteroid list. Tracked in issue #116.
 
-- **Room**: new `picture_of_day` table (one row, replace-on-conflict) via `DatabasePictureOfDay` + `PICTURE_OF_DAY_ROW_ID = 0`. DB version 1 → 2 with `MIGRATION_1_2` (additive — `asteroid_database` untouched).
-- **DAO**: `PictureOfDayDao.getPictureOfDay(): Flow<DatabasePictureOfDay?>` (single-row `WHERE id = 0`) and a suspend `insertPictureOfDay(...)` with `OnConflictStrategy.REPLACE`.
-- **DI**: `DatabaseModule` adds the `addMigrations(MIGRATION_1_2)` call, provides `PictureOfDayDao`, and threads it into `AsteroidRepository`'s constructor.
-- **Repository**: `getPictureOfDay(): Flow<PictureOfDay?>` reads from the DAO; new `refreshPictureOfDay()` writes the network result via `ImageOfTheDay.asDatabaseModel()`. The old imperative `getImageOfTheDay()` is deleted — Room is now the single source of truth, mirroring the asteroid path.
-- **MainViewModel**: `imageOfTheDay: StateFlow<PictureOfDay?>` is sourced from `repository.getPictureOfDay()` via `stateIn(WhileSubscribed(5_000))`. `init` kicks off `refreshAsteroids()` and `refreshPictureOfDay()` in two independent `viewModelScope.launch` blocks so the round-trips don't queue.
-- **Coil disk cache**: Coil 2's default disk cache (~2% of `cacheDir`) covers same-URL re-requests across cold starts; verified manually via cold-start-twice smoke. No explicit `ImageLoader { diskCache(…) }` configured — the default suffices for one-image-per-day cache pressure.
+- **Room**: add `picture_of_day` table (one row, replace-on-conflict) — `id` (constant 0), `mediaType`, `title`, `url`. Mirrors `network.ImageOfTheDay`.
+- **Repository**: `getPictureOfDay(): Flow<PictureOfDay?>` reads from the new DAO; existing `getImageOfTheDay()` becomes the network-write half (call after the response, persist via `insertPictureOfDay(...)`).
+- **MainViewModel**: `imageOfTheDay: StateFlow<PictureOfDay?>` is sourced from the database, not the one-shot network call. `init` triggers `refreshPictureOfDay()` alongside `refreshAsteroids()`. On launch, the UI gets yesterday's APOD instantly from the cache; today's swaps in via Coil's `crossfade(true)` once the network call returns.
+- **Coil disk cache**: confirm or explicitly configure `ImageLoader { … diskCache(…) … }` so the same URL hits cache on the second cold start of the same day. Coil's default should already cover this; verify with a cold-start-twice smoke test.
 
-### Tests
-
-- JVM: `MainViewModelTest` — `init triggers parallel refresh of asteroids and APOD`, `imageOfTheDay mirrors the cached APOD flow`, `refreshPictureOfDay error path is swallowed`.
-- JVM: `AsteroidRepositoryTest` — `getPictureOfDay maps the cached entity to the domain model`, `getPictureOfDay emits null when nothing is cached`.
-- Instrumented: `PictureOfDayDaoTest` — `getPictureOfDay_emitsNullBeforeFirstInsert`, `getPictureOfDay_returnsRowAfterInsert`, `insertPictureOfDay_replacesExistingRowOnConflict`.
-- Manual smoke: fresh install (one-time slow path), force-stop + relaunch (instant from Room + Coil disk cache), next-day relaunch (yesterday paints instantly, today swaps in via crossfade).
-
-A `MigrationTestHelper` test would require wiring `room.schemaLocation` and committing a baseline schema JSON — out of scope for this PR. The migration is small and additive; the in-memory DAO test exercises the v2 schema.
+Verification on the second cold-start: image renders before the asteroid list. On a fresh install: same as today (one-time slow path).
 
 ## Quality bets to consider (no phase yet)
 

@@ -54,19 +54,15 @@ import org.junit.Test
 class MainViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var repository: AsteroidRepository
-    private lateinit var pictureOfDayFlow: MutableStateFlow<PictureOfDay?>
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         repository = mockk(relaxed = true)
-        pictureOfDayFlow = MutableStateFlow(null)
-        // The init block kicks off both refresh paths; default both to no-op
-        // so each test only stubs what it cares about. getPictureOfDay() is
-        // the cache read the UI subscribes to.
+        // The init block calls both refresh paths; default both to no-op so the
+        // test owner only stubs what they care about.
         coEvery { repository.refreshAsteroids() } returns Unit
-        coEvery { repository.refreshPictureOfDay() } returns Unit
-        every { repository.getPictureOfDay() } returns pictureOfDayFlow
+        coEvery { repository.getImageOfTheDay() } returns SAMPLE_IMAGE
         every { repository.getAsteroidSelection(any()) } returns MutableStateFlow(emptyList())
     }
 
@@ -76,42 +72,24 @@ class MainViewModelTest {
     }
 
     @Test
-    fun `init triggers parallel refresh of asteroids and APOD`() =
+    fun `init refreshes asteroids and fetches the image of the day`() =
         runTest(testDispatcher) {
             val viewModel = MainViewModel(repository)
             advanceUntilIdle()
 
             coVerify(exactly = 1) { repository.refreshAsteroids() }
-            coVerify(exactly = 1) { repository.refreshPictureOfDay() }
-            // Initial value before the cache emits.
-            assertThat(viewModel.imageOfTheDay.value).isNull()
+            coVerify(exactly = 1) { repository.getImageOfTheDay() }
+            assertThat(viewModel.imageOfTheDay.value).isEqualTo(SAMPLE_IMAGE)
         }
 
     @Test
-    fun `imageOfTheDay mirrors the cached APOD flow`() =
+    fun `getImageOfTheDay error path is swallowed and leaves null`() =
         runTest(testDispatcher) {
-            val viewModel = MainViewModel(repository)
-
-            viewModel.imageOfTheDay.test {
-                assertThat(awaitItem()).isNull()
-
-                pictureOfDayFlow.value = SAMPLE_IMAGE
-                advanceUntilIdle()
-                assertThat(awaitItem()).isEqualTo(SAMPLE_IMAGE)
-
-                cancelAndIgnoreRemainingEvents()
-            }
-        }
-
-    @Test
-    fun `refreshPictureOfDay error path is swallowed`() =
-        runTest(testDispatcher) {
-            coEvery { repository.refreshPictureOfDay() } throws RuntimeException("boom")
+            coEvery { repository.getImageOfTheDay() } throws RuntimeException("boom")
 
             val viewModel = MainViewModel(repository)
             advanceUntilIdle()
 
-            // Failure must not propagate; the cache flow is the source of truth.
             assertThat(viewModel.imageOfTheDay.value).isNull()
         }
 

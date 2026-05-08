@@ -30,12 +30,12 @@ package com.tarek.asteroidradar.repository
 
 import com.tarek.asteroidradar.BuildConfig
 import com.tarek.asteroidradar.database.AsteroidDao
-import com.tarek.asteroidradar.database.PictureOfDayDao
 import com.tarek.asteroidradar.database.asDomainModel
 import com.tarek.asteroidradar.domain.Asteroid
 import com.tarek.asteroidradar.domain.PictureOfDay
 import com.tarek.asteroidradar.network.AsteroidApi
 import com.tarek.asteroidradar.network.asDatabaseModel
+import com.tarek.asteroidradar.network.asDomainModel
 import com.tarek.asteroidradar.network.parseAsteroidsJsonResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -47,7 +47,6 @@ import java.time.LocalDate
 
 class AsteroidRepository(
     private val asteroidDao: AsteroidDao,
-    private val pictureOfDayDao: PictureOfDayDao,
 ) {
     sealed class AsteroidsFilter {
         data object TODAY : AsteroidsFilter()
@@ -83,23 +82,12 @@ class AsteroidRepository(
                 }
         }
 
-    // Issue #116: Room is the single source of truth for the APOD too.
-    // The UI subscribes to this Flow, so the cached row paints immediately on
-    // cold start while refreshPictureOfDay() runs in parallel — Coil's disk
-    // cache hits the same URL and the asteroid list no longer beats the
-    // image to first paint.
-    fun getPictureOfDay(): Flow<PictureOfDay?> = pictureOfDayDao.getPictureOfDay().map { it?.asDomainModel() }
-
-    suspend fun refreshPictureOfDay() {
-        withContext(Dispatchers.IO) {
-            try {
-                pictureOfDayDao.insertPictureOfDay(
-                    AsteroidApi.retrofitService.getImageOfDay(API_KEY).asDatabaseModel(),
-                )
-            } catch (e: Exception) {
-                Timber.d("AsteroidRepository: refreshPictureOfDay() failed %s", e.message)
-            }
+    suspend fun getImageOfTheDay(): PictureOfDay {
+        var imageOfTheDay: PictureOfDay
+        withContext(Dispatchers.Main) {
+            imageOfTheDay = AsteroidApi.retrofitService.getImageOfDay(API_KEY).asDomainModel()
         }
+        return imageOfTheDay
     }
 
     suspend fun refreshAsteroids() {

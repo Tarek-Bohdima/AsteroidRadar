@@ -29,7 +29,6 @@
 package com.tarek.asteroidradar.network
 
 import com.tarek.asteroidradar.database.DatabaseAsteroid
-import com.tarek.asteroidradar.database.DatabasePictureOfDay
 import com.tarek.asteroidradar.domain.Asteroid
 import com.tarek.asteroidradar.domain.PictureOfDay
 import kotlinx.serialization.SerialName
@@ -48,13 +47,6 @@ fun ImageOfTheDay.asDomainModel(): PictureOfDay =
         mediaType = this.mediaType,
         title = this.title,
         url = this.url,
-    )
-
-fun ImageOfTheDay.asDatabaseModel(): DatabasePictureOfDay =
-    DatabasePictureOfDay(
-        mediaType = mediaType,
-        title = title,
-        url = url,
     )
 
 fun List<Asteroid>.asDatabaseModel(): Array<DatabaseAsteroid> =
