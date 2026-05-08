@@ -44,7 +44,7 @@ plugins {
 // .github/workflows/release.yml greps these names, so don't rename them.
 val versionMajor = 4
 val versionMinor = 0
-val versionPatch = 0
+val versionPatch = 1
 val versionClassifier = "INTERNAL"
 
 // versionCode formula uses minSdk as a high digit so a future minSdk bump

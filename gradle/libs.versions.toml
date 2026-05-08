@@ -8,21 +8,23 @@ kotlin = "2.3.0"
 # 2.3.4 (Kotlin 2.3.0 baseline) rather than 2.3.7, which is the bleeding edge
 # where Hilt's compatibility hasn't fully caught up.
 ksp = "2.3.4"
-androidxNavigation = "2.8.5"
+androidxNavigation = "2.9.8"
 
-androidxActivity = "1.10.1"
-androidxAppcompat = "1.7.0"
+androidxActivity = "1.13.0"
+androidxAppcompat = "1.7.1"
 # Compose BOM aligns the rest of the androidx.compose.* artifacts (Material 3,
 # UI, tooling). The activity/lifecycle/navigation/hilt-compose deps are
 # published outside the BOM and pin alongside their non-Compose siblings.
+# BOM is intentionally NOT bumped in Phase 13b — Compose surface needs its
+# own validation phase, separate from the AndroidX-core group bump.
 androidxComposeBom = "2025.01.01"
-androidxConstraintlayout = "2.2.0"
+androidxConstraintlayout = "2.2.1"
 # androidx.hilt:* (hilt-work, hilt-compiler) is a separate artifact group from
 # com.google.dagger:hilt-*; KSP-supported since 1.2.0.
-androidxHilt = "1.2.0"
-androidxLifecycle = "2.8.7"
-androidxRoom = "2.8.0"
-androidxWork = "2.10.0"
+androidxHilt = "1.3.0"
+androidxLifecycle = "2.10.0"
+androidxRoom = "2.8.4"
+androidxWork = "2.11.2"
 
 # Coroutines core + android unified on a single ref. Bumped to the
 # Kotlin-2.3-compatible release in Phase 13a alongside the Kotlin / KSP / AGP
