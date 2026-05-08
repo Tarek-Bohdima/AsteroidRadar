@@ -22,7 +22,12 @@ shippable; pick them off in order — each one stacks on the last.
 | — | v3.0.0-INTERNAL release-only crash | Hotfix #114 → **v3.0.1-INTERNAL** verified clean. Bad converter-factory loop + Moshi codegen wasn't wired up; details in issue #113. |
 | 10 | Dependency-analysis (`buildHealth` gate) | Done (#110) |
 | 11 | Moshi → kotlinx.serialization (drop runtime reflection) | Done (#117) — single serialization library across nav routes (Phase 9c) and HTTP (Phase 11). Released as **v3.0.2-INTERNAL**, verified clean. |
-| 12 | Persistent APOD + Coil disk cache | In progress — issue #116, branch `feat/persistent-apod-cache`. Addresses the cold-start image latency users have flagged on every v3.x verification. |
+| 12 | Persistent APOD + Coil disk cache | Done (#119) — Room-backed APOD with parallel refresh. Rides `v3.0.3-INTERNAL` together with #122 + #124. |
+| — | DI cleanup — kill `AsteroidApi` service-locator | Done (#122) — Retrofit service constructor-injected via Hilt; closes the last manual provider. Rides `v3.0.3-INTERNAL`. |
+| — | NDK debug symbols in release AAB | Done (#124) — closes issue #112 (Play Console "missing debug symbols" warning). Rides `v3.0.3-INTERNAL`. |
+| — | APOD video-day handling | Done (#125) — Coil `VideoFrameDecoder` for `video/*` APOD entries + video-card fallback. Bumps to **`v3.0.4-INTERNAL`**. |
+| 13 | Coordinated AGP + Kotlin + AndroidX bump (drop kapt) | Queued — issue #78 (rewritten). Rolls up the three failed Dependabot PRs (#72 / #73 / #74) into one coherent jump. Bumps to **`v4.0.0-INTERNAL`** (Kotlin major). |
+| 14 | Baseline profiles + macrobenchmark | Queued — graduated from "Quality bets". Compounds with Phase 12's cold-start work and Phase 5's Hilt graph. |
 | — | **Module split** lands with feature #2, not as a phase | — |
 
 Tick the table when phases land. Each phase below lists scope, rationale, and
@@ -31,28 +36,104 @@ the rough size; sub-bullets are the concrete deltas.
 ## Current shipping state
 
 Snapshot for whoever opens this repo next (likely future-you). Reflects the
-state at the close of the v3.0.2 release cycle.
+state at 2026-05-08, after the v3.0.3 + v3.0.4 stack landed on `master` and
+ahead of Phase 13.
 
-- **Live on Play Internal**: `v3.0.2-INTERNAL` — verified on Pixel 7 Pro
-  (clean install through Play Store update), 2026-05-07. Both endpoints
-  (NeoWs feed + APOD) load; rotation, navigation, filters all work.
-- **v3.x release timeline**:
+- **Live on Play Internal**: `v3.0.2-INTERNAL` — last *verified* build,
+  Pixel 7 Pro clean install, 2026-05-07. Both endpoints load; rotation,
+  navigation, filters all work.
+- **Version-of-record on `master`**: `v3.0.4-INTERNAL`. Two stacked
+  unverified increments sit in the build script awaiting a single device
+  smoke + tag pair:
+  - `v3.0.3-INTERNAL` (queued) — Phase 12 (#119, persistent APOD cache),
+    DI cleanup (#122, kills the `AsteroidApi` service-locator) and NDK
+    debug symbols (#124, closes #112).
+  - `v3.0.4-INTERNAL` (queued) — APOD video-day handling (#125): Coil
+    `VideoFrameDecoder` + a video-card fallback when the day's APOD is a
+    video instead of an image. Rides on top of v3.0.3.
+- **v3.x release timeline** (chronological):
   - `v3.0.0-INTERNAL` — Phase 9c Compose rewrite. **Broken on real devices**
-    via release-only converter-factory regression. Never roll this back to.
-  - `v3.0.1-INTERNAL` — hotfix (#114). Fixed a non-local-return loop bug
-    in the custom Retrofit factory + wired up `moshi-kotlin-codegen`.
-    Verified clean.
+    via release-only converter-factory regression. Never roll back to.
+  - `v3.0.1-INTERNAL` — hotfix (#114). Non-local-return loop bug in the
+    custom Retrofit factory + wired up `moshi-kotlin-codegen`. Verified.
   - `v3.0.2-INTERNAL` — Phase 11 (#117). Replaced Moshi with
-    kotlinx.serialization end-to-end. Single serialization library across
-    nav routes and network. Reflection-free runtime. Verified clean.
-- **In progress**: Phase 12 — persistent APOD cache (issue #116, branch
-  `feat/persistent-apod-cache`). Room entity + DAO + DB migration 1→2 +
-  Repository Flow getter + ViewModel sources `imageOfTheDay` from the DB
-  instead of the one-shot network call. Bumps version-of-record to
-  `v3.0.3-INTERNAL`. Tag held for device smoke (force-stop-and-relaunch
-  to confirm the cached image paints before the asteroid list).
-- **Backlog**: issue #112 (NDK debug symbols, build-only fix to silence a
-  Play Console warning — five lines under `buildTypes.release { ndk { … } }`).
+    kotlinx.serialization end-to-end. Reflection-free runtime. Verified.
+  - `v3.0.3-INTERNAL` *(queued)* — Phase 12 + DI cleanup + NDK symbols.
+    Tag held for force-stop-and-relaunch smoke.
+  - `v3.0.4-INTERNAL` *(queued)* — APOD video-day handling.
+- **Next pickup**: Phase 13 — coordinated AGP + Kotlin + AndroidX bump and
+  drop the kapt build step (issue #78, rewritten). Bumps to
+  `v4.0.0-INTERNAL`.
+
+## Retrospective — v3.x cycle (Phases 9–12, plus the v3.0.0 incident)
+
+A snapshot of what the v3.x cycle taught us, captured here so Phase 13
+inherits the lessons rather than re-learning them.
+
+### What went well — keep doing
+
+- **One scope per PR.** Phase 9 splitting into 9a/9b/9c, Phase 7 into
+  a/b/c, Phase 12 standing alone — each PR was small enough to review in
+  one sitting. Sub-PR sequencing held up under stress (the Phase 5 Hilt
+  three-parter shipped cleanly).
+- **Issues-first discipline.** Every non-trivial change opened an issue
+  before the PR. The acceptance criteria + test-name format paid off: PRs
+  arrived self-documenting and reviewers had concrete things to check.
+- **Closing the category, not the symptom.** v3.0.0's release-only crash
+  was hot-fixed in #114 by adding `moshi-kotlin-codegen` (band-aid). Phase
+  11 then *deleted Moshi entirely*, removing the whole class of "reflection
+  vs R8" failure. Durability beat speed. Apply the same instinct to Phase
+  13 — fix the kapt root cause, don't keep the workaround alive.
+- **Convention plugin paid off late.** Phase 2's `build-logic/` felt
+  premature for a single-module app, but Phase 9 (Compose) and Phase 5
+  (Hilt) plugged in as one-line plugin applications. Architecture
+  investments compound.
+- **DAGP (Phase 10) caught 8 unused deps in one shot.** Cheap gate, high
+  signal — keep it green; don't baseline failures unless the cost of fixing
+  in-place is genuinely prohibitive.
+- **Memory + IMPROVEMENT_PLAN.md as a handoff system.** Multi-session
+  continuity worked. The "Current shipping state" section is the
+  load-bearing handoff — keep it terse, keep it current.
+
+### What didn't go well — change
+
+- **Debug-only smoke shipped a broken release.** `v3.0.0-INTERNAL` passed
+  every check except the one that mattered: `assembleRelease + install`
+  on a real device. Cost: a hotfix cycle. Fix: pre-tag protocol now
+  requires a release-build install, not `installDebug`.
+- **Doc and code drifted.** Phase 9c's documented deletion list said
+  `kotlin-kapt` would be dropped. It wasn't — the JavaPoet leak forced it
+  back for Hilt's compiler. The doc claimed "Done"; reality required a
+  workaround. Lesson: a "Done" tick is necessary but not sufficient — every
+  third phase, audit the doc against `git grep` reality.
+- **Coordinated bumps were wasted as Dependabot PRs.** Three failed
+  attempts (#72/#73/#74) before anyone realized they had to land
+  together. Dependabot is great for isolated bumps and useless for
+  mutually-blocking ones. Phase 13 reframes this as a single planned phase.
+- **"Quality bets" parking lot grew stale.** Baseline profiles sat there
+  through two release cycles. Lesson: cap the parking lot at 3 entries;
+  promote/cull at every phase close.
+- **Issue bodies decay.** #78 was written ~6 months ago against
+  `v2.0.0-INTERNAL` and a Data-Binding-still-uses-kapt premise. Both are
+  now obsolete. Lesson: rewrite, don't patch, when the rationale moves.
+
+### Going forward — operating principles
+
+These are the rules of engagement for Phase 13 and beyond.
+
+1. **Pre-tag protocol**: `./gradlew assembleRelease` + `adb install` on a
+   real device before pushing any `v*` tag. Debug builds do not count.
+2. **Doc-drift audit at every phase close**: spot-check the deletion list
+   in the just-closed phase against `git grep` to confirm reality matches
+   the doc. Note discrepancies in the next phase's section.
+3. **Coordinated bumps get a phase, not a PR.** Mutually-blocking
+   toolchain moves (AGP + Kotlin + AndroidX) ride one issue with one
+   sub-PR sequence. Dependabot is held off the cluster until the phase
+   closes.
+4. **Close the category, not the symptom.** When a fix is a workaround,
+   write the follow-up issue at the same time as the band-aid PR.
+5. **Quality bets parking lot is capped at 3.** New entries displace old
+   ones; promotion to a phase or removal happens at every phase close.
 
 ## Watchpoints for future sessions
 
@@ -194,10 +275,14 @@ ready to publish a build.
   onto `fragment_main.xml` since Coil composes scaling on the view, not the
   request. Dropped a Picasso-only `NotificationPermission` lint-baseline
   entry.
-- **Drop `kotlin-kapt` plugin application — deferred.** AGP 8.3.0's Data
-  Binding compiler still discovers `@BindingAdapter` methods via kapt. Will
-  drop when we're on AGP 8.6+ (Data Binding moves to KSP); rolls into the
-  AGP-9 / Phase-6 vicinity rather than belonging here.
+- **Drop `kotlin-kapt` plugin application — deferred (and re-deferred).**
+  Originally deferred from Phase 4 because Data Binding's `@BindingAdapter`
+  compiler ran through kapt. Phase 9c then removed Data Binding entirely —
+  but kapt was *re-applied* for Hilt's compiler to dodge a JavaPoet 1.10
+  `ClassName.canonicalName()` `NoSuchMethodError` raised by
+  `hiltAggregateDeps*`. The current home for the kapt removal is **Phase 13**,
+  which bumps Hilt + AGP + Kotlin together and validates that the JavaPoet
+  leak is fixed before deleting the workaround.
 
 **Open Phase 4 follow-up — manual device smoke.** Before tagging
 `v2.0.0-INTERNAL`, install the debug APK on a device and exercise the four
@@ -403,6 +488,13 @@ ship the smaller surface (Detail) without disrupting Main. Branch naming:
   `androidx-navigation-fragment-ktx`, `androidx-navigation-ui-ktx`, the
   safe-args Gradle plugin entry. Regenerate lint baseline once.
 
+  **Reality-check (post-merge).** The deletion list above is what Phase 9c
+  *intended* to delete. `kotlin-kapt` was re-applied during the same PR for
+  Hilt's compiler to work around a JavaPoet 1.10 `ClassName.canonicalName()`
+  `NoSuchMethodError` from `hiltAggregateDeps*`. The convention plugin sets
+  `enableAggregatingTask = false` to fall back to per-module annotation
+  processing. Phase 13 closes this out properly.
+
 ### Things to watch during Phase 9
 
 - **Coil 2 vs Coil 3.** Phase 4 landed Coil 2.7.0. If a BOM bump pulls Coil
@@ -470,14 +562,112 @@ Goal: kill the cold-start APOD-image latency that users have flagged on every v3
 
 A `MigrationTestHelper` test would require wiring `room.schemaLocation` and committing a baseline schema JSON — out of scope for this PR. The migration is small and additive; the in-memory DAO test exercises the v2 schema.
 
-## Quality bets to consider (no phase yet)
+## Phase 13 — Coordinated AGP + Kotlin + AndroidX bump (drop kapt)
 
-- **Baseline profiles + a macrobenchmark module** for cold-start
-  performance. Worthwhile after Phase 5 / Hilt landed (DI graph affects
-  startup); compounds nicely with Phase 12.
+Goal: catch the toolchain back up to a supported track in one coherent jump,
+and finally delete the kapt workaround that's been carried since Phase 9c.
+Tracked in issue #78 (rewritten 2026-05-08; the original body was written
+against a `v2.0.0-INTERNAL` premise and a Data-Binding rationale that Phase
+9c made obsolete). Bumps version-of-record to `v4.0.0-INTERNAL` (Kotlin major
+under the SemVer table in `CLAUDE.md`).
+
+This phase exists because three Dependabot PRs (#72 / #73 / #74) closed
+unmerged: each bump blocked on one of the others. Treating it as a phase
+rather than three parallel PRs is one of the operating principles from the
+v3.x retrospective above.
+
+### Sub-PR breakdown
+
+Branches `feat/phase-13a-…` etc.:
+
+- **13a — Tooling (`feat/phase-13a-toolchain`).** AGP `8.7.3` → `8.13.2`,
+  Kotlin `2.0.21` → `2.3.21`, KSP to the matching `2.3.21-1.0.x` line, and
+  `kotlinx-coroutines` to a Kotlin-2.3-compatible release. Compose Compiler
+  plugin auto-tracks Kotlin since 2.0 — no separate pin to bump. Wrapper is
+  already `8.13` from a prior bump. Smallest coherent unit; no behavior
+  change beyond what the toolchain itself dictates.
+- **13b — AndroidX group (`feat/phase-13b-androidx`).** `lifecycle 2.8.7` →
+  latest `2.10.x`; `navigation 2.8.5` → latest `2.9.x` (incl. safe-args
+  plugin entry, even though we no longer apply it post-9c — the catalog
+  still pins it as a Compose Nav alignment marker); `room 2.8.0` → latest
+  `2.8.4+`; `work 2.10.0` → latest `2.11.x`. Other AndroidX libs to the
+  current stable matching the above.
+- **13c — Drop kapt (`feat/phase-13c-drop-kapt`).** Remove the
+  `kotlin-kapt` plugin id from `gradle/libs.versions.toml`. Replace
+  `kapt(libs.hilt.compiler)` with `ksp(libs.hilt.compiler)` in
+  `app/build.gradle.kts` and confirm only one Hilt-compiler wiring remains
+  (the convention plugin already declares it). Delete the
+  `configure<HiltExtension> { enableAggregatingTask = false }` override in
+  `build-logic/convention/src/main/kotlin/asteroidradar.android.hilt.gradle.kts`
+  — the JavaPoet `NoSuchMethodError` should be fixed in the bumped Hilt + AGP
+  combo. Verify on a release build, not just debug.
+
+### Things to watch during Phase 13
+
+- **Release-only regression risk.** This is the v3.0.0 lesson incarnate.
+  Run `./gradlew assembleRelease` + `adb install` on a real device before
+  tagging. Debug builds do not exercise R8 + the bumped metadata path.
+- **Hilt + KSP NoSuchMethodError validation gate.** 13c only ships once a
+  release build proves `enableAggregatingTask = true` no longer raises the
+  JavaPoet error. If it does, 13c reverts to keeping the override (and the
+  kapt fallback) and a follow-up issue captures the residual blocker.
+- **R8 fallback option.** Per the long-standing watchpoint, if a *third*
+  R8-only bug surfaces on this bump, dropping `isMinifyEnabled = true` is
+  on the table. Phase 11 made this less likely, but the option stays.
+- **Lint baseline regen** likely needed once after 13a or 13b. Commit the
+  regen separately from the bump itself so the diff is reviewable.
+- **Stale `safeargs` catalog entry.** Even though 9c removed safe-args from
+  the build, the catalog still lists the Gradle plugin pin. Treat it as
+  bookkeeping in 13b — keep in sync with the Navigation version, but it
+  remains unapplied.
+
+## Phase 14 — Baseline profiles + macrobenchmark
+
+Goal: measurable cold-start performance, not "feels fast in dev." Graduated
+from the "Quality bets" parking lot — sat there through two release cycles
+and is now timely (Phase 5 added the Hilt DI graph at startup, Phase 12
+added the Room read for the cached APOD; both affect cold-start budget).
+
+- New `:benchmark` module (the project's first second-module) with the
+  AndroidX Macrobenchmark library. Compiles to a separate AAB so the
+  benchmark instrumentation never ships to users.
+- `StartupBenchmark` measuring cold-start time-to-first-frame across N
+  iterations. Captures TraceData for offline review.
+- `BaselineProfileGenerator` driving the four golden-path flows
+  (NeoWs feed loads, APOD renders, navigate-to-detail, force-stop +
+  relaunch from cache). Output `baseline-prof.txt` checked in under
+  `app/src/main/`; AGP 8.x bundles it into the AAB automatically.
+- CI: a separate workflow runs the macrobenchmark on a managed Gradle
+  device (AGP's built-in AVD provisioning) and uploads the trace as an
+  artifact. *Not* gating; perf signal is informational until we have a
+  baseline to ratchet against.
+- **Out of scope**: Macrobenchmark for non-startup flows, Firebase Test
+  Lab integration, perf regression budgets in CI. Those land if the
+  baseline profile shows real cold-start headroom worth defending.
+
+### Why now
+
+- Phase 5 graph + Phase 12 Room read together push the cold-start budget
+  far enough that "feels fast" doesn't cut it anymore.
+- Compose adoption (Phase 9) is exactly the surface baseline profiles were
+  designed for — the AOT-compiled Compose Compose runtime hot path is a
+  significant cold-start win.
+- Cheap to write, expensive to retrofit later. If we're going to do it,
+  doing it before adding a second feature (where the macrobenchmark module
+  pattern locks in) is the right time.
+
+## Quality bets to consider (capped at 3)
+
+Capped per the v3.x retrospective. Promote to a phase or cull at every
+phase close.
+
 - **Gradle build scans** if a Develocity instance becomes available.
-- **Jacoco merge** — alternative coverage backend if Kover blocks on a Kotlin
-  bump.
+- **Jacoco merge** — alternative coverage backend if Kover blocks on a
+  future Kotlin bump.
+- **Phase 11b** — migrate `parseAsteroidsJsonResult` (the
+  `org.json.JSONObject`-based NeoWs parser) onto a
+  kotlinx.serialization `JsonTransformingSerializer`. Doable, small
+  surface, low priority.
 
 ## How to use this document
 
