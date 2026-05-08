@@ -26,7 +26,9 @@ shippable; pick them off in order — each one stacks on the last.
 | — | DI cleanup — kill `AsteroidApi` service-locator | Done (#122) — Retrofit service constructor-injected via Hilt; closes the last manual provider. Rides `v3.0.3-INTERNAL`. |
 | — | NDK debug symbols in release AAB | Done (#124) — closes issue #112 (Play Console "missing debug symbols" warning). Rides `v3.0.3-INTERNAL`. |
 | — | APOD video-day handling | Done (#125) — Coil `VideoFrameDecoder` for `video/*` APOD entries + video-card fallback. Bumps to **`v3.0.4-INTERNAL`**. |
-| 13 | Coordinated AGP + Kotlin + AndroidX bump (drop kapt) | Queued — issue #78 (rewritten). Rolls up the three failed Dependabot PRs (#72 / #73 / #74) into one coherent jump. Bumps to **`v4.0.0-INTERNAL`** (Kotlin major). |
+| 13a | Toolchain bump aligned to NIA (AGP 9 + Kotlin 2.3 + Hilt 2.59, drop kapt) | Done (#127) — folded 13c's kapt removal in via NIA's `ksp(kotlin-metadata)` pattern. Bumps to **`v4.0.0-INTERNAL`**. |
+| 13b | AndroidX group bump | Queued — last remaining sub-PR for issue #78. lifecycle 2.10.x, navigation 2.9.x, room 2.8.4+, work 2.11.x. |
+| 13c | Drop kapt for Hilt | Collapsed into 13a — the toolchain bump forced it (Hilt's metadata library version cap surfaced under Kotlin 2.3, and NIA's pattern was the documented fix). |
 | 14 | Baseline profiles + macrobenchmark | Queued — graduated from "Quality bets". Compounds with Phase 12's cold-start work and Phase 5's Hilt graph. |
 | — | **Module split** lands with feature #2, not as a phase | — |
 
@@ -36,34 +38,37 @@ the rough size; sub-bullets are the concrete deltas.
 ## Current shipping state
 
 Snapshot for whoever opens this repo next (likely future-you). Reflects the
-state at 2026-05-08, after the v3.0.3 + v3.0.4 stack landed on `master` and
-ahead of Phase 13.
+state at 2026-05-08, after Phase 13a (#127) merged and `v4.0.0-INTERNAL`
+got tagged.
 
-- **Live on Play Internal**: `v3.0.2-INTERNAL` — last *verified* build,
-  Pixel 7 Pro clean install, 2026-05-07. Both endpoints load; rotation,
-  navigation, filters all work.
-- **Version-of-record on `master`**: `v3.0.4-INTERNAL`. Two stacked
-  unverified increments sit in the build script awaiting a single device
-  smoke + tag pair:
-  - `v3.0.3-INTERNAL` (queued) — Phase 12 (#119, persistent APOD cache),
-    DI cleanup (#122, kills the `AsteroidApi` service-locator) and NDK
-    debug symbols (#124, closes #112).
-  - `v3.0.4-INTERNAL` (queued) — APOD video-day handling (#125): Coil
-    `VideoFrameDecoder` + a video-card fallback when the day's APOD is a
-    video instead of an image. Rides on top of v3.0.3.
-- **v3.x release timeline** (chronological):
+- **Live on Play Internal**: `v3.0.4-INTERNAL` — bundles Phase 12 + DI
+  cleanup + NDK symbols + APOD video-day handling. User confirmed it
+  behaves correctly on a Pixel 7 Pro 2026-05-08.
+- **Version-of-record on `master`**: `v4.0.0-INTERNAL` — Phase 13a's
+  toolchain bump. Tag pushed 2026-05-08 *without* device smoke per user
+  direction (build was already validated end-to-end through every CI
+  gate including `assembleRelease` + R8 + minify; smoke was waived as a
+  one-off, second precedent after `v3.0.3-INTERNAL`). The pre-tag protocol
+  in the operating principles below stays in force as the default.
+- **v3.x → v4.0 release timeline** (chronological):
   - `v3.0.0-INTERNAL` — Phase 9c Compose rewrite. **Broken on real devices**
     via release-only converter-factory regression. Never roll back to.
   - `v3.0.1-INTERNAL` — hotfix (#114). Non-local-return loop bug in the
     custom Retrofit factory + wired up `moshi-kotlin-codegen`. Verified.
   - `v3.0.2-INTERNAL` — Phase 11 (#117). Replaced Moshi with
     kotlinx.serialization end-to-end. Reflection-free runtime. Verified.
-  - `v3.0.3-INTERNAL` *(queued)* — Phase 12 + DI cleanup + NDK symbols.
-    Tag held for force-stop-and-relaunch smoke.
-  - `v3.0.4-INTERNAL` *(queued)* — APOD video-day handling.
-- **Next pickup**: Phase 13 — coordinated AGP + Kotlin + AndroidX bump and
-  drop the kapt build step (issue #78, rewritten). Bumps to
-  `v4.0.0-INTERNAL`.
+  - `v3.0.3-INTERNAL` — Phase 12 (#119) + DI cleanup (#122) + NDK
+    symbols (#124). Tagged 2026-05-08 *retroactively* (workflow run
+    `25571009314`); smoke skipped because v3.0.4 already covered the
+    underlying changes on-device.
+  - `v3.0.4-INTERNAL` — APOD video-day handling (#125). Live on Play
+    Internal, on user's phone 2026-05-08.
+  - `v4.0.0-INTERNAL` — Phase 13a (#127). AGP 9 + Kotlin 2.3 + Hilt 2.59
+    + KSP-driven Hilt + drop kapt. Tagged without device smoke (one-off
+    skip; pre-tag protocol stays default).
+- **Next pickup**: Phase 13b — AndroidX group bump (last remaining sub-PR
+  for issue #78). lifecycle 2.10.x, navigation 2.9.x, room 2.8.4+,
+  work 2.11.x. Patch bump (no breaking surface vs `v4.0.0-INTERNAL`).
 
 ## Retrospective — v3.x cycle (Phases 9–12, plus the v3.0.0 incident)
 
@@ -123,6 +128,8 @@ These are the rules of engagement for Phase 13 and beyond.
 
 1. **Pre-tag protocol**: `./gradlew assembleRelease` + `adb install` on a
    real device before pushing any `v*` tag. Debug builds do not count.
+   *Skip-the-smoke decisions are explicitly one-offs and are recorded in
+   the release timeline (see `v3.0.3-INTERNAL` and `v4.0.0-INTERNAL`).*
 2. **Doc-drift audit at every phase close**: spot-check the deletion list
    in the just-closed phase against `git grep` to confirm reality matches
    the doc. Note discrepancies in the next phase's section.
@@ -134,6 +141,16 @@ These are the rules of engagement for Phase 13 and beyond.
    write the follow-up issue at the same time as the band-aid PR.
 5. **Quality bets parking lot is capped at 3.** New entries displace old
    ones; promotion to a phase or removal happens at every phase close.
+6. **Consult Google's reference sample before negotiating scope** — for
+   toolchain bumps and unfamiliar Gradle/AGP/Kotlin/Hilt errors, fetch
+   the relevant files from
+   [Now in Android](https://github.com/android/nowinandroid)
+   (`gradle/libs.versions.toml` + the matching
+   `build-logic/convention/src/main/kotlin/<...>ConventionPlugin.kt`)
+   *before* proposing a narrowed scope. Phase 13a learned this the hard
+   way: a working-but-suboptimal Kotlin-2.2-with-kapt landing was
+   replaced by NIA's Kotlin-2.3-with-`ksp(kotlin-metadata)` pattern in a
+   single redirect, folding 13c into 13a.
 
 ## Watchpoints for future sessions
 
@@ -576,50 +593,86 @@ unmerged: each bump blocked on one of the others. Treating it as a phase
 rather than three parallel PRs is one of the operating principles from the
 v3.x retrospective above.
 
-### Sub-PR breakdown
+### Sub-PR breakdown (post-13a-merge reality)
 
-Branches `feat/phase-13a-…` etc.:
+- **13a — Toolchain bump aligned to NIA (`feat/phase-13a-toolchain`,
+  PR #127).** **Done.** Originally scoped as just AGP + Kotlin + KSP +
+  coroutines. The session that landed it expanded scope to also (a) bump
+  Gradle wrapper 8.13 → 9.5.0 (embedded Kotlin 2.3.20 was needed to read
+  Kotlin 2.3 plugin metadata), (b) bump AGP all the way to 9.0.0 (NIA's
+  pin; AGP 9 has built-in Kotlin support so the `kotlin.android` plugin
+  was removed), (c) bump Hilt 2.52 → 2.59.2 (Palantir javapoet fork
+  resolves the JavaPoet 1.10 leak), (d) wire Hilt's compiler through KSP
+  with an explicit `ksp(libs.kotlin.metadata)` pin per
+  [Now in Android's HiltConventionPlugin](https://github.com/android/nowinandroid/blob/main/build-logic/convention/src/main/kotlin/HiltConventionPlugin.kt)
+  pattern, (e) bump DAGP 2.6.1 → 2.18.0 with a buildscript-classpath
+  `kotlin-metadata-jvm` constraint (DAGP's `ExplodeJarTask` reads the
+  same metadata), (f) drop deprecated `android.enableJetifier=true` and
+  the now-default `android.nonTransitiveRClass=false`. Net effect: 13c's
+  scope folded in here. Bumped to `v4.0.0-INTERNAL`.
+- **13b — AndroidX group (`feat/phase-13b-androidx`).** Queued. Last
+  remaining sub-PR for issue #78. `lifecycle 2.8.7` → `2.10.x`,
+  `navigation 2.8.5` → `2.9.x` (incl. the safe-args plugin entry, kept
+  in the catalog as a Nav alignment marker even though it's not
+  applied), `room 2.8.0` → `2.8.4+`, `work 2.10.0` → `2.11.x`. Other
+  AndroidX libs to current stable matching the above. Patch bump on
+  `v4.0.0-INTERNAL` — no breaking surface introduced beyond what 13a
+  already shipped.
+- **13c — Drop kapt.** **Collapsed into 13a.** Originally scoped as a
+  follow-up that would only ship if a release build proved Hilt's
+  `enableAggregatingTask = true` no longer raised the JavaPoet error.
+  Reality: under Kotlin 2.3, Hilt's bundled `kotlin-metadata-jvm`
+  rejected 2.3-emitted bytecode (`Provided Metadata instance has version
+  2.3.0, while maximum supported version is 2.2.0`). NIA's documented
+  fix — drop kapt, use `ksp(hilt-compiler) + ksp(kotlin-metadata)` —
+  was the only way through. So 13a did 13c's work too, and the kapt
+  workaround disappeared in the same PR that introduced its motivation.
 
-- **13a — Tooling (`feat/phase-13a-toolchain`).** AGP `8.7.3` → `8.13.2`,
-  Kotlin `2.0.21` → `2.3.21`, KSP to the matching `2.3.21-1.0.x` line, and
-  `kotlinx-coroutines` to a Kotlin-2.3-compatible release. Compose Compiler
-  plugin auto-tracks Kotlin since 2.0 — no separate pin to bump. Wrapper is
-  already `8.13` from a prior bump. Smallest coherent unit; no behavior
-  change beyond what the toolchain itself dictates.
-- **13b — AndroidX group (`feat/phase-13b-androidx`).** `lifecycle 2.8.7` →
-  latest `2.10.x`; `navigation 2.8.5` → latest `2.9.x` (incl. safe-args
-  plugin entry, even though we no longer apply it post-9c — the catalog
-  still pins it as a Compose Nav alignment marker); `room 2.8.0` → latest
-  `2.8.4+`; `work 2.10.0` → latest `2.11.x`. Other AndroidX libs to the
-  current stable matching the above.
-- **13c — Drop kapt (`feat/phase-13c-drop-kapt`).** Remove the
-  `kotlin-kapt` plugin id from `gradle/libs.versions.toml`. Replace
-  `kapt(libs.hilt.compiler)` with `ksp(libs.hilt.compiler)` in
-  `app/build.gradle.kts` and confirm only one Hilt-compiler wiring remains
-  (the convention plugin already declares it). Delete the
-  `configure<HiltExtension> { enableAggregatingTask = false }` override in
-  `build-logic/convention/src/main/kotlin/asteroidradar.android.hilt.gradle.kts`
-  — the JavaPoet `NoSuchMethodError` should be fixed in the bumped Hilt + AGP
-  combo. Verify on a release build, not just debug.
+### Things we hit during 13a (kept here so 13b doesn't relearn them)
 
-### Things to watch during Phase 13
+- **Embedded Kotlin in Gradle 8.x can't read Kotlin 2.3 plugin metadata.**
+  The build-logic module's `kotlin-dsl` uses Gradle's *embedded* Kotlin
+  compiler (locked to 2.0.21 in Gradle 8.13). Bumping Kotlin to 2.3
+  required Gradle 9.5.0 (embedded Kotlin 2.3.20). The wrapper bump is
+  not optional — `kotlin-dsl` precompiled scripts can't be opted out of
+  embedded-Kotlin compilation in a one-line override.
+- **AGP 9.0 has built-in Kotlin support.** The `org.jetbrains.kotlin.android`
+  plugin must be removed (applying it errors out with a "no longer
+  required" message). Removed at root `apply false` *and* in the
+  `asteroidradar.android.application` convention plugin's `plugins {}` block.
+- **kapt is gone — but the kotlin-metadata pin is doing the same work.**
+  The Hilt processor needs to read Kotlin metadata from the project's
+  bytecode. Hilt's bundled `kotlin-metadata-jvm` is a minor or two behind
+  Kotlin's release cycle. The `ksp(libs.kotlin.metadata)` declaration
+  in the Hilt convention plugin overrides it on the KSP processor
+  classpath; without it, switching kapt → KSP would just relocate the
+  failure rather than fix it. Same trick is needed for DAGP via the root
+  `buildscript { dependencies { classpath(libs.kotlin.metadata) } }`.
+- **dagger#3965 (Hilt + KSP classloader split)** was a red herring on
+  Hilt 2.52 + Gradle 9.x. Bumping Hilt to 2.59.2 made the error vanish
+  entirely. Investigation cost ~30 minutes; the lesson is to always
+  match Hilt's pin to NIA's before debugging plugin-classloader symptoms.
+- **DAGP officially supports up to AGP 8.7** (per its own warning).
+  DAGP 2.18.0 actually works on AGP 9.0, but it produces a "Proceed at
+  your own risk" message. Watch for off-by-one severity on transitive
+  dep flagging; if a DAGP miscall surfaces, the fallback is to disable
+  the `buildHealth` gate temporarily until DAGP catches up.
 
-- **Release-only regression risk.** This is the v3.0.0 lesson incarnate.
-  Run `./gradlew assembleRelease` + `adb install` on a real device before
-  tagging. Debug builds do not exercise R8 + the bumped metadata path.
-- **Hilt + KSP NoSuchMethodError validation gate.** 13c only ships once a
-  release build proves `enableAggregatingTask = true` no longer raises the
-  JavaPoet error. If it does, 13c reverts to keeping the override (and the
-  kapt fallback) and a follow-up issue captures the residual blocker.
-- **R8 fallback option.** Per the long-standing watchpoint, if a *third*
-  R8-only bug surfaces on this bump, dropping `isMinifyEnabled = true` is
-  on the table. Phase 11 made this less likely, but the option stays.
-- **Lint baseline regen** likely needed once after 13a or 13b. Commit the
-  regen separately from the bump itself so the diff is reviewable.
-- **Stale `safeargs` catalog entry.** Even though 9c removed safe-args from
-  the build, the catalog still lists the Gradle plugin pin. Treat it as
-  bookkeeping in 13b — keep in sync with the Navigation version, but it
-  remains unapplied.
+### Operating-principle reinforcement (2026-05-08)
+
+Phase 13a confirmed two operating principles from the v3.x retrospective:
+
+1. **"Close the category, not the symptom"** — narrow 13a (Kotlin 2.2 +
+   kapt) was a working solution for the metadata-cap symptom. The user
+   redirected to NIA, which closed the *category* (kapt-driven Hilt) in
+   one PR. Result: 13c collapses, the JavaPoet workaround comment
+   disappears, and future Kotlin bumps don't re-relearn the same lesson.
+2. **"Consult Google's reference samples before negotiating scope."**
+   New durable rule, codified as `feedback_consult_google_samples` in
+   memory: when bumping toolchain or hitting Gradle/AGP/Kotlin classloader
+   or metadata errors, fetch NIA's `libs.versions.toml` + relevant
+   convention plugin *before* proposing scope tradeoffs. NIA's pattern
+   often is the documented fix.
 
 ## Phase 14 — Baseline profiles + macrobenchmark
 
