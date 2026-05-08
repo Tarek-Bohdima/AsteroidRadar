@@ -102,7 +102,6 @@ class AsteroidRepositoryTest {
         runTest {
             pictureOfDayDao.flow.value =
                 DatabasePictureOfDay(
-                    id = 0,
                     mediaType = "image",
                     title = "Cached APOD",
                     url = "https://example.invalid/apod.jpg",

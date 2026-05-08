@@ -60,18 +60,17 @@ fun List<DatabaseAsteroid>.asDomainModel(): List<Asteroid> =
         )
     }
 
-// Single-row table — `id` is hard-pinned to PICTURE_OF_DAY_ROW_ID and the DAO
-// inserts with REPLACE so each refresh overwrites yesterday's row in place.
+// Single-row table — `id` defaults to 0 so callers never have to know about
+// the row pinning. The DAO query selects WHERE id = 0 and inserts use
+// REPLACE on conflict, so each refresh overwrites yesterday's row in place.
 @Entity(tableName = "picture_of_day")
 data class DatabasePictureOfDay(
     @PrimaryKey
-    val id: Int = PICTURE_OF_DAY_ROW_ID,
+    val id: Int = 0,
     val mediaType: String,
     val title: String,
     val url: String,
 )
-
-const val PICTURE_OF_DAY_ROW_ID: Int = 0
 
 fun DatabasePictureOfDay.asDomainModel(): PictureOfDay =
     PictureOfDay(

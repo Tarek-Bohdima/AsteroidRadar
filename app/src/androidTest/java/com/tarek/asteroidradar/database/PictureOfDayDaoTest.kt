@@ -97,7 +97,6 @@ class PictureOfDayDaoTest {
         mediaType: String = "image",
     ): DatabasePictureOfDay =
         DatabasePictureOfDay(
-            id = PICTURE_OF_DAY_ROW_ID,
             mediaType = mediaType,
             title = title,
             url = url,
