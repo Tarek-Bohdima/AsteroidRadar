@@ -29,7 +29,9 @@ shippable; pick them off in order — each one stacks on the last.
 | 13a | Toolchain bump aligned to NIA (AGP 9 + Kotlin 2.3 + Hilt 2.59, drop kapt) | Done (#127) — folded 13c's kapt removal in via NIA's `ksp(kotlin-metadata)` pattern. Bumps to **`v4.0.0-INTERNAL`**. |
 | 13b | AndroidX group bump | Done (#129) — lifecycle 2.10, nav 2.9.8, room 2.8.4, work 2.11.2, +compileSdk/targetSdk 36. Bumps to **`v4.0.1-INTERNAL`**. Closes issue #78. |
 | 13c | Drop kapt for Hilt | Collapsed into 13a — the toolchain bump forced it (Hilt's metadata library version cap surfaced under Kotlin 2.3, and NIA's pattern was the documented fix). |
-| 14 | Baseline profiles + macrobenchmark | **Active** — graduated from "Quality bets". Compounds with Phase 12's cold-start work and Phase 5's Hilt graph. |
+| 14a | `:benchmark` module + `StartupBenchmark` | Done (#132) — first second-module in the project. AndroidX Macrobenchmark library on AGP-9-compatible `androidx.baselineprofile 1.5.0-alpha06`. |
+| 14b | `BaselineProfileGenerator` + checked-in `baseline-prof.txt` | Done (#133) — 20.7k-entry profile generated on Pixel 7 / API 33 emulator; bundles into AAB at `BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`. Bumps to **`v4.0.2-INTERNAL`** (held untagged). |
+| 14c | CI workflow + GMD provisioning | **Active** — manual `workflow_dispatch` only; provisions Pixel 7 / API 34 GMD; uploads Perfetto traces as artifacts. Closes issue #131. |
 | — | **Module split** lands with feature #2, not as a phase | — |
 
 Tick the table when phases land. Each phase below lists scope, rationale, and
@@ -70,9 +72,14 @@ state at 2026-05-08, after Phase 13 closed end-to-end (`v4.0.0-INTERNAL` +
     2.10, nav 2.9.8, room 2.8.4, work 2.11.2, +compileSdk/targetSdk 36).
     Tagged without device smoke (workflow run `25576639557`). Closes
     issue #78 cleanly via `Closes #78`.
-- **Next pickup**: Phase 14 — baseline profiles + macrobenchmark module.
-  New `:benchmark` module (project's first second-module). `StartupBenchmark`
-  + `BaselineProfileGenerator` driving the four golden-path flows.
+  - `v4.0.2-INTERNAL` *(tag held)* — Phase 14 (#132 + #133 + 14c TBD). Per
+    user direction at the close of 14b's session, **Phase 14 ships as one
+    tag covering all three sub-PRs** instead of three separate cuts. Tag
+    pushes when 14c lands.
+- **Next pickup**: Phase 14c — CI workflow + GMD provisioning. Manual
+  `workflow_dispatch` runs `:benchmark:pixel7Api34BenchmarkReleaseAndroidTest`
+  on an AGP-provisioned Pixel 7 / API 34 AVD; uploads Perfetto traces as
+  artifacts. Not gating any PR — informational signal only.
 
 ### Issue close-keyword lesson (2026-05-08)
 

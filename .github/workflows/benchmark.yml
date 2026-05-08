@@ -1,0 +1,103 @@
+name: Macrobenchmark
+
+# Manual-only trigger. The macrobenchmark workflow provisions a Pixel 7 / API 34
+# AVD via AGP's Gradle Managed Devices, which downloads ~5 GB of system image
+# and adds 10–15 minutes per run — too expensive to gate every PR on. Cold-start
+# perf signal is informational until we have a baseline number to ratchet against
+# (Phase 14c scope: the workflow exists, the budgeting comes later if/when the
+# trace shows real headroom worth defending).
+#
+# To run: Actions tab → "Macrobenchmark" → "Run workflow" → choose `master` (or
+# any branch). The trace artifact is attached to the run on completion.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Third-party actions pinned to commit SHAs with version-tag comments — same
+# supply-chain hardening as `build_pull_request.yml`. Dependabot's
+# `github-actions` ecosystem auto-bumps these on a weekly cadence.
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      NASA_API_KEY: ${{ secrets.NASA_API_KEY }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # KVM is the kernel module that lets the AVD run with hardware
+      # virtualization on the GitHub Actions Linux runner. Without these
+      # permissions the emulator falls back to software rendering and either
+      # times out or fails to boot. Pattern lifted from Now in Android's
+      # NightlyBaselineProfiles workflow.
+      - name: Enable KVM group permissions
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls /dev/kvm
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Cache Gradle packages
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-bench-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-bench-
+            ${{ runner.os }}-gradle-
+
+      # Provision the Pixel 7 / API 34 GMD. Separate step so the system-image
+      # download (~5 GB) shows up clearly in the workflow timeline; failures
+      # here are usually quota / disk-space, not anything the benchmark code
+      # could surface. `swiftshader_indirect` GPU is the documented choice for
+      # headless CI runners (no host GPU passthrough).
+      - name: Provision pixel7Api34 managed device
+        run: ./gradlew :benchmark:pixel7Api34Setup
+          --info
+          -Pandroid.experimental.testOptions.managedDevices.emulator.showKernelLogging=true
+          -Pandroid.testoptions.manageddevices.emulator.gpu="swiftshader_indirect"
+
+      # Run the StartupBenchmark macrobenchmark on the GMD. Output is the
+      # cold-start TTFF metric across N iterations + a Perfetto trace per
+      # iteration. The trace is what we upload as an artifact; the headline
+      # number is in the gradle log.
+      - name: Run StartupBenchmark on pixel7Api34
+        run: ./gradlew :benchmark:pixel7Api34BenchmarkReleaseAndroidTest
+          -Pandroid.testoptions.manageddevices.emulator.gpu="swiftshader_indirect"
+          -Pandroid.experimental.testOptions.managedDevices.emulator.showKernelLogging=true
+
+      # `if: always()` so a benchmark failure still uploads partial output.
+      - name: Upload macrobenchmark traces and reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: macrobenchmark-traces
+          path: |
+            benchmark/build/outputs/managed_device_android_test_additional_output/**/*
+            benchmark/build/outputs/androidTest-results/**/*
+            benchmark/build/reports/androidTests/**/*
+          if-no-files-found: warn
+          retention-days: 14
