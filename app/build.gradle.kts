@@ -215,6 +215,14 @@ android {
             )
             buildConfigField("String", "NASA_API_KEY", "\"${env("NASA_API_KEY")}\"")
             signingConfig = signingConfigs.getByName("release")
+            // SYMBOL_TABLE bundles function names from transitive Compose / AndroidX
+            // .so libs into BUNDLE-METADATA/com.android.tools.build.debugsymbols/,
+            // silencing Play Console's "no debug symbols" warning. FULL would also
+            // include source-line info but bloats the AAB 5–20 MB for libraries we
+            // don't own; symbol tables alone make native-frame crashes readable.
+            ndk {
+                debugSymbolLevel = "SYMBOL_TABLE"
+            }
         }
     }
 
