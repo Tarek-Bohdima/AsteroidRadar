@@ -31,7 +31,10 @@ package com.tarek.asteroidradar.repository
 import com.google.common.truth.Truth.assertThat
 import com.tarek.asteroidradar.database.AsteroidDao
 import com.tarek.asteroidradar.database.DatabaseAsteroid
+import com.tarek.asteroidradar.database.DatabasePictureOfDay
+import com.tarek.asteroidradar.database.PictureOfDayDao
 import com.tarek.asteroidradar.database.asDomainModel
+import com.tarek.asteroidradar.domain.PictureOfDay
 import com.tarek.asteroidradar.repository.AsteroidRepository.AsteroidsFilter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,12 +46,14 @@ import java.time.LocalDate
 
 class AsteroidRepositoryTest {
     private lateinit var dao: FakeAsteroidDao
+    private lateinit var pictureOfDayDao: FakePictureOfDayDao
     private lateinit var repository: AsteroidRepository
 
     @Before
     fun setUp() {
         dao = FakeAsteroidDao()
-        repository = AsteroidRepository(dao)
+        pictureOfDayDao = FakePictureOfDayDao()
+        repository = AsteroidRepository(dao, pictureOfDayDao)
     }
 
     @Test
@@ -90,6 +95,36 @@ class AsteroidRepositoryTest {
             // Repository captures `LocalDate.now()` at construction time; the test
             // runs in the same process moments later, so the values must agree.
             assertThat(LocalDate.parse(captured)).isEqualTo(LocalDate.now())
+        }
+
+    @Test
+    fun `getPictureOfDay maps the cached entity to the domain model`() =
+        runTest {
+            pictureOfDayDao.flow.value =
+                DatabasePictureOfDay(
+                    id = 0,
+                    mediaType = "image",
+                    title = "Cached APOD",
+                    url = "https://example.invalid/apod.jpg",
+                )
+
+            val result = repository.getPictureOfDay().first()
+
+            assertThat(result).isEqualTo(
+                PictureOfDay(
+                    mediaType = "image",
+                    title = "Cached APOD",
+                    url = "https://example.invalid/apod.jpg",
+                ),
+            )
+        }
+
+    @Test
+    fun `getPictureOfDay emits null when nothing is cached`() =
+        runTest {
+            val result = repository.getPictureOfDay().first()
+
+            assertThat(result).isNull()
         }
 
     private fun asteroidEntity(
@@ -138,6 +173,16 @@ private class FakeAsteroidDao : AsteroidDao {
     }
 
     override suspend fun deletePreviousAsteroid(today: String) {
+        error("not used in this test")
+    }
+}
+
+private class FakePictureOfDayDao : PictureOfDayDao {
+    val flow = MutableStateFlow<DatabasePictureOfDay?>(null)
+
+    override fun getPictureOfDay(): Flow<DatabasePictureOfDay?> = flow
+
+    override suspend fun insertPictureOfDay(pictureOfDay: DatabasePictureOfDay) {
         error("not used in this test")
     }
 }

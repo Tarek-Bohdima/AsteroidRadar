@@ -54,8 +54,17 @@ class MainViewModel
     constructor(
         private val repository: AsteroidRepository,
     ) : ViewModel() {
-        private val _imageOfTheDay = MutableStateFlow<PictureOfDay?>(null)
-        val imageOfTheDay: StateFlow<PictureOfDay?> = _imageOfTheDay.asStateFlow()
+        // Issue #116: APOD is sourced from Room, not the network. The cached
+        // row paints immediately on cold start; refreshPictureOfDay() runs in
+        // parallel and the new row swaps in via Coil's crossfade once it lands.
+        val imageOfTheDay: StateFlow<PictureOfDay?> =
+            repository
+                .getPictureOfDay()
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(SUBSCRIPTION_TIMEOUT_MS),
+                    initialValue = null,
+                )
 
         private val _filter = MutableStateFlow<AsteroidsFilter>(AsteroidsFilter.STORED)
         val filter: StateFlow<AsteroidsFilter> = _filter.asStateFlow()
@@ -73,25 +82,26 @@ class MainViewModel
                 )
 
         init {
-            viewModelScope.launch {
-                getAsteroidList()
-                getImageOfTheDay()
-            }
+            // Two independent launches so the APOD round-trip doesn't queue
+            // behind the NeoWs feed (the latency users have flagged on every
+            // v3.x verification).
+            viewModelScope.launch { refreshAsteroids() }
+            viewModelScope.launch { refreshPictureOfDay() }
         }
 
-        private suspend fun getImageOfTheDay() {
+        private suspend fun refreshPictureOfDay() {
             try {
-                _imageOfTheDay.value = repository.getImageOfTheDay()
+                repository.refreshPictureOfDay()
             } catch (e: Exception) {
-                Timber.d("MainViewModel: getImageOfTheDay called : %s", e.message)
+                Timber.d("MainViewModel: refreshPictureOfDay() failed : %s", e.message)
             }
         }
 
-        private suspend fun getAsteroidList() {
+        private suspend fun refreshAsteroids() {
             try {
                 repository.refreshAsteroids()
             } catch (e: Exception) {
-                Timber.d("MainViewModel: getAsteroidList() called : %s", e.message)
+                Timber.d("MainViewModel: refreshAsteroids() failed : %s", e.message)
             }
         }
 

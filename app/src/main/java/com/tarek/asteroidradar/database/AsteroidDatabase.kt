@@ -30,8 +30,32 @@ package com.tarek.asteroidradar.database
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [DatabaseAsteroid::class], version = 1)
+@Database(
+    entities = [DatabaseAsteroid::class, DatabasePictureOfDay::class],
+    version = 2,
+)
 abstract class AsteroidDatabase : RoomDatabase() {
     abstract val asteroidDao: AsteroidDao
+    abstract val pictureOfDayDao: PictureOfDayDao
 }
+
+// Phase 12 — adds the single-row picture_of_day table for the persistent APOD
+// cache (issue #116). Existing asteroid_database table is untouched.
+val MIGRATION_1_2: Migration =
+    object : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS picture_of_day (
+                    id INTEGER NOT NULL PRIMARY KEY,
+                    mediaType TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    url TEXT NOT NULL
+                )
+                """.trimIndent(),
+            )
+        }
+    }

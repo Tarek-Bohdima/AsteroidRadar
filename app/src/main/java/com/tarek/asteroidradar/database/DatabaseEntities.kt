@@ -31,6 +31,7 @@ package com.tarek.asteroidradar.database
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.tarek.asteroidradar.domain.Asteroid
+import com.tarek.asteroidradar.domain.PictureOfDay
 
 @Entity(tableName = "asteroid_database")
 data class DatabaseAsteroid(
@@ -58,3 +59,23 @@ fun List<DatabaseAsteroid>.asDomainModel(): List<Asteroid> =
             isPotentiallyHazardous = it.isPotentiallyHazardous,
         )
     }
+
+// Single-row table — `id` is hard-pinned to PICTURE_OF_DAY_ROW_ID and the DAO
+// inserts with REPLACE so each refresh overwrites yesterday's row in place.
+@Entity(tableName = "picture_of_day")
+data class DatabasePictureOfDay(
+    @PrimaryKey
+    val id: Int = PICTURE_OF_DAY_ROW_ID,
+    val mediaType: String,
+    val title: String,
+    val url: String,
+)
+
+const val PICTURE_OF_DAY_ROW_ID: Int = 0
+
+fun DatabasePictureOfDay.asDomainModel(): PictureOfDay =
+    PictureOfDay(
+        mediaType = mediaType,
+        title = title,
+        url = url,
+    )
