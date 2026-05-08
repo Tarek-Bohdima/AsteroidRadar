@@ -40,6 +40,23 @@ coil = "2.7.0"
 # assertion). Phase 10 dropped Espresso-core when the view-system tests
 # went away, so the version pin is scoped to the intents artifact only.
 androidxTestEspresso = "3.7.0"
+# Macrobenchmark + the Baseline Profile Gradle plugin track the same release
+# line — the plugin under `androidx.baselineprofile` and the runtime under
+# `androidx.benchmark:benchmark-macro-junit4`. Pinned together (Phase 14a).
+# Held at the 1.5.0-alpha line (NIA's pin) because the 1.4.x stable was
+# built against AGP 8.x's `TestExtension` class, which AGP 9.0 renamed to
+# `TestExtensionImpl`. The 1.5.x line restores AGP-9 compatibility. Bump to
+# stable when androidx.benchmark cuts a 1.5.0 release.
+androidxMacroBenchmark = "1.5.0-alpha06"
+# UI Automator — the baseline-profile generator drives the four golden-path
+# flows via UiAutomator (cross-app UI control), since Compose UI testing can't
+# leave the test process boundary that a baseline profile run requires.
+androidxUiAutomator = "2.3.0"
+# androidx.test:core / rules / runner — full test infrastructure surface
+# needed by macrobenchmark. We already have `ext-junit` at 1.3.0 for the
+# instrumented Compose tests; these cover the additional surfaces.
+androidxTestRules = "1.7.0"
+androidxTestRunner = "1.7.0"
 # Hilt 2.59.2 supports Kotlin 2.3 metadata (the bundled `kotlin-metadata-jvm`
 # is overridden via an explicit `ksp(libs.kotlin.metadata)` declaration in the
 # `asteroidradar.android.hilt` convention plugin — same pattern as Now in
@@ -137,6 +154,14 @@ androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "a
 # kept off the android-test bundle so other tests don't accidentally lean
 # on Espresso matchers.
 androidx-test-espresso-intents = { module = "androidx.test.espresso:espresso-intents", version.ref = "androidxTestEspresso" }
+# Macrobenchmark + UiAutomator — confined to the `:benchmark` module
+# (Phase 14). Macrobenchmark drives cold-start TTFF measurement and the
+# baseline-profile generator; UiAutomator handles cross-process UI control
+# the profile run needs (the test runs in a different process than :app).
+androidx-benchmark-macro = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "androidxMacroBenchmark" }
+androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidxTestRules" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
+androidx-test-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "androidxUiAutomator" }
 junit = { module = "junit:junit", version.ref = "junit" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
@@ -207,6 +232,14 @@ test-shared = [
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+# `com.android.test` is the AGP plugin for test-only modules — applied to
+# `:benchmark` so the macrobenchmark module compiles to a separate AAB and
+# never ships to users. AGP version-tracks the application plugin.
+android-test = { id = "com.android.test", version.ref = "agp" }
+# androidx.baselineprofile — generates the AOT-compilation hints AGP bundles
+# into the release AAB at `assets/dexopt/baseline.prof`. Version-tracks the
+# macrobenchmark library (same release line, different artifact).
+baselineprofile = { id = "androidx.baselineprofile", version.ref = "androidxMacroBenchmark" }
 # DAGP is applied at the root project (not per-module) — its
 # ProjectEvaluationListener walks every subproject automatically.
 dependency-analysis = { id = "com.autonomousapps.dependency-analysis", version.ref = "dependencyAnalysis" }

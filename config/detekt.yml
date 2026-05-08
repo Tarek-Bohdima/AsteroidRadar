@@ -48,4 +48,9 @@ naming:
     # flags every Composable in the project. Mans0n compose-rules ships its
     # own composable-aware checks (slot-table correctness, hoisting, etc.) —
     # this exemption is only for the function-name casing.
-    ignoreAnnotated: ['Composable']
+    # @Test functions use Style C backtick spec names (memory:
+    # feedback_issue_format), which match this rule's regex literally but
+    # detekt flags them anyway. Annotation-based exemption is more durable
+    # than tweaking the regex; covers JUnit's `org.junit.Test` (legacy and
+    # JUnit 4 used here) and JUnit 5's `org.junit.jupiter.api.Test`.
+    ignoreAnnotated: ['Composable', 'Test']
