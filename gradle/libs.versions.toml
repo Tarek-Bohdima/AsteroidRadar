@@ -32,6 +32,10 @@ kotlinxCoroutines = "1.8.1"
 kotlinxSerialization = "1.7.3"
 
 coil = "2.7.0"
+# Espresso — only `intents` is wired (for MainScreenTest's ACTION_VIEW
+# assertion). Phase 10 dropped Espresso-core when the view-system tests
+# went away, so the version pin is scoped to the intents artifact only.
+androidxTestEspresso = "3.7.0"
 # Hilt 2.51+ supports Kotlin 2.x via KSP, which is why DI lands after Phase 4's
 # Kotlin bump. `enableAggregatingTask = true` (the default since 2.45) is kept
 # explicit in the convention plugin.
@@ -108,12 +112,23 @@ retrofit-converter-kotlinx-serialization = { module = "com.squareup.retrofit2:co
 retrofit-converter-scalars = { module = "com.squareup.retrofit2:converter-scalars", version.ref = "retrofit" }
 
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+# coil-video registers a VideoFrameDecoder.Factory that pulls frame 0 out
+# of any direct .mp4/.webm URL Coil downloads — covers NASA APOD video days
+# (#123). The ImageLoader the app provides via NetworkModule installs the
+# factory app-wide; AsyncImage call sites stay unchanged.
+coil-video = { module = "io.coil-kt:coil-video", version.ref = "coil" }
 detekt-compose-rules = { module = "io.nlopez.compose.rules:detekt", version.ref = "composeRules" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExtJunit" }
+# espresso-intents is the only Espresso surface still on the classpath —
+# MainScreenTest uses `Intents.intended(...)` to assert the ACTION_VIEW
+# fired by the APOD video-card fallback. Pulls espresso-core transitively;
+# kept off the android-test bundle so other tests don't accidentally lean
+# on Espresso matchers.
+androidx-test-espresso-intents = { module = "androidx.test.espresso:espresso-intents", version.ref = "androidxTestEspresso" }
 junit = { module = "junit:junit", version.ref = "junit" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
@@ -152,6 +167,7 @@ compose = [
     "androidx-lifecycle-runtime-compose",
     "androidx-navigation-compose",
     "coil-compose",
+    "coil-video",
 ]
 # Retrofit networking stack — Scalars converter for the raw-string NeoWs
 # feed and the kotlinx-serialization converter for `@Serializable` DTOs.
