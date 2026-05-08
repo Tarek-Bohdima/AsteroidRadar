@@ -26,47 +26,19 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-package com.tarek.asteroidradar.network
+package com.tarek.asteroidradar.database
 
-import com.tarek.asteroidradar.database.DatabaseAsteroid
-import com.tarek.asteroidradar.database.DatabasePictureOfDay
-import com.tarek.asteroidradar.domain.Asteroid
-import com.tarek.asteroidradar.domain.PictureOfDay
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
-@Serializable
-data class ImageOfTheDay(
-    @SerialName("media_type")
-    val mediaType: String,
-    val title: String,
-    val url: String,
-)
+@Dao
+interface PictureOfDayDao {
+    @Query("SELECT * FROM picture_of_day WHERE id = 0 LIMIT 1")
+    fun getPictureOfDay(): Flow<DatabasePictureOfDay?>
 
-fun ImageOfTheDay.asDomainModel(): PictureOfDay =
-    PictureOfDay(
-        mediaType = this.mediaType,
-        title = this.title,
-        url = this.url,
-    )
-
-fun ImageOfTheDay.asDatabaseModel(): DatabasePictureOfDay =
-    DatabasePictureOfDay(
-        mediaType = mediaType,
-        title = title,
-        url = url,
-    )
-
-fun List<Asteroid>.asDatabaseModel(): Array<DatabaseAsteroid> =
-    map {
-        DatabaseAsteroid(
-            id = it.id,
-            codename = it.codename,
-            closeApproachDate = it.closeApproachDate,
-            absoluteMagnitude = it.absoluteMagnitude,
-            estimatedDiameter = it.estimatedDiameter,
-            relativeVelocity = it.relativeVelocity,
-            distanceFromEarth = it.distanceFromEarth,
-            isPotentiallyHazardous = it.isPotentiallyHazardous,
-        )
-    }.toTypedArray()
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPictureOfDay(pictureOfDay: DatabasePictureOfDay)
+}

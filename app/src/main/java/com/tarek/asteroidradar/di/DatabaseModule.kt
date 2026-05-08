@@ -32,6 +32,8 @@ import android.content.Context
 import androidx.room.Room
 import com.tarek.asteroidradar.database.AsteroidDao
 import com.tarek.asteroidradar.database.AsteroidDatabase
+import com.tarek.asteroidradar.database.MIGRATION_1_2
+import com.tarek.asteroidradar.database.PictureOfDayDao
 import com.tarek.asteroidradar.repository.AsteroidRepository
 import dagger.Module
 import dagger.Provides
@@ -53,12 +55,19 @@ object DatabaseModule {
                 context,
                 AsteroidDatabase::class.java,
                 "asteroids",
-            ).build()
+            ).addMigrations(MIGRATION_1_2)
+            .build()
 
     @Provides
     fun provideAsteroidDao(database: AsteroidDatabase): AsteroidDao = database.asteroidDao
 
     @Provides
+    fun providePictureOfDayDao(database: AsteroidDatabase): PictureOfDayDao = database.pictureOfDayDao
+
+    @Provides
     @Singleton
-    fun provideAsteroidRepository(asteroidDao: AsteroidDao): AsteroidRepository = AsteroidRepository(asteroidDao)
+    fun provideAsteroidRepository(
+        asteroidDao: AsteroidDao,
+        pictureOfDayDao: PictureOfDayDao,
+    ): AsteroidRepository = AsteroidRepository(asteroidDao, pictureOfDayDao)
 }
