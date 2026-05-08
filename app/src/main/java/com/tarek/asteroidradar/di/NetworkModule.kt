@@ -28,48 +28,47 @@
  */
 package com.tarek.asteroidradar.di
 
-import android.content.Context
-import androidx.room.Room
-import com.tarek.asteroidradar.database.AsteroidDao
-import com.tarek.asteroidradar.database.AsteroidDatabase
-import com.tarek.asteroidradar.database.MIGRATION_1_2
-import com.tarek.asteroidradar.database.PictureOfDayDao
 import com.tarek.asteroidradar.network.AsteroidService
-import com.tarek.asteroidradar.repository.AsteroidRepository
+import com.tarek.asteroidradar.util.Constants
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
+import retrofit2.Retrofit
+import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import retrofit2.converter.scalars.ScalarsConverterFactory
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object DatabaseModule {
+object NetworkModule {
+    // `ignoreUnknownKeys = true` lets the APOD response evolve (NASA frequently
+    // adds fields like `copyright`, `date`, `explanation`, `hdurl`, `service_version`)
+    // without us recompiling — only the three fields annotated on `ImageOfTheDay`
+    // are required to be present.
     @Provides
     @Singleton
-    fun provideAsteroidDatabase(
-        @ApplicationContext context: Context,
-    ): AsteroidDatabase =
-        Room
-            .databaseBuilder(
-                context,
-                AsteroidDatabase::class.java,
-                "asteroids",
-            ).addMigrations(MIGRATION_1_2)
+    fun provideJson(): Json = Json { ignoreUnknownKeys = true }
+
+    // Builder order matters: Scalars first matches `String` returns and yields
+    // the raw response body (for `getAsteroids`, where the parser walks the
+    // nested-by-date payload manually); kotlinx-serialization second handles
+    // `@Serializable` DTOs (`ImageOfTheDay`). Phase 11 made this the only
+    // serialization library across both nav routes and HTTP — fully
+    // reflection-free at runtime.
+    @Provides
+    @Singleton
+    fun provideRetrofit(json: Json): Retrofit =
+        Retrofit
+            .Builder()
+            .baseUrl(Constants.BASE_URL)
+            .addConverterFactory(ScalarsConverterFactory.create())
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
 
     @Provides
-    fun provideAsteroidDao(database: AsteroidDatabase): AsteroidDao = database.asteroidDao
-
-    @Provides
-    fun providePictureOfDayDao(database: AsteroidDatabase): PictureOfDayDao = database.pictureOfDayDao
-
-    @Provides
     @Singleton
-    fun provideAsteroidRepository(
-        asteroidDao: AsteroidDao,
-        pictureOfDayDao: PictureOfDayDao,
-        asteroidService: AsteroidService,
-    ): AsteroidRepository = AsteroidRepository(asteroidDao, pictureOfDayDao, asteroidService)
+    fun provideAsteroidService(retrofit: Retrofit): AsteroidService = retrofit.create(AsteroidService::class.java)
 }

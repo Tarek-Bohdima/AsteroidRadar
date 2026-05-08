@@ -29,11 +29,6 @@
 package com.tarek.asteroidradar.network
 
 import com.tarek.asteroidradar.util.Constants
-import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
-import retrofit2.Retrofit
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
-import retrofit2.converter.scalars.ScalarsConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
 
@@ -44,6 +39,10 @@ import retrofit2.http.Query
  * payload is parsed manually in `parseAsteroidsJsonResult` because of its
  * nested-by-date shape). `getImageOfDay` returns a kotlinx-serialization-decoded
  * [ImageOfTheDay].
+ *
+ * Construction (Retrofit instance, JSON config, converter ordering) lives in
+ * `di/NetworkModule.kt`; the service is provided as a `@Singleton` Hilt binding
+ * and injected wherever it is consumed.
  */
 interface AsteroidService {
     @GET("neo/rest/v1/feed")
@@ -55,27 +54,4 @@ interface AsteroidService {
     suspend fun getImageOfDay(
         @Query(Constants.PARAMETER_API_KEY) key: String,
     ): ImageOfTheDay
-}
-
-// `ignoreUnknownKeys = true` lets the APOD response evolve (NASA frequently
-// adds fields like `copyright`, `date`, `explanation`, `hdurl`, `service_version`)
-// without us recompiling — only the three fields we annotate on `ImageOfTheDay`
-// are required to be present.
-private val json = Json { ignoreUnknownKeys = true }
-
-// Register Scalars before the kotlinx-serialization converter: Retrofit walks
-// factories in order; Scalars matches `String` returns and yields the raw
-// response body, while kotlinx-serialization handles `@Serializable` DTOs
-// (`ImageOfTheDay`). Phase 11 replaced Moshi here — single serialization
-// library across nav routes (Phase 9c) and HTTP, fully reflection-free.
-private val retrofit =
-    Retrofit
-        .Builder()
-        .baseUrl(Constants.BASE_URL)
-        .addConverterFactory(ScalarsConverterFactory.create())
-        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-        .build()
-
-object AsteroidApi {
-    val retrofitService: AsteroidService by lazy { retrofit.create(AsteroidService::class.java) }
 }
