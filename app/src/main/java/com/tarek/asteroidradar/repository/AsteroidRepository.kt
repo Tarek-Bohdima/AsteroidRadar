@@ -34,7 +34,7 @@ import com.tarek.asteroidradar.database.PictureOfDayDao
 import com.tarek.asteroidradar.database.asDomainModel
 import com.tarek.asteroidradar.domain.Asteroid
 import com.tarek.asteroidradar.domain.PictureOfDay
-import com.tarek.asteroidradar.network.AsteroidApi
+import com.tarek.asteroidradar.network.AsteroidService
 import com.tarek.asteroidradar.network.asDatabaseModel
 import com.tarek.asteroidradar.network.parseAsteroidsJsonResult
 import kotlinx.coroutines.Dispatchers
@@ -48,6 +48,7 @@ import java.time.LocalDate
 class AsteroidRepository(
     private val asteroidDao: AsteroidDao,
     private val pictureOfDayDao: PictureOfDayDao,
+    private val asteroidService: AsteroidService,
 ) {
     sealed class AsteroidsFilter {
         data object TODAY : AsteroidsFilter()
@@ -94,7 +95,7 @@ class AsteroidRepository(
         withContext(Dispatchers.IO) {
             try {
                 pictureOfDayDao.insertPictureOfDay(
-                    AsteroidApi.retrofitService.getImageOfDay(API_KEY).asDatabaseModel(),
+                    asteroidService.getImageOfDay(API_KEY).asDatabaseModel(),
                 )
             } catch (e: Exception) {
                 Timber.d("AsteroidRepository: refreshPictureOfDay() failed %s", e.message)
@@ -105,8 +106,7 @@ class AsteroidRepository(
     suspend fun refreshAsteroids() {
         withContext(Dispatchers.IO) {
             try {
-                val asteroidsJson =
-                    AsteroidApi.retrofitService.getAsteroids(API_KEY)
+                val asteroidsJson = asteroidService.getAsteroids(API_KEY)
                 asteroidDao.insertAll(
                     *parseAsteroidsJsonResult(JSONObject(asteroidsJson))
                         .asDatabaseModel(),

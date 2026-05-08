@@ -35,25 +35,36 @@ import com.tarek.asteroidradar.database.DatabasePictureOfDay
 import com.tarek.asteroidradar.database.PictureOfDayDao
 import com.tarek.asteroidradar.database.asDomainModel
 import com.tarek.asteroidradar.domain.PictureOfDay
+import com.tarek.asteroidradar.network.AsteroidService
+import com.tarek.asteroidradar.network.ImageOfTheDay
 import com.tarek.asteroidradar.repository.AsteroidRepository.AsteroidsFilter
+import com.tarek.asteroidradar.util.Constants
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import org.json.JSONArray
+import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
+import java.text.SimpleDateFormat
 import java.time.LocalDate
+import java.util.Calendar
+import java.util.Locale
 
 class AsteroidRepositoryTest {
     private lateinit var dao: FakeAsteroidDao
     private lateinit var pictureOfDayDao: FakePictureOfDayDao
+    private lateinit var service: FakeAsteroidService
     private lateinit var repository: AsteroidRepository
 
     @Before
     fun setUp() {
         dao = FakeAsteroidDao()
         pictureOfDayDao = FakePictureOfDayDao()
-        repository = AsteroidRepository(dao, pictureOfDayDao)
+        service = FakeAsteroidService()
+        repository = AsteroidRepository(dao, pictureOfDayDao, service)
     }
 
     @Test
@@ -126,6 +137,65 @@ class AsteroidRepositoryTest {
             assertThat(result).isNull()
         }
 
+    @Test
+    fun `refreshAsteroids inserts parsed entities into the DAO`() =
+        runTest {
+            val today = nextSevenDaysFormattedDates().first()
+            service.asteroidsResult = { feedWithSingleAsteroidOn(today) }
+
+            repository.refreshAsteroids()
+
+            assertThat(dao.insertAllCalls).hasSize(1)
+            val inserted = dao.insertAllCalls.single()
+            assertThat(inserted).hasSize(1)
+            with(inserted.single()) {
+                assertThat(id).isEqualTo(SAMPLE_ID)
+                assertThat(closeApproachDate).isEqualTo(today)
+                assertThat(isPotentiallyHazardous).isTrue()
+            }
+        }
+
+    @Test
+    fun `refreshAsteroids swallows network exceptions and leaves the DAO untouched`() =
+        runTest {
+            service.asteroidsResult = { throw IOException("simulated network failure") }
+
+            repository.refreshAsteroids()
+
+            assertThat(dao.insertAllCalls).isEmpty()
+        }
+
+    @Test
+    fun `refreshPictureOfDay persists the converted entity into the DAO`() =
+        runTest {
+            service.imageOfDayResult = {
+                ImageOfTheDay(
+                    mediaType = "image",
+                    title = "APOD title",
+                    url = "https://example.invalid/apod.jpg",
+                )
+            }
+
+            repository.refreshPictureOfDay()
+
+            assertThat(pictureOfDayDao.insertCalls).hasSize(1)
+            with(pictureOfDayDao.insertCalls.single()) {
+                assertThat(mediaType).isEqualTo("image")
+                assertThat(title).isEqualTo("APOD title")
+                assertThat(url).isEqualTo("https://example.invalid/apod.jpg")
+            }
+        }
+
+    @Test
+    fun `refreshPictureOfDay swallows network exceptions and leaves the DAO untouched`() =
+        runTest {
+            service.imageOfDayResult = { throw IOException("simulated network failure") }
+
+            repository.refreshPictureOfDay()
+
+            assertThat(pictureOfDayDao.insertCalls).isEmpty()
+        }
+
     private fun asteroidEntity(
         id: Long,
         date: String = LocalDate.now().toString(),
@@ -140,6 +210,63 @@ class AsteroidRepositoryTest {
             distanceFromEarth = 0.025,
             isPotentiallyHazardous = id % 2L == 0L,
         )
+
+    // Builds the same 8-date NeoWs feed shape `parseAsteroidsJsonResult` expects,
+    // with one populated asteroid on `today` and empty arrays for the remaining
+    // dates. Mirrors the fixture used in ParseAsteroidsJsonResultTest.
+    private fun feedWithSingleAsteroidOn(today: String): String {
+        val dates = nextSevenDaysFormattedDates()
+        val nearEarthObjects =
+            JSONObject().apply {
+                dates.forEach { date ->
+                    if (date == today) {
+                        put(date, JSONArray().put(populatedAsteroidJson(date)))
+                    } else {
+                        put(date, JSONArray())
+                    }
+                }
+            }
+        return JSONObject().put("near_earth_objects", nearEarthObjects).toString()
+    }
+
+    private fun populatedAsteroidJson(date: String): JSONObject =
+        JSONObject().apply {
+            put("id", SAMPLE_ID)
+            put("name", "(2024 AB1)")
+            put("absolute_magnitude_h", 19.5)
+            put(
+                "estimated_diameter",
+                JSONObject().put(
+                    "kilometers",
+                    JSONObject().put("estimated_diameter_max", 0.42),
+                ),
+            )
+            put(
+                "close_approach_data",
+                JSONArray().put(
+                    JSONObject().apply {
+                        put("close_approach_date", date)
+                        put("relative_velocity", JSONObject().put("kilometers_per_second", 11.7))
+                        put("miss_distance", JSONObject().put("astronomical", 0.025))
+                    },
+                ),
+            )
+            put("is_potentially_hazardous_asteroid", true)
+        }
+
+    private fun nextSevenDaysFormattedDates(): List<String> {
+        val cal = Calendar.getInstance()
+        val fmt = SimpleDateFormat(Constants.API_QUERY_DATE_FORMAT, Locale.getDefault())
+        return (0..Constants.DEFAULT_END_DATE_DAYS).map {
+            val s = fmt.format(cal.time)
+            cal.add(Calendar.DAY_OF_YEAR, 1)
+            s
+        }
+    }
+
+    private companion object {
+        const val SAMPLE_ID = 54218396L
+    }
 }
 
 private class FakeAsteroidDao : AsteroidDao {
@@ -151,6 +278,8 @@ private class FakeAsteroidDao : AsteroidDao {
         private set
     var getWeeklyCalledWith: Pair<String, String>? = null
         private set
+
+    val insertAllCalls = mutableListOf<List<DatabaseAsteroid>>()
 
     override fun getAsteroids(): Flow<List<DatabaseAsteroid>> = allFlow
 
@@ -168,7 +297,7 @@ private class FakeAsteroidDao : AsteroidDao {
     }
 
     override fun insertAll(vararg asteroids: DatabaseAsteroid) {
-        error("not used in this test")
+        insertAllCalls += asteroids.toList()
     }
 
     override suspend fun deletePreviousAsteroid(today: String) {
@@ -178,10 +307,20 @@ private class FakeAsteroidDao : AsteroidDao {
 
 private class FakePictureOfDayDao : PictureOfDayDao {
     val flow = MutableStateFlow<DatabasePictureOfDay?>(null)
+    val insertCalls = mutableListOf<DatabasePictureOfDay>()
 
     override fun getPictureOfDay(): Flow<DatabasePictureOfDay?> = flow
 
     override suspend fun insertPictureOfDay(pictureOfDay: DatabasePictureOfDay) {
-        error("not used in this test")
+        insertCalls += pictureOfDay
     }
+}
+
+private class FakeAsteroidService : AsteroidService {
+    var asteroidsResult: () -> String = { error("getAsteroids not stubbed") }
+    var imageOfDayResult: () -> ImageOfTheDay = { error("getImageOfDay not stubbed") }
+
+    override suspend fun getAsteroids(key: String): String = asteroidsResult()
+
+    override suspend fun getImageOfDay(key: String): ImageOfTheDay = imageOfDayResult()
 }
