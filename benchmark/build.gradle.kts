@@ -77,11 +77,14 @@ android {
 }
 
 baselineProfile {
-    // GMD-only execution. Avoids the developer's connected device (if any)
-    // from skewing the profile output across machines.
+    // Both GMD and connected devices are accepted. NIA's solo-policy
+    // (`useConnectedDevices = false`) optimizes for cross-machine consistency
+    // on a multi-flavor production app — for this internal-track project,
+    // letting a developer run the generator on whichever emulator they have
+    // up is faster, and the GMD path is still wired for 14c's CI workflow.
     managedDevices.clear()
     managedDevices += "pixel7Api34"
-    useConnectedDevices = false
+    useConnectedDevices = true
 }
 
 dependencies {

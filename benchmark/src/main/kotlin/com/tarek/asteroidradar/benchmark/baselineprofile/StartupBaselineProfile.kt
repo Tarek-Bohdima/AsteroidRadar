@@ -26,10 +26,9 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-package com.tarek.asteroidradar.benchmark
+package com.tarek.asteroidradar.benchmark.baselineprofile
 
-import androidx.benchmark.macro.StartupMode
-import androidx.benchmark.macro.junit4.MacrobenchmarkRule
+import androidx.benchmark.macro.junit4.BaselineProfileRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Until
@@ -41,41 +40,45 @@ private const val TARGET_PACKAGE = "com.tarek.asteroidradar"
 private const val FIRST_FRAME_TIMEOUT_MS = 5_000L
 
 /**
- * Cold-start macrobenchmark. Measures time-to-first-asteroid-list-frame across
- * 5 iterations, reporting min / median / max with confidence intervals.
+ * Generates a Baseline Profile for cold-start performance.
  *
- * Informational baseline target is < 1500ms TTFF on a Pixel 7 / API 34 GMD;
- * the benchmark itself doesn't fail on regression — it captures a trace file
- * for offline review and lets the developer / CI artifact pipeline decide
- * whether to ratchet a budget around the number.
+ * Running this test on a device (or AGP-managed Gradle device) produces a
+ * `baseline-prof.txt` file under
+ * `app/build/outputs/managed_device_android_test_additional_output/.../`,
+ * which AGP then bundles into the release AAB at `assets/dexopt/baseline.prof`.
+ * Play Store delivers the AOT-compiled hot paths to users on first install.
  *
- * Method names use camelCase rather than the project's Style C backtick
- * convention because D8 rejects space characters in DEX-compiled method names
- * prior to DEX version 040 (API 35+), and `:benchmark` minSdk is 28 (baseline
- * profile generator requires API 28+). The KDoc carries the human-readable spec.
+ * The generator follows NIA's minimal `StartupBaselineProfile` pattern: cold
+ * start, wait for content to render. Richer per-screen profiles (e.g. detail
+ * navigation, scroll) can be added as separate `*BaselineProfile.kt` files
+ * if their hot paths warrant it.
+ *
+ * `includeInStartupProfile = true` enables AGP's [Dex Layout Optimizations]
+ * (https://developer.android.com/topic/performance/baselineprofiles/dex-layout-optimizations),
+ * which cluster the hottest classes together in the resulting DEX file for
+ * faster cold-start class loading.
  */
 @RunWith(AndroidJUnit4::class)
-class StartupBenchmark {
+class StartupBaselineProfile {
     @get:Rule
-    val rule = MacrobenchmarkRule()
+    val rule = BaselineProfileRule()
 
+    /** Generates the cold-start baseline profile. Method named `generate` to
+     * match NIA's pattern (single entry-point per profile class) and to dodge
+     * the same D8-no-spaces-in-method-names constraint documented in
+     * `StartupBenchmark`'s KDoc. */
     @Test
-    fun coldStart() {
-        rule.measureRepeated(
+    fun generate() =
+        rule.collect(
             packageName = TARGET_PACKAGE,
-            metrics = listOf(androidx.benchmark.macro.StartupTimingMetric()),
-            iterations = 5,
-            startupMode = StartupMode.COLD,
-            setupBlock = { pressHome() },
-            measureBlock = {
-                startActivityAndWait()
-                // The asteroid list is a LazyColumn — wait for any row to render
-                // so we measure time-to-content, not just time-to-first-frame.
-                // The MainActivity content description is a stable anchor we set
-                // in MainScreen for accessibility; if it isn't on screen within
-                // 5s, the benchmark fails loudly rather than reporting bad data.
-                device.wait(Until.hasObject(By.descContains("Asteroid")), FIRST_FRAME_TIMEOUT_MS)
-            },
-        )
-    }
+            includeInStartupProfile = true,
+        ) {
+            pressHome()
+            startActivityAndWait()
+            // Wait for the LazyColumn to paint at least one asteroid row before
+            // ending the profile run — without this, the profile only captures
+            // up to the activity's first frame, missing the Compose render path
+            // that's the actual hot surface we want to AOT-compile.
+            device.wait(Until.hasObject(By.descContains("Asteroid")), FIRST_FRAME_TIMEOUT_MS)
+        }
 }

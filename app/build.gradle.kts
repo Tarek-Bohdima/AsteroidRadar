@@ -36,6 +36,11 @@ plugins {
     id("asteroidradar.android.application")
     id("asteroidradar.android.compose")
     id("asteroidradar.android.hilt")
+    // Baseline profile consumer side. Pairs with the `:benchmark` module's
+    // `androidx.baselineprofile` plugin (Phase 14a) — the dependency
+    // `baselineProfile(projects.benchmark)` below is what AGP wires through
+    // when bundling the generated `baseline-prof.txt` into the release AAB.
+    alias(libs.plugins.baselineprofile)
     alias(libs.plugins.kover)
 }
 
@@ -44,7 +49,7 @@ plugins {
 // .github/workflows/release.yml greps these names, so don't rename them.
 val versionMajor = 4
 val versionMinor = 0
-val versionPatch = 1
+val versionPatch = 2
 val versionClassifier = "INTERNAL"
 
 // versionCode formula uses minSdk as a high digit so a future minSdk bump
@@ -260,6 +265,12 @@ dependencies {
     // module-side declaration needed.
 
     implementation(libs.timber)
+
+    // Baseline profile producer. The `:benchmark` module generates
+    // `baseline-prof.txt` via its `StartupBaselineProfile`; AGP wires the
+    // output into this AAB at `assets/dexopt/baseline.prof` automatically
+    // because of the `baselineprofile` plugin applied above. Phase 14b.
+    baselineProfile(projects.benchmark)
 
     // Compose runtime: BOM aligns the androidx.compose.* artifacts; the bundle
     // pulls in UI / Material 3 / activity-compose / lifecycle-runtime-compose /
