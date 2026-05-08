@@ -33,6 +33,19 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Android 11+ package visibility: declares the intent shapes the app
+         resolves on other packages so Intent.resolveActivity() and the
+         system's chooser can find handlers. The APOD video-card fallback
+         (#123) fires Intent.ACTION_VIEW on https URLs (NASA YouTube /
+         Vimeo embeds) — without this, resolveActivity() returns null on
+         API 30+ even when a browser is installed. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
     <application
         android:name=".AsteroidRadarApplication"
         android:allowBackup="true"

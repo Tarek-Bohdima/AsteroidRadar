@@ -38,6 +38,8 @@
     <string name="relative_velocity_title">Viteza relativă</string>
     <string name="distance_from_earth_title">Distanța față de pământ</string>
     <string name="image_of_the_day">Imaginea zilei</string>
+    <string name="video_of_the_day_format">Videoclipul zilei — %1$s</string>
+    <string name="video_of_the_day_open">Deschide videoclipul în browser</string>
     <string name="astronomical_unit_explanation">Unitatea astronomică (au) este o unitate de lungime, aproximativ distanța de la Pământ la Soare și egală cu aproximativ 150 de milioane de kilometri (93 de milioane de mile)</string>
     <string name="astronomical_unit_explanation_button">Definiția unității astronomice</string>
     <string name="potentially_hazardous_asteroid_image">Imagine cu asteroid potențial periculoasă</string>

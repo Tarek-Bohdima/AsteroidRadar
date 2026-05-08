@@ -28,8 +28,11 @@
  */
 package com.tarek.asteroidradar.ui.main
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -66,10 +69,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.tarek.asteroidradar.R
 import com.tarek.asteroidradar.domain.Asteroid
+import com.tarek.asteroidradar.domain.PictureOfDay
 import com.tarek.asteroidradar.repository.AsteroidRepository.AsteroidsFilter
 
 private val ApodHeaderHeight = 220.dp
@@ -86,6 +90,7 @@ fun MainScreen(
 ) {
     val asteroids by viewModel.asteroids.collectAsStateWithLifecycle()
     val image by viewModel.imageOfTheDay.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -98,7 +103,12 @@ fun MainScreen(
                     .fillMaxSize()
                     .padding(padding),
         ) {
-            ImageOfTheDayHeader(imageUrl = image?.url)
+            ImageOfTheDayHeader(
+                picture = image,
+                onVideoTap = { url ->
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                },
+            )
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(asteroids, key = { it.id }) { asteroid ->
                     AsteroidRow(asteroid = asteroid, onClick = { onAsteroidClick(asteroid) })
@@ -154,41 +164,98 @@ private fun MainTopBar(onFilterSelect: (AsteroidsFilter) -> Unit) {
     )
 }
 
+// `internal` so MainScreenTest can render this composable without going
+// through the Hilt-injected MainViewModel — same testing seam DetailScreen
+// uses by accepting its data as a parameter.
 @Composable
-private fun ImageOfTheDayHeader(
-    imageUrl: String?,
+internal fun ImageOfTheDayHeader(
+    picture: PictureOfDay?,
+    onVideoTap: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val isVideo = picture?.mediaType == "video"
     Box(
         modifier =
             modifier
                 .fillMaxWidth()
                 .height(ApodHeaderHeight),
     ) {
-        AsyncImage(
+        SubcomposeAsyncImage(
             model =
                 ImageRequest
                     .Builder(context)
-                    .data(imageUrl?.replaceFirst(Regex("^http://"), "https://"))
+                    .data(picture?.url?.replaceFirst(Regex("^http://"), "https://"))
                     .placeholder(R.drawable.placeholder_picture_of_day)
-                    .error(R.drawable.ic_broken_image)
                     .crossfade(true)
                     .build(),
             contentDescription = stringResource(R.string.image_of_the_day),
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),
+            error = {
+                // VideoFrameDecoder handles direct .mp4/.webm — when it can't
+                // (YouTube/Vimeo embeds), fall back to a tap-through card
+                // instead of a broken-image icon.
+                if (picture?.mediaType == "video") {
+                    VideoFallbackCard(
+                        title = picture.title,
+                        onClick = { onVideoTap(picture.url) },
+                    )
+                } else {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_broken_image),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            },
+        )
+        // Caption stays visible on image-days; on video-days the card paints
+        // over it via the error slot's fillMaxSize, so no double-label.
+        if (!isVideo) {
+            Text(
+                text = stringResource(R.string.image_of_the_day),
+                color = colorResource(R.color.default_text_color),
+                style = MaterialTheme.typography.titleLarge,
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomStart)
+                        .fillMaxWidth()
+                        .background(colorResource(R.color.image_of_day_caption_scrim))
+                        .padding(16.dp),
+            )
+        }
+    }
+}
+
+@Composable
+internal fun VideoFallbackCard(
+    title: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(colorResource(R.color.image_of_day_caption_scrim))
+                .clickable(onClick = onClick)
+                .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_videocam),
+            contentDescription = stringResource(R.string.video_of_the_day_open),
+            tint = colorResource(R.color.default_text_color),
+            modifier = Modifier.height(48.dp),
         )
         Text(
-            text = stringResource(R.string.image_of_the_day),
+            text = stringResource(R.string.video_of_the_day_format, title),
             color = colorResource(R.color.default_text_color),
-            style = MaterialTheme.typography.titleLarge,
-            modifier =
-                Modifier
-                    .align(Alignment.BottomStart)
-                    .fillMaxWidth()
-                    .background(colorResource(R.color.image_of_day_caption_scrim))
-                    .padding(16.dp),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(top = 8.dp),
         )
     }
 }

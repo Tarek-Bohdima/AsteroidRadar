@@ -44,7 +44,7 @@ plugins {
 // .github/workflows/release.yml greps these names, so don't rename them.
 val versionMajor = 3
 val versionMinor = 0
-val versionPatch = 3
+val versionPatch = 4
 val versionClassifier = "INTERNAL"
 
 // versionCode formula uses minSdk as a high digit so a future minSdk bump
@@ -297,4 +297,6 @@ dependencies {
     // androidx.compose.* dependencies.
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    // Only Espresso surface still wired — MainScreenTest's ACTION_VIEW assertion.
+    androidTestImplementation(libs.androidx.test.espresso.intents)
 }

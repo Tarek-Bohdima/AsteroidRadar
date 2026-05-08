@@ -28,11 +28,15 @@
  */
 package com.tarek.asteroidradar.di
 
+import android.content.Context
+import coil.ImageLoader
+import coil.decode.VideoFrameDecoder
 import com.tarek.asteroidradar.network.AsteroidService
 import com.tarek.asteroidradar.util.Constants
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -71,4 +75,18 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideAsteroidService(retrofit: Retrofit): AsteroidService = retrofit.create(AsteroidService::class.java)
+
+    // Issue #123: register VideoFrameDecoder so Coil extracts frame 0 from
+    // direct .mp4/.webm URLs (e.g. NASA's APOD video days). The application
+    // exposes this loader via ImageLoaderFactory, so every AsyncImage call
+    // site picks it up without needing per-call wiring.
+    @Provides
+    @Singleton
+    fun provideImageLoader(
+        @ApplicationContext context: Context,
+    ): ImageLoader =
+        ImageLoader
+            .Builder(context)
+            .components { add(VideoFrameDecoder.Factory()) }
+            .build()
 }

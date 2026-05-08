@@ -36,7 +36,10 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import coil.ImageLoader
+import coil.ImageLoaderFactory
 import com.tarek.asteroidradar.work.RefreshDataWorker
+import dagger.Lazy
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -48,10 +51,16 @@ import javax.inject.Inject
 @HiltAndroidApp
 class AsteroidRadarApplication :
     Application(),
-    Configuration.Provider {
+    Configuration.Provider,
+    ImageLoaderFactory {
     private val applicationScope = CoroutineScope(Dispatchers.Default)
 
     @Inject lateinit var workerFactory: HiltWorkerFactory
+
+    // Lazy so Coil resolves the loader on first AsyncImage compose, not at
+    // Application.onCreate — keeps cold start untouched. Hilt has populated
+    // the field by the time Coil calls newImageLoader().
+    @Inject lateinit var imageLoader: Lazy<ImageLoader>
 
     // The default WorkManagerInitializer is removed in the manifest so this
     // is read by WorkManager.getInstance() lazily — after Hilt has populated
@@ -62,6 +71,8 @@ class AsteroidRadarApplication :
                 .Builder()
                 .setWorkerFactory(workerFactory)
                 .build()
+
+    override fun newImageLoader(): ImageLoader = imageLoader.get()
 
     override fun onCreate() {
         super.onCreate()
