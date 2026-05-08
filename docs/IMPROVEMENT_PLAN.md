@@ -27,9 +27,9 @@ shippable; pick them off in order — each one stacks on the last.
 | — | NDK debug symbols in release AAB | Done (#124) — closes issue #112 (Play Console "missing debug symbols" warning). Rides `v3.0.3-INTERNAL`. |
 | — | APOD video-day handling | Done (#125) — Coil `VideoFrameDecoder` for `video/*` APOD entries + video-card fallback. Bumps to **`v3.0.4-INTERNAL`**. |
 | 13a | Toolchain bump aligned to NIA (AGP 9 + Kotlin 2.3 + Hilt 2.59, drop kapt) | Done (#127) — folded 13c's kapt removal in via NIA's `ksp(kotlin-metadata)` pattern. Bumps to **`v4.0.0-INTERNAL`**. |
-| 13b | AndroidX group bump | Queued — last remaining sub-PR for issue #78. lifecycle 2.10.x, navigation 2.9.x, room 2.8.4+, work 2.11.x. |
+| 13b | AndroidX group bump | Done (#129) — lifecycle 2.10, nav 2.9.8, room 2.8.4, work 2.11.2, +compileSdk/targetSdk 36. Bumps to **`v4.0.1-INTERNAL`**. Closes issue #78. |
 | 13c | Drop kapt for Hilt | Collapsed into 13a — the toolchain bump forced it (Hilt's metadata library version cap surfaced under Kotlin 2.3, and NIA's pattern was the documented fix). |
-| 14 | Baseline profiles + macrobenchmark | Queued — graduated from "Quality bets". Compounds with Phase 12's cold-start work and Phase 5's Hilt graph. |
+| 14 | Baseline profiles + macrobenchmark | **Active** — graduated from "Quality bets". Compounds with Phase 12's cold-start work and Phase 5's Hilt graph. |
 | — | **Module split** lands with feature #2, not as a phase | — |
 
 Tick the table when phases land. Each phase below lists scope, rationale, and
@@ -38,18 +38,18 @@ the rough size; sub-bullets are the concrete deltas.
 ## Current shipping state
 
 Snapshot for whoever opens this repo next (likely future-you). Reflects the
-state at 2026-05-08, after Phase 13a (#127) merged and `v4.0.0-INTERNAL`
-got tagged.
+state at 2026-05-08, after Phase 13 closed end-to-end (`v4.0.0-INTERNAL` +
+`v4.0.1-INTERNAL` tagged the same day).
 
 - **Live on Play Internal**: `v3.0.4-INTERNAL` — bundles Phase 12 + DI
   cleanup + NDK symbols + APOD video-day handling. User confirmed it
   behaves correctly on a Pixel 7 Pro 2026-05-08.
-- **Version-of-record on `master`**: `v4.0.0-INTERNAL` — Phase 13a's
-  toolchain bump. Tag pushed 2026-05-08 *without* device smoke per user
-  direction (build was already validated end-to-end through every CI
-  gate including `assembleRelease` + R8 + minify; smoke was waived as a
-  one-off, second precedent after `v3.0.3-INTERNAL`). The pre-tag protocol
-  in the operating principles below stays in force as the default.
+- **Version-of-record on `master`**: `v4.0.1-INTERNAL` — Phase 13b's
+  AndroidX group bump. Three consecutive smoke-skips this cycle
+  (`v3.0.3`, `v4.0.0`, `v4.0.1`) — all explicit one-offs, not new policy.
+  The pre-tag protocol in the operating principles still says install on
+  a real device before any future `v*` tag; if the pattern continues
+  past `v5.0`, fold it into the principles section.
 - **v3.x → v4.0 release timeline** (chronological):
   - `v3.0.0-INTERNAL` — Phase 9c Compose rewrite. **Broken on real devices**
     via release-only converter-factory regression. Never roll back to.
@@ -65,10 +65,31 @@ got tagged.
     Internal, on user's phone 2026-05-08.
   - `v4.0.0-INTERNAL` — Phase 13a (#127). AGP 9 + Kotlin 2.3 + Hilt 2.59
     + KSP-driven Hilt + drop kapt. Tagged without device smoke (one-off
-    skip; pre-tag protocol stays default).
-- **Next pickup**: Phase 13b — AndroidX group bump (last remaining sub-PR
-  for issue #78). lifecycle 2.10.x, navigation 2.9.x, room 2.8.4+,
-  work 2.11.x. Patch bump (no breaking surface vs `v4.0.0-INTERNAL`).
+    skip; workflow run `25575673678` succeeded in 6m39s).
+  - `v4.0.1-INTERNAL` — Phase 13b (#129). AndroidX group bump (lifecycle
+    2.10, nav 2.9.8, room 2.8.4, work 2.11.2, +compileSdk/targetSdk 36).
+    Tagged without device smoke (workflow run `25576639557`). Closes
+    issue #78 cleanly via `Closes #78`.
+- **Next pickup**: Phase 14 — baseline profiles + macrobenchmark module.
+  New `:benchmark` module (project's first second-module). `StartupBenchmark`
+  + `BaselineProfileGenerator` driving the four golden-path flows.
+
+### Issue close-keyword lesson (2026-05-08)
+
+PR #127 used `Refs #78` to keep the umbrella issue open until the final
+sub-PR landed, but GitHub auto-closed `#78` on merge anyway via
+`closingIssuesReferences` resolving to `[78]` (cause unclear; possibly
+the issue body's own `Closes #72, #73, #74` references getting parsed
+when #127 cross-linked it). Issue had to be reopened manually.
+
+PR #129 then used explicit `Closes #78` and the close worked cleanly as
+intended. Lesson:
+- For umbrella issues that should stay open until later sub-PRs land,
+  use prose mentions ("Part of #N") rather than `Refs #N`. Avoid putting
+  any `Fixes`/`Closes`/`Resolves` keyword anywhere — including within
+  the issue's quoted body.
+- For the final sub-PR that should close the umbrella, use explicit
+  `Closes #N`.
 
 ## Retrospective — v3.x cycle (Phases 9–12, plus the v3.0.0 incident)
 
@@ -610,14 +631,20 @@ v3.x retrospective above.
   same metadata), (f) drop deprecated `android.enableJetifier=true` and
   the now-default `android.nonTransitiveRClass=false`. Net effect: 13c's
   scope folded in here. Bumped to `v4.0.0-INTERNAL`.
-- **13b — AndroidX group (`feat/phase-13b-androidx`).** Queued. Last
-  remaining sub-PR for issue #78. `lifecycle 2.8.7` → `2.10.x`,
-  `navigation 2.8.5` → `2.9.x` (incl. the safe-args plugin entry, kept
-  in the catalog as a Nav alignment marker even though it's not
-  applied), `room 2.8.0` → `2.8.4+`, `work 2.10.0` → `2.11.x`. Other
-  AndroidX libs to current stable matching the above. Patch bump on
-  `v4.0.0-INTERNAL` — no breaking surface introduced beyond what 13a
-  already shipped.
+- **13b — AndroidX group (`feat/phase-13b-androidx`, PR #129).** **Done.**
+  Pins moved: `lifecycle 2.8.7` → `2.10.0`, `navigation 2.8.5` → `2.9.8`,
+  `room 2.8.0` → `2.8.4`, `work 2.10.0` → `2.11.2`, `activity 1.10.1` →
+  `1.13.0`, `appcompat 1.7.0` → `1.7.1`, `constraintlayout 2.2.0` →
+  `2.2.1`, `hilt-work / hilt-navigation-compose / hilt-compiler 1.2.0` →
+  `1.3.0`. **Forced toolchain bumps**: `compileSdk` + `targetSdk` 35 →
+  36 (lifecycle 2.10 / nav 2.9 floor; AGP flagged at configure time;
+  `minSdk` stays at 26 — no breaking-for-users bump). One source change:
+  `MainScreen.kt` import migration for the relocated `hiltViewModel()`
+  in androidx.hilt 1.3.0 (`androidx.hilt.navigation.compose.hiltViewModel`
+  → `androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel`). Compose
+  BOM intentionally **not** bumped (still `2025.01.01`) — Compose surface
+  needs its own validation phase separate from the AndroidX-core group.
+  Bumped to `v4.0.1-INTERNAL`.
 - **13c — Drop kapt.** **Collapsed into 13a.** Originally scoped as a
   follow-up that would only ship if a release build proved Hilt's
   `enableAggregatingTask = true` no longer raised the JavaPoet error.
@@ -627,6 +654,25 @@ v3.x retrospective above.
   fix — drop kapt, use `ksp(hilt-compiler) + ksp(kotlin-metadata)` —
   was the only way through. So 13a did 13c's work too, and the kapt
   workaround disappeared in the same PR that introduced its motivation.
+
+### Things we hit during 13b (added 2026-05-08)
+
+- **AndroidX 2.10 / 2.9 require `compileSdk 36`.** AGP raises a
+  configure-time error if `compileSdk` is below the floor of any
+  declared dependency. `targetSdk` was bumped to 36 alongside
+  `compileSdk` for consistency; `minSdk` stays at 26 (no
+  breaking-for-users bump per the SemVer table in `CLAUDE.md`).
+- **`hiltViewModel()` relocated in androidx.hilt 1.3.0.** The function
+  moved from `androidx.hilt.navigation.compose` to
+  `androidx.hilt.lifecycle.viewmodel.compose`. Old import still
+  compiles via `@Deprecated`, but lint emits a warning until updated.
+  Single-line fix in `MainScreen.kt`.
+- **NIA's pins are sometimes more conservative than the latest stable.**
+  NIA stays on `activity 1.9.3` and `navigation 2.8.5`; we ended up
+  ahead at `1.13.0` and `2.9.8` respectively. The NIA-consultation
+  rule (operating principle 6) is for *patterns and architecture*, not
+  for *version pins* — for pins, latest stable on Maven Central is
+  fine when there's a clear motivation to bump.
 
 ### Things we hit during 13a (kept here so 13b doesn't relearn them)
 
