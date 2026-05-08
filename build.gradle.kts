@@ -33,11 +33,23 @@
 // while per-subproject application happens through the convention plugin
 // (root-only application doesn't reach subprojects whose Android plugin is
 // applied via a precompiled script plugin).
+
+// Force a Kotlin 2.3-compatible `kotlin-metadata-jvm` onto the buildscript
+// classpath so DAGP's `ExplodeJarTask` can read 2.3-emitted bytecode metadata.
+// DAGP 2.18.0 bundles `kotlin-metadata-jvm` 2.1.x; without this constraint it
+// fails with "Provided Metadata instance has version 2.3.0, while maximum
+// supported version is 2.1.0". Same trick the Hilt convention plugin uses for
+// its KSP processor.
+buildscript {
+    dependencies {
+        classpath(libs.kotlin.metadata)
+    }
+}
+
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.detekt) apply false
-    alias(libs.plugins.kotlin.android) apply false
-    alias(libs.plugins.kotlin.kapt) apply false
+    alias(libs.plugins.hilt) apply false
     alias(libs.plugins.kotlin.parcelize) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.ksp) apply false

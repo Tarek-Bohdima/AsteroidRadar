@@ -42,9 +42,9 @@ plugins {
 // Version components — bump these (not versionCode / versionName directly) when
 // cutting a release. Classifier choices: INTERNAL, ALPHA, BETA, RC, RELEASE.
 // .github/workflows/release.yml greps these names, so don't rename them.
-val versionMajor = 3
+val versionMajor = 4
 val versionMinor = 0
-val versionPatch = 4
+val versionPatch = 0
 val versionClassifier = "INTERNAL"
 
 // versionCode formula uses minSdk as a high digit so a future minSdk bump
@@ -255,13 +255,9 @@ dependencies {
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
 
-    // Hilt's main compiler runs through kapt — see the convention plugin
-    // comment for the JavaPoet/aggregator-task workaround this preserves.
-    // The dagger-hilt compiler comes from the convention plugin's `ksp(...)`
-    // declaration and is overridden here by the kapt path Hilt prefers when
-    // both are present. Drop both this kapt dep and the kapt plugin once
-    // Hilt + Gradle metadata versions realign.
-    kapt(libs.hilt.compiler)
+    // Hilt's compiler + the kotlin-metadata-jvm pin are wired in the
+    // `asteroidradar.android.hilt` convention plugin's `ksp(...)` block; no
+    // module-side declaration needed.
 
     implementation(libs.timber)
 

@@ -29,27 +29,18 @@ import com.android.build.api.dsl.ApplicationExtension
 // signing, buildTypes) stays in the consuming script.
 //
 // Phase 9c retired Data Binding + `androidx.navigation.safeargs.kotlin`
-// (replaced by Nav-Compose typed routes). The kotlinx-serialization compiler
-// plugin is the new entry — required by the @Serializable Asteroid that
-// Nav-Compose encodes into route arguments.
-//
-// `kotlin-kapt` stays applied even though no @BindingAdapter survives, so
-// that `kapt(libs.hilt.compiler)` in :app routes Hilt's aggregating step
-// through kapt instead of the broken Gradle worker. Hilt 2.52's KSP
-// aggregator (`hiltAggregateDeps*`) hits a NoSuchMethodError on
-// `ClassName.canonicalName()` once kapt isn't there to pin JavaPoet 1.13
-// indirectly: AGP brings JavaPoet 1.10 onto the daemon classloader, Gradle's
-// classloader-resolution race lets 1.10 win, and Hilt's bytecode (compiled
-// against 1.13) blows up. Hilt's switch to Palantir's javapoet fork lands in
-// 2.55, but the 2.55+ classes ship with Kotlin 2.1 metadata that even Gradle
-// 8.13's embedded Kotlin (2.0.21) won't read. Until that toolchain bump is
-// taken as its own scoped step, kapt's presence quietly steers Hilt around
-// the bug — there are no other kapt users left, so this is otherwise a no-op.
+// (replaced by Nav-Compose typed routes). Phase 13a retired `kotlin-kapt` —
+// Hilt 2.59+ uses Palantir's javapoet fork (no JavaPoet 1.10 leak) and its
+// compiler now runs through KSP. The kotlinx-serialization compiler plugin
+// stays — required by the @Serializable Asteroid that Nav-Compose encodes
+// into route arguments.
+// AGP 9.0 has built-in Kotlin support — `org.jetbrains.kotlin.android` is no
+// longer applied (and would error out if it were). The Kotlin compile tasks
+// are still configured via the Kotlin Gradle plugin types, since AGP's built-in
+// support uses the same task classes.
 plugins {
     id("com.android.application")
     id("com.autonomousapps.dependency-analysis")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.kapt")
     id("org.jetbrains.kotlin.plugin.parcelize")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.devtools.ksp")
@@ -83,12 +74,11 @@ extensions.configure<ApplicationExtension> {
     }
 }
 
-// `kotlinOptions` lives on the Kotlin plugin extension, not the Android one;
-// configure it via the project's `tasks.withType<KotlinCompile>()` API so this
-// works on Kotlin 1.6.x as well as later majors that move toward
-// `compilerOptions {}`. Phase 4's Kotlin bump can swap this out cleanly.
+// JVM target on the Kotlin compile tasks. The legacy `kotlinOptions { }` DSL
+// was promoted from deprecation to error in Kotlin 2.3; configure via the
+// Provider-based `compilerOptions` API instead.
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class.java).configureEach {
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
