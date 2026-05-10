@@ -1,13 +1,13 @@
 # Version catalog — single source of truth for plugin / library versions.
 
 [versions]
-agp = "9.0.0"
+agp = "9.2.1"
 kotlin = "2.3.21"
 # KSP version format is `<kotlin>-<ksp-impl>` since KSP2 (>= 2.0) — must match
 # the Kotlin compiler version exactly on the leading segment. Pinned to NIA's
 # 2.3.4 (Kotlin 2.3.0 baseline) rather than 2.3.7, which is the bleeding edge
 # where Hilt's compatibility hasn't fully caught up.
-ksp = "2.3.4"
+ksp = "2.3.7"
 androidxNavigation = "2.9.8"
 
 androidxActivity = "1.13.0"
