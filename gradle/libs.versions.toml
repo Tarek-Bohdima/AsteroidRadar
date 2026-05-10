@@ -29,7 +29,7 @@ androidxWork = "2.11.2"
 # Coroutines core + android unified on a single ref. Bumped to the
 # Kotlin-2.3-compatible release in Phase 13a alongside the Kotlin / KSP / AGP
 # toolchain bump.
-kotlinxCoroutines = "1.10.2"
+kotlinxCoroutines = "1.11.0"
 # kotlinx-serialization-json — typed Nav-Compose routes (Phase 9c) encode
 # Asteroid via Json.encodeToString. The Kotlin Serialization Gradle plugin
 # version-tracks the Kotlin pin, so it doesn't need its own ref.
