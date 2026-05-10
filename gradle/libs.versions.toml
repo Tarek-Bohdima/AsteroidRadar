@@ -33,7 +33,7 @@ kotlinxCoroutines = "1.11.0"
 # kotlinx-serialization-json — typed Nav-Compose routes (Phase 9c) encode
 # Asteroid via Json.encodeToString. The Kotlin Serialization Gradle plugin
 # version-tracks the Kotlin pin, so it doesn't need its own ref.
-kotlinxSerialization = "1.7.3"
+kotlinxSerialization = "1.11.0"
 
 coil = "2.7.0"
 # Espresso — only `intents` is wired (for MainScreenTest's ACTION_VIEW
