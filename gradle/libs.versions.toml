@@ -1,7 +1,7 @@
 # Version catalog — single source of truth for plugin / library versions.
 
 [versions]
-agp = "9.0.0"
+agp = "9.2.1"
 kotlin = "2.3.0"
 # KSP version format is `<kotlin>-<ksp-impl>` since KSP2 (>= 2.0) — must match
 # the Kotlin compiler version exactly on the leading segment. Pinned to NIA's
