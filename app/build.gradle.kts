@@ -44,12 +44,34 @@ plugins {
     alias(libs.plugins.kover)
 }
 
+// Phase 15b — Firebase plugins applied conditionally on `google-services.json`
+// presence. Keeps debug builds working for contributors who haven't set up
+// Firebase yet; release builds require the file (the fail-fast in the task
+// graph below produces a clearer message than the plugin's own error). The
+// plugin Maven coordinates are still on the buildscript classpath via the
+// `apply false` aliases in the root build script.
+val googleServicesJson = file("google-services.json")
+if (googleServicesJson.exists()) {
+    apply(
+        plugin =
+            libs.plugins.google.services
+                .get()
+                .pluginId,
+    )
+    apply(
+        plugin =
+            libs.plugins.firebase.crashlytics
+                .get()
+                .pluginId,
+    )
+}
+
 // Version components — bump these (not versionCode / versionName directly) when
 // cutting a release. Classifier choices: INTERNAL, ALPHA, BETA, RC, RELEASE.
 // .github/workflows/release.yml greps these names, so don't rename them.
 val versionMajor = 4
 val versionMinor = 0
-val versionPatch = 2
+val versionPatch = 3
 val versionClassifier = "INTERNAL"
 
 // versionCode formula uses minSdk as a high digit so a future minSdk bump
@@ -80,6 +102,15 @@ gradle.taskGraph.whenReady {
     if (allTasks.any { it.name in releaseTasks }) {
         require(env("NASA_API_KEY").isNotBlank()) {
             "NASA_API_KEY is required for release builds. Set it via env var or local.properties."
+        }
+        // Phase 15b — release builds need google-services.json present so the
+        // google-services plugin generates the per-variant resources Firebase
+        // Crashlytics reads at SDK init. Fail at task-graph-ready time with a
+        // pointer to the README rather than the plugin's terse default error.
+        require(googleServicesJson.exists()) {
+            "app/google-services.json is required for release builds. " +
+                "Download from console.firebase.google.com or decode " +
+                "GOOGLE_SERVICES_JSON_BASE64 via CI — see README."
         }
     }
 }
@@ -265,6 +296,18 @@ dependencies {
     // module-side declaration needed.
 
     implementation(libs.timber)
+
+    // Phase 15b — Firebase Crashlytics. Pulled with `implementation` (not
+    // `releaseImplementation`) so `CrashlyticsLogger` + `FirebaseModule`
+    // compile in both build types and unit tests in the default `src/test/`
+    // source set can construct the logger with a mocked FirebaseCrashlytics.
+    // `FirebaseCrashlytics.getInstance()` is never invoked at runtime in
+    // debug because the @IntoSet binding for CrashlyticsLogger lives in
+    // `LoggerReleaseModule` (in `app/src/release/...`), so the debug Hilt
+    // graph never asks for it. APK size impact on debug is ~1-2 MB; the
+    // release-only binding is the actual Gate 1 (build-type filtering).
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics.ktx)
 
     // Baseline profile producer. The `:benchmark` module generates
     // `baseline-prof.txt` via its `StartupBaselineProfile`; AGP wires the

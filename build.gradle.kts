@@ -49,6 +49,12 @@ buildscript {
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.detekt) apply false
+    // Firebase Crashlytics + Google Services plugins — Phase 15b. Registered
+    // here `apply false` so app/build.gradle.kts can apply them conditionally
+    // (only when `app/google-services.json` exists); the plugin classpath
+    // resolution still has to happen at the root.
+    alias(libs.plugins.firebase.crashlytics) apply false
+    alias(libs.plugins.google.services) apply false
     alias(libs.plugins.hilt) apply false
     alias(libs.plugins.kotlin.parcelize) apply false
     alias(libs.plugins.kotlin.serialization) apply false
