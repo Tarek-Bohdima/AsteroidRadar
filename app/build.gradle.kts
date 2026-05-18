@@ -307,7 +307,7 @@ dependencies {
     // graph never asks for it. APK size impact on debug is ~1-2 MB; the
     // release-only binding is the actual Gate 1 (build-type filtering).
     implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.crashlytics.ktx)
+    implementation(libs.firebase.crashlytics.sdk)
 
     // Baseline profile producer. The `:benchmark` module generates
     // `baseline-prof.txt` via its `StartupBaselineProfile`; AGP wires the

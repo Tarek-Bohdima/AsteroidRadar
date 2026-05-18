@@ -70,11 +70,14 @@ timber = "5.0.1"
 # Firebase BoM aligns every firebase-* artifact to one tested-together release.
 # Phase 15b only pulls Crashlytics; the BoM keeps the door open for future
 # Firebase additions (Performance, Remote Config) without per-artifact pinning.
-firebaseBom = "33.7.0"
+# Bumped to 34.13.0 per Firebase Console's setup guidance; the BoM 34 series
+# also folds Kotlin extensions back into the main `firebase-crashlytics`
+# artifact, so the legacy `-ktx` suffix is dropped on the library coord below.
+firebaseBom = "34.13.0"
 # Google Services Gradle plugin parses `app/google-services.json` and generates
 # the per-build-type `google-services.xml` resource that Firebase libs read at
 # init. Plugin version-tracks the Firebase Android client release line.
-googleServices = "4.4.2"
+googleServices = "4.4.4"
 # Firebase Crashlytics Gradle plugin — uploads ProGuard / R8 mapping files +
 # generates the BuildConfig flag the SDK uses to detect minification.
 firebaseCrashlyticsPlugin = "3.0.2"
@@ -150,12 +153,14 @@ retrofit-converter-scalars = { module = "com.squareup.retrofit2:converter-scalar
 
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 # Firebase BoM platform — applied via `platform(...)` so the firebase-* deps
-# below can drop their version refs. Phase 15b imports it only on the release
-# classpath via `releaseImplementation`.
+# below can drop their version refs.
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
-# Crashlytics KTX SDK — Kotlin-idiomatic extensions over firebase-crashlytics.
-# Version managed by the BoM; no version.ref here.
-firebase-crashlytics-ktx = { module = "com.google.firebase:firebase-crashlytics-ktx" }
+# Crashlytics SDK. The `-ktx` suffix was deprecated in BoM 34 — Kotlin
+# extensions are now folded into the main artifact. Catalog key is
+# `firebase-crashlytics-sdk` (not `firebase-crashlytics`) to keep a distinct
+# accessor from the `firebase-crashlytics` plugin entry below — same pattern
+# as `hilt-android` (library) coexisting with `hilt` (plugin).
+firebase-crashlytics-sdk = { module = "com.google.firebase:firebase-crashlytics" }
 # coil-video registers a VideoFrameDecoder.Factory that pulls frame 0 out
 # of any direct .mp4/.webm URL Coil downloads — covers NASA APOD video days
 # (#123). The ImageLoader the app provides via NetworkModule installs the
