@@ -32,8 +32,8 @@ shippable; pick them off in order — each one stacks on the last.
 | 14a | `:benchmark` module + `StartupBenchmark` | Done (#132) — first second-module in the project. AndroidX Macrobenchmark library on AGP-9-compatible `androidx.baselineprofile 1.5.0-alpha06`. |
 | 14b | `BaselineProfileGenerator` + checked-in `baseline-prof.txt` | Done (#133) — 20.7k-entry profile generated on Pixel 7 / API 33 emulator; bundles into AAB at `BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`. Bumps to **`v4.0.2-INTERNAL`** (tag bundled with 14c). |
 | 14c | CI workflow + GMD provisioning | Done (#134) — manual `workflow_dispatch` only; provisions Pixel 7 / API 34 GMD; uploads Perfetto traces as artifacts. Closes issue #131. |
-| 15a | Logging architecture (sealed events + Logger interface + TimberLogger sink) | In progress (#151) — sealed `LogEvent` hierarchy + `Logger` interface + `CompositeLogger` fanout via Hilt `@IntoSet`. Migrates 4 existing `Timber.d` call sites and adds 2 `RefreshDataWorker` lifecycle events. Reference doc at `docs/patterns/structured-logging.md`. Part of umbrella #150. |
-| 15b | Firebase Crashlytics sink | Queued — adds `CrashlyticsLogger` as a second `@IntoSet` binding. Wires Firebase setup + `google-services.json`. Bumps to **`v4.0.3-INTERNAL`** when it lands. Part of umbrella #150. |
+| 15a | Logging architecture (sealed events + Logger interface + TimberLogger sink) | Done (#152) — sealed `LogEvent` hierarchy + `Logger` interface + `CompositeLogger` fanout via Hilt `@IntoSet`. Migrated 4 existing `Timber.d` call sites and added 2 `RefreshDataWorker` lifecycle events. Reference doc at `docs/patterns/structured-logging.md`. |
+| 15b | Firebase Crashlytics sink | Done — `CrashlyticsLogger` bound into `Set<Logger>` only in release builds via `LoggerReleaseModule` (Gate 1, build-type filtering). Severity floor at Warn inside the sink (Gate 2) keeps Crashlytics within its per-session non-fatal cap. Adds Firebase BoM + Crashlytics SDK + plugins; `google-services.json` required for release builds (gitignored; CI decodes from `GOOGLE_SERVICES_JSON_BASE64`). Bumps to **`v4.0.3-INTERNAL`**. Closes umbrella #150. |
 | — | **Module split** lands with feature #2, not as a phase | — |
 
 Tick the table when phases land. Each phase below lists scope, rationale, and
@@ -42,18 +42,18 @@ the rough size; sub-bullets are the concrete deltas.
 ## Current shipping state
 
 Snapshot for whoever opens this repo next (likely future-you). Reflects the
-state at 2026-05-18, after Phase 14 closed end-to-end (`v4.0.2-INTERNAL`
-tagged 2026-05-08, bundling 14a/b/c into a single cut).
+state at 2026-05-18, after Phase 15 closed end-to-end with `v4.0.3-INTERNAL`
+bundling 15a (logging architecture) + 15b (Crashlytics sink) into one tag.
 
 - **Live on Play Internal**: `v3.0.4-INTERNAL` — bundles Phase 12 + DI
   cleanup + NDK symbols + APOD video-day handling. User confirmed it
   behaves correctly on a Pixel 7 Pro 2026-05-08.
-- **Version-of-record on `master`**: `v4.0.2-INTERNAL` — Phase 14
-  (baseline profiles + macrobenchmark). Four consecutive smoke-skips this
-  cycle (`v3.0.3`, `v4.0.0`, `v4.0.1`, `v4.0.2`) — all explicit one-offs,
-  not new policy. The pre-tag protocol in the operating principles still
-  says install on a real device before any future `v*` tag; if the
-  pattern continues past `v5.0`, fold it into the principles section.
+- **Version-of-record on `master`**: `v4.0.3-INTERNAL` — Phase 15
+  (structured logging + Crashlytics). The streak of four consecutive
+  smoke-skips (`v3.0.3`, `v4.0.0`, `v4.0.1`, `v4.0.2`) ended with 15a's
+  on-emulator smoke (typed events + worker lifecycle verified on AVD).
+  `v4.0.3` adds the Crashlytics sink — release-build install + force-crash
+  smoke is the appropriate pre-tag check before pushing the tag.
 - **v3.x → v4.0 release timeline** (chronological):
   - `v3.0.0-INTERNAL` — Phase 9c Compose rewrite. **Broken on real devices**
     via release-only converter-factory regression. Never roll back to.
@@ -79,8 +79,20 @@ tagged 2026-05-08, bundling 14a/b/c into a single cut).
     Tagged 2026-05-08 (workflow run `25583579445`); smoke skipped (the
     fourth in the streak — benchmark module + macrobenchmark workflow
     are dev-tooling-only, never ship to users).
+  - `v4.0.3-INTERNAL` — Phase 15 (#152 + 15b PR). Structured logging
+    pattern: sealed `LogEvent` taxonomy + Hilt set-multibinding fanout
+    (15a, on-AVD smoke verified on Pixel 7 Pro / API 33), then Firebase
+    Crashlytics sink as a second `@IntoSet` binding scoped to release
+    builds via source-set Hilt module (15b, Gate 1 build-type filter +
+    Gate 2 severity floor at Warn). Educational reference doc at
+    `docs/patterns/structured-logging.md`. Tag held pending release-build
+    smoke on a real device (force-crash → confirm Crashlytics receives
+    it within ~5 min).
 - **Next pickup**: queue empty. Pickup is from the "Quality bets" parking
-  lot (capped at 3) or fresh feature work.
+  lot (capped at 3) or fresh feature work. Possible 15c-shaped follow-ups
+  (NavController route tracking, tag-as-event-id restructure,
+  decorator-based runtime filtering, double-swallow cleanup) were
+  explicitly deferred — promote via a fresh issue if any becomes timely.
 
 ### Issue close-keyword lesson (2026-05-08)
 

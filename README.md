@@ -76,6 +76,32 @@ KEY_PASSWORD=...
 The keystore must be **PKCS12** — `signingConfigs.release.storeType` is hard-coded
 to `"PKCS12"` in `app/build.gradle`.
 
+### Firebase Crashlytics (Phase 15b)
+
+Release builds ship structured logs and crash reports to Firebase Crashlytics
+via the typed-event logging pattern documented in
+[`docs/patterns/structured-logging.md`](docs/patterns/structured-logging.md).
+The Firebase plugins are applied **conditionally** on the presence of
+`app/google-services.json`, so debug builds keep working for anyone who hasn't
+set up Firebase yet — only `assembleRelease` / `bundleRelease` / `packageRelease`
+require it (the build script fails fast if it's missing).
+
+To set up locally:
+
+1. Create a Firebase project at <https://console.firebase.google.com>.
+2. Add an Android app with package name `com.tarek.asteroidradar` (must match
+   `applicationId`).
+3. Download the generated `google-services.json` and place it at
+   `app/google-services.json`. The file is gitignored — never commit it.
+
+For CI, add the file's base64-encoded contents as the
+`GOOGLE_SERVICES_JSON_BASE64` GitHub Secret; the release workflow decodes it
+into place before building.
+
+The debug build type never wires the Crashlytics sink (`LoggerReleaseModule`
+lives in `app/src/release/`), so no Crashlytics traffic is generated during
+local development.
+
 ## Release flow
 
 Releases are tag-driven. Push a tag matching `v*` and
@@ -90,7 +116,9 @@ Releases are tag-driven. Push a tag matching `v*` and
    auto-flagged as pre-release.
 
 Required GitHub Secrets: `NASA_API_KEY`, `KEYSTORE_BASE64` (the PKCS12 keystore
-base64-encoded), `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
+base64-encoded), `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`,
+`GOOGLE_SERVICES_JSON_BASE64` (the Firebase config file, base64-encoded — see
+"Firebase Crashlytics" above).
 
 Tag/version conventions: SemVer with an optional classifier suffix that maps to
 a Play Store track:

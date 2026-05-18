@@ -13,6 +13,13 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Firebase configuration — generated per-developer / per-CI from the Firebase
+# Console. CI populates this from a GOOGLE_SERVICES_JSON_BASE64 secret; local
+# dev should download from console.firebase.google.com per the README. Never
+# commit — contains your project's API key and app IDs.
+app/google-services.json
+
 # Created by https://www.toptal.com/developers/gitignore/api/androidstudio,kotlin,macos
 # Edit at https://www.toptal.com/developers/gitignore?templates=androidstudio,kotlin,macos
 

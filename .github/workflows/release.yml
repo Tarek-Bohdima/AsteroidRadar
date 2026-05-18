@@ -40,6 +40,11 @@
 #   KEY_ALIAS            — your key alias (e.g. key13)
 #   KEY_PASSWORD         — your key password
 #   NASA_API_KEY         — NASA API key for release builds
+#   GOOGLE_SERVICES_JSON_BASE64
+#                        — base64-encoded google-services.json from Firebase
+#                          Console (Phase 15b). Required for Crashlytics.
+#                          Generate: base64 -i app/google-services.json \
+#                                    | tr -d '\n' | pbcopy
 # ──────────────────────────────────────────────────────────────
 
 name: Release
@@ -145,6 +150,18 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode \
             > ${{ runner.temp }}/release.jks
+
+      # ── 7b. Decode google-services.json ──────────────────────
+      #    Phase 15b — Firebase Crashlytics requires google-services.json
+      #    at app/google-services.json. Same pattern as the keystore: a
+      #    base64-encoded secret decoded into the location the build
+      #    expects. The google-services Gradle plugin reads this file at
+      #    configure time, generates per-variant resources, and the
+      #    Crashlytics SDK reads those at init.
+      - name: Decode google-services.json
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 --decode \
+            > app/google-services.json
 
       # ── 8. Build & sign release APK ──────────────────────────
       #    Gradle reads the env vars below and applies signingConfigs.release
