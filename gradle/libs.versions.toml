@@ -7,7 +7,7 @@ kotlin = "2.3.21"
 # the Kotlin compiler version exactly on the leading segment. Pinned to NIA's
 # 2.3.4 (Kotlin 2.3.0 baseline) rather than 2.3.7, which is the bleeding edge
 # where Hilt's compatibility hasn't fully caught up.
-ksp = "2.3.7"
+ksp = "2.3.8"
 androidxNavigation = "2.9.8"
 
 androidxActivity = "1.13.0"
