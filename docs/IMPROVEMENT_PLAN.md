@@ -30,8 +30,8 @@ shippable; pick them off in order — each one stacks on the last.
 | 13b | AndroidX group bump | Done (#129) — lifecycle 2.10, nav 2.9.8, room 2.8.4, work 2.11.2, +compileSdk/targetSdk 36. Bumps to **`v4.0.1-INTERNAL`**. Closes issue #78. |
 | 13c | Drop kapt for Hilt | Collapsed into 13a — the toolchain bump forced it (Hilt's metadata library version cap surfaced under Kotlin 2.3, and NIA's pattern was the documented fix). |
 | 14a | `:benchmark` module + `StartupBenchmark` | Done (#132) — first second-module in the project. AndroidX Macrobenchmark library on AGP-9-compatible `androidx.baselineprofile 1.5.0-alpha06`. |
-| 14b | `BaselineProfileGenerator` + checked-in `baseline-prof.txt` | Done (#133) — 20.7k-entry profile generated on Pixel 7 / API 33 emulator; bundles into AAB at `BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`. Bumps to **`v4.0.2-INTERNAL`** (held untagged). |
-| 14c | CI workflow + GMD provisioning | **Active** — manual `workflow_dispatch` only; provisions Pixel 7 / API 34 GMD; uploads Perfetto traces as artifacts. Closes issue #131. |
+| 14b | `BaselineProfileGenerator` + checked-in `baseline-prof.txt` | Done (#133) — 20.7k-entry profile generated on Pixel 7 / API 33 emulator; bundles into AAB at `BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`. Bumps to **`v4.0.2-INTERNAL`** (tag bundled with 14c). |
+| 14c | CI workflow + GMD provisioning | Done (#134) — manual `workflow_dispatch` only; provisions Pixel 7 / API 34 GMD; uploads Perfetto traces as artifacts. Closes issue #131. |
 | — | **Module split** lands with feature #2, not as a phase | — |
 
 Tick the table when phases land. Each phase below lists scope, rationale, and
@@ -40,18 +40,18 @@ the rough size; sub-bullets are the concrete deltas.
 ## Current shipping state
 
 Snapshot for whoever opens this repo next (likely future-you). Reflects the
-state at 2026-05-08, after Phase 13 closed end-to-end (`v4.0.0-INTERNAL` +
-`v4.0.1-INTERNAL` tagged the same day).
+state at 2026-05-18, after Phase 14 closed end-to-end (`v4.0.2-INTERNAL`
+tagged 2026-05-08, bundling 14a/b/c into a single cut).
 
 - **Live on Play Internal**: `v3.0.4-INTERNAL` — bundles Phase 12 + DI
   cleanup + NDK symbols + APOD video-day handling. User confirmed it
   behaves correctly on a Pixel 7 Pro 2026-05-08.
-- **Version-of-record on `master`**: `v4.0.1-INTERNAL` — Phase 13b's
-  AndroidX group bump. Three consecutive smoke-skips this cycle
-  (`v3.0.3`, `v4.0.0`, `v4.0.1`) — all explicit one-offs, not new policy.
-  The pre-tag protocol in the operating principles still says install on
-  a real device before any future `v*` tag; if the pattern continues
-  past `v5.0`, fold it into the principles section.
+- **Version-of-record on `master`**: `v4.0.2-INTERNAL` — Phase 14
+  (baseline profiles + macrobenchmark). Four consecutive smoke-skips this
+  cycle (`v3.0.3`, `v4.0.0`, `v4.0.1`, `v4.0.2`) — all explicit one-offs,
+  not new policy. The pre-tag protocol in the operating principles still
+  says install on a real device before any future `v*` tag; if the
+  pattern continues past `v5.0`, fold it into the principles section.
 - **v3.x → v4.0 release timeline** (chronological):
   - `v3.0.0-INTERNAL` — Phase 9c Compose rewrite. **Broken on real devices**
     via release-only converter-factory regression. Never roll back to.
@@ -72,14 +72,13 @@ state at 2026-05-08, after Phase 13 closed end-to-end (`v4.0.0-INTERNAL` +
     2.10, nav 2.9.8, room 2.8.4, work 2.11.2, +compileSdk/targetSdk 36).
     Tagged without device smoke (workflow run `25576639557`). Closes
     issue #78 cleanly via `Closes #78`.
-  - `v4.0.2-INTERNAL` *(tag held)* — Phase 14 (#132 + #133 + 14c TBD). Per
-    user direction at the close of 14b's session, **Phase 14 ships as one
-    tag covering all three sub-PRs** instead of three separate cuts. Tag
-    pushes when 14c lands.
-- **Next pickup**: Phase 14c — CI workflow + GMD provisioning. Manual
-  `workflow_dispatch` runs `:benchmark:pixel7Api34BenchmarkReleaseAndroidTest`
-  on an AGP-provisioned Pixel 7 / API 34 AVD; uploads Perfetto traces as
-  artifacts. Not gating any PR — informational signal only.
+  - `v4.0.2-INTERNAL` — Phase 14 (#132 + #133 + #134). Bundled into one
+    tag covering all three sub-PRs per user direction at 14b close.
+    Tagged 2026-05-08 (workflow run `25583579445`); smoke skipped (the
+    fourth in the streak — benchmark module + macrobenchmark workflow
+    are dev-tooling-only, never ship to users).
+- **Next pickup**: queue empty. Pickup is from the "Quality bets" parking
+  lot (capped at 3) or fresh feature work.
 
 ### Issue close-keyword lesson (2026-05-08)
 
