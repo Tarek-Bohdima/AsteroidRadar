@@ -26,52 +26,37 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-package com.tarek.asteroidradar.di
+package com.tarek.asteroidradar.log
 
-import android.content.Context
-import androidx.room.Room
-import com.tarek.asteroidradar.database.AsteroidDao
-import com.tarek.asteroidradar.database.AsteroidDatabase
-import com.tarek.asteroidradar.database.MIGRATION_1_2
-import com.tarek.asteroidradar.database.PictureOfDayDao
-import com.tarek.asteroidradar.log.Logger
-import com.tarek.asteroidradar.network.AsteroidService
-import com.tarek.asteroidradar.repository.AsteroidRepository
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.components.SingletonComponent
+import timber.log.Timber
+import javax.inject.Inject
 import javax.inject.Singleton
 
-@Module
-@InstallIn(SingletonComponent::class)
-object DatabaseModule {
-    @Provides
-    @Singleton
-    fun provideAsteroidDatabase(
-        @ApplicationContext context: Context,
-    ): AsteroidDatabase =
-        Room
-            .databaseBuilder(
-                context,
-                AsteroidDatabase::class.java,
-                "asteroids",
-            ).addMigrations(MIGRATION_1_2)
-            .build()
+// The Logcat sink. Routes every event through Timber so the existing
+// DebugTree planted in AsteroidRadarApplication.onCreate still picks the
+// calls up. The TimberLogger is the only place left in `main` that should
+// reference `timber.log.Timber.<level>(...)` — all other call sites go
+// through Logger.log(LogEvent.*).
+@Singleton
+class TimberLogger
+    @Inject
+    constructor() : Logger {
+        override fun log(event: LogEvent) {
+            val tree = Timber.tag(event.tag)
+            val rendered = event.message + event.attributes.toSuffix()
+            when (event.priority) {
+                LogPriority.Verbose -> tree.v(event.throwable, rendered)
+                LogPriority.Debug -> tree.d(event.throwable, rendered)
+                LogPriority.Info -> tree.i(event.throwable, rendered)
+                LogPriority.Warn -> tree.w(event.throwable, rendered)
+                LogPriority.Error -> tree.e(event.throwable, rendered)
+            }
+        }
 
-    @Provides
-    fun provideAsteroidDao(database: AsteroidDatabase): AsteroidDao = database.asteroidDao
-
-    @Provides
-    fun providePictureOfDayDao(database: AsteroidDatabase): PictureOfDayDao = database.pictureOfDayDao
-
-    @Provides
-    @Singleton
-    fun provideAsteroidRepository(
-        asteroidDao: AsteroidDao,
-        pictureOfDayDao: PictureOfDayDao,
-        asteroidService: AsteroidService,
-        logger: Logger,
-    ): AsteroidRepository = AsteroidRepository(asteroidDao, pictureOfDayDao, asteroidService, logger)
-}
+        private fun Map<String, Any>.toSuffix(): String =
+            if (isEmpty()) {
+                ""
+            } else {
+                entries.joinToString(prefix = " ", separator = " ") { "${it.key}=${it.value}" }
+            }
+    }

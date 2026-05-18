@@ -34,6 +34,8 @@ import com.tarek.asteroidradar.database.PictureOfDayDao
 import com.tarek.asteroidradar.database.asDomainModel
 import com.tarek.asteroidradar.domain.Asteroid
 import com.tarek.asteroidradar.domain.PictureOfDay
+import com.tarek.asteroidradar.log.LogEvent
+import com.tarek.asteroidradar.log.Logger
 import com.tarek.asteroidradar.network.AsteroidService
 import com.tarek.asteroidradar.network.asDatabaseModel
 import com.tarek.asteroidradar.network.parseAsteroidsJsonResult
@@ -42,13 +44,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import timber.log.Timber
 import java.time.LocalDate
 
 class AsteroidRepository(
     private val asteroidDao: AsteroidDao,
     private val pictureOfDayDao: PictureOfDayDao,
     private val asteroidService: AsteroidService,
+    private val logger: Logger,
 ) {
     sealed class AsteroidsFilter {
         data object TODAY : AsteroidsFilter()
@@ -98,7 +100,7 @@ class AsteroidRepository(
                     asteroidService.getImageOfDay(API_KEY).asDatabaseModel(),
                 )
             } catch (e: Exception) {
-                Timber.d("AsteroidRepository: refreshPictureOfDay() failed %s", e.message)
+                logger.log(LogEvent.Network.RefreshPictureOfDayFailed(e))
             }
         }
     }
@@ -112,7 +114,7 @@ class AsteroidRepository(
                         .asDatabaseModel(),
                 )
             } catch (e: Exception) {
-                Timber.d("AsteroidRepository: refreshAsteroids() failed %s", e.message)
+                logger.log(LogEvent.Network.RefreshAsteroidsFailed(e))
             }
         }
     }

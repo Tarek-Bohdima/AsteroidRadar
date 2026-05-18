@@ -32,6 +32,7 @@ import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import com.tarek.asteroidradar.domain.Asteroid
 import com.tarek.asteroidradar.domain.PictureOfDay
+import com.tarek.asteroidradar.log.Logger
 import com.tarek.asteroidradar.repository.AsteroidRepository
 import com.tarek.asteroidradar.repository.AsteroidRepository.AsteroidsFilter
 import io.mockk.coEvery
@@ -54,12 +55,14 @@ import org.junit.Test
 class MainViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var repository: AsteroidRepository
+    private lateinit var logger: Logger
     private lateinit var pictureOfDayFlow: MutableStateFlow<PictureOfDay?>
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         repository = mockk(relaxed = true)
+        logger = mockk(relaxed = true)
         pictureOfDayFlow = MutableStateFlow(null)
         // The init block kicks off both refresh paths; default both to no-op
         // so each test only stubs what it cares about. getPictureOfDay() is
@@ -78,7 +81,7 @@ class MainViewModelTest {
     @Test
     fun `init triggers parallel refresh of asteroids and APOD`() =
         runTest(testDispatcher) {
-            val viewModel = MainViewModel(repository)
+            val viewModel = MainViewModel(repository, logger)
             advanceUntilIdle()
 
             coVerify(exactly = 1) { repository.refreshAsteroids() }
@@ -90,7 +93,7 @@ class MainViewModelTest {
     @Test
     fun `imageOfTheDay mirrors the cached APOD flow`() =
         runTest(testDispatcher) {
-            val viewModel = MainViewModel(repository)
+            val viewModel = MainViewModel(repository, logger)
 
             viewModel.imageOfTheDay.test {
                 assertThat(awaitItem()).isNull()
@@ -108,7 +111,7 @@ class MainViewModelTest {
         runTest(testDispatcher) {
             coEvery { repository.refreshPictureOfDay() } throws RuntimeException("boom")
 
-            val viewModel = MainViewModel(repository)
+            val viewModel = MainViewModel(repository, logger)
             advanceUntilIdle()
 
             // Failure must not propagate; the cache flow is the source of truth.
@@ -125,7 +128,7 @@ class MainViewModelTest {
             every { repository.getAsteroidSelection(AsteroidsFilter.TODAY) } returns today
             every { repository.getAsteroidSelection(AsteroidsFilter.WEEK) } returns week
 
-            val viewModel = MainViewModel(repository)
+            val viewModel = MainViewModel(repository, logger)
             advanceUntilIdle()
 
             // Collect the StateFlow so flatMapLatest re-evaluates on each filter

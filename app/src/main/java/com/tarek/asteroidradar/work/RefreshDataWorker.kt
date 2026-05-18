@@ -32,6 +32,8 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.tarek.asteroidradar.log.LogEvent
+import com.tarek.asteroidradar.log.Logger
 import com.tarek.asteroidradar.repository.AsteroidRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -44,6 +46,7 @@ class RefreshDataWorker
         @Assisted appContext: Context,
         @Assisted params: WorkerParameters,
         private val repository: AsteroidRepository,
+        private val logger: Logger,
     ) : CoroutineWorker(
             appContext,
             params,
@@ -52,12 +55,35 @@ class RefreshDataWorker
             const val WORK_NAME = "RefreshDataWorker"
         }
 
-        override suspend fun doWork(): Result =
-            try {
-                repository.deletePastAsteroids()
-                repository.refreshAsteroids()
-                Result.success()
-            } catch (e: HttpException) {
-                Result.retry()
+        override suspend fun doWork(): Result {
+            logger.log(LogEvent.Work.RefreshDataWorkerStarted)
+            val start = System.currentTimeMillis()
+            // Track the outcome alongside the Result rather than pattern-matching
+            // the returned Result post-hoc. `Result.Success`/`Result.Retry` are
+            // annotated @RestrictTo(LIBRARY_GROUP) in androidx.work, so external
+            // code can't reference them as types — only construct via the
+            // factory functions and treat them opaquely. The `finally` keeps
+            // the lifecycle event firing even if a non-HttpException propagates
+            // out of repository.refreshAsteroids() (WorkManager would treat it
+            // as Result.failure() — we log Outcome.Failure before re-throwing).
+            var outcome: LogEvent.Work.Outcome = LogEvent.Work.Outcome.Failure
+            return try {
+                try {
+                    repository.deletePastAsteroids()
+                    repository.refreshAsteroids()
+                    outcome = LogEvent.Work.Outcome.Success
+                    Result.success()
+                } catch (e: HttpException) {
+                    outcome = LogEvent.Work.Outcome.Retry
+                    Result.retry()
+                }
+            } finally {
+                logger.log(
+                    LogEvent.Work.RefreshDataWorkerFinished(
+                        durationMs = System.currentTimeMillis() - start,
+                        outcome = outcome,
+                    ),
+                )
             }
+        }
     }

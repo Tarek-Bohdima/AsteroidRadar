@@ -35,6 +35,8 @@ import com.tarek.asteroidradar.database.DatabasePictureOfDay
 import com.tarek.asteroidradar.database.PictureOfDayDao
 import com.tarek.asteroidradar.database.asDomainModel
 import com.tarek.asteroidradar.domain.PictureOfDay
+import com.tarek.asteroidradar.log.LogEvent
+import com.tarek.asteroidradar.log.Logger
 import com.tarek.asteroidradar.network.AsteroidService
 import com.tarek.asteroidradar.network.ImageOfTheDay
 import com.tarek.asteroidradar.repository.AsteroidRepository.AsteroidsFilter
@@ -57,6 +59,7 @@ class AsteroidRepositoryTest {
     private lateinit var dao: FakeAsteroidDao
     private lateinit var pictureOfDayDao: FakePictureOfDayDao
     private lateinit var service: FakeAsteroidService
+    private lateinit var logger: RecordingLogger
     private lateinit var repository: AsteroidRepository
 
     @Before
@@ -64,7 +67,8 @@ class AsteroidRepositoryTest {
         dao = FakeAsteroidDao()
         pictureOfDayDao = FakePictureOfDayDao()
         service = FakeAsteroidService()
-        repository = AsteroidRepository(dao, pictureOfDayDao, service)
+        logger = RecordingLogger()
+        repository = AsteroidRepository(dao, pictureOfDayDao, service, logger)
     }
 
     @Test
@@ -158,11 +162,13 @@ class AsteroidRepositoryTest {
     @Test
     fun `refreshAsteroids swallows network exceptions and leaves the DAO untouched`() =
         runTest {
-            service.asteroidsResult = { throw IOException("simulated network failure") }
+            val failure = IOException("simulated network failure")
+            service.asteroidsResult = { throw failure }
 
             repository.refreshAsteroids()
 
             assertThat(dao.insertAllCalls).isEmpty()
+            assertThat(logger.received).containsExactly(LogEvent.Network.RefreshAsteroidsFailed(failure))
         }
 
     @Test
@@ -189,11 +195,13 @@ class AsteroidRepositoryTest {
     @Test
     fun `refreshPictureOfDay swallows network exceptions and leaves the DAO untouched`() =
         runTest {
-            service.imageOfDayResult = { throw IOException("simulated network failure") }
+            val failure = IOException("simulated network failure")
+            service.imageOfDayResult = { throw failure }
 
             repository.refreshPictureOfDay()
 
             assertThat(pictureOfDayDao.insertCalls).isEmpty()
+            assertThat(logger.received).containsExactly(LogEvent.Network.RefreshPictureOfDayFailed(failure))
         }
 
     private fun asteroidEntity(
@@ -323,4 +331,12 @@ private class FakeAsteroidService : AsteroidService {
     override suspend fun getAsteroids(key: String): String = asteroidsResult()
 
     override suspend fun getImageOfDay(key: String): ImageOfTheDay = imageOfDayResult()
+}
+
+private class RecordingLogger : Logger {
+    val received = mutableListOf<LogEvent>()
+
+    override fun log(event: LogEvent) {
+        received += event
+    }
 }

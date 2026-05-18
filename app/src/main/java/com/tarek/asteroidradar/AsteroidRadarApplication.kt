@@ -38,6 +38,8 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import coil.ImageLoader
 import coil.ImageLoaderFactory
+import com.tarek.asteroidradar.log.LogEvent
+import com.tarek.asteroidradar.log.Logger
 import com.tarek.asteroidradar.work.RefreshDataWorker
 import dagger.Lazy
 import dagger.hilt.android.HiltAndroidApp
@@ -62,6 +64,12 @@ class AsteroidRadarApplication :
     // the field by the time Coil calls newImageLoader().
     @Inject lateinit var imageLoader: Lazy<ImageLoader>
 
+    // Populated by Hilt during super.onCreate(); safe to use in the body of
+    // onCreate() once super has returned. The DebugTree below is what makes
+    // TimberLogger's output visible in Logcat — TimberLogger writes through
+    // Timber.tag(...).<level>(...), which routes to all planted trees.
+    @Inject lateinit var logger: Logger
+
     // The default WorkManagerInitializer is removed in the manifest so this
     // is read by WorkManager.getInstance() lazily — after Hilt has populated
     // workerFactory in onCreate. Reading it earlier would NPE the lateinit.
@@ -77,6 +85,7 @@ class AsteroidRadarApplication :
     override fun onCreate() {
         super.onCreate()
         Timber.plant(Timber.DebugTree())
+        logger.log(LogEvent.App.Launched)
         delayedInit()
     }
 
