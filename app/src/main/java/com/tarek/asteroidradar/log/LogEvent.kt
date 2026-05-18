@@ -91,8 +91,18 @@ sealed class LogEvent {
         ) : Work() {
             override val priority: LogPriority =
                 if (outcome == Outcome.Success) LogPriority.Info else LogPriority.Warn
-            override val message: String = "RefreshDataWorker finished outcome=${outcome.name}"
-            override val attributes: Map<String, Any> = mapOf("durationMs" to durationMs)
+            override val message: String = "RefreshDataWorker finished"
+
+            // Both fields live in the structured attribute map so remote sinks
+            // (Crashlytics customKeys, Datadog log attributes) can index each
+            // as a searchable field. TimberLogger flattens this back into a
+            // `key=value` suffix on the rendered message, so Logcat output is
+            // identical to the message-baked-in shape.
+            override val attributes: Map<String, Any> =
+                mapOf(
+                    "outcome" to outcome.name,
+                    "durationMs" to durationMs,
+                )
         }
     }
 
