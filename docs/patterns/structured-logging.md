@@ -54,6 +54,120 @@ Four moving parts:
 4. **Hilt module** — wires sinks into the set (`@IntoSet`) and binds
    `CompositeLogger` as the singular `Logger` consumers see.
 
+## Severity belongs to events, not loggers
+
+The deepest shift in the pattern, and the easiest one to miss. The old
+API made every call site decide two things at once:
+
+1. *What happened?* — encoded in the message string.
+2. *How loud?* — encoded in the method name (`.d`, `.i`, `.w`, `.e`).
+
+```kotlin
+Timber.d("Repository: refresh failed ${e.message}")
+//     ^                       ^
+//     severity: debug         payload: free text
+```
+
+In practice these get tangled. `Timber.d` is one keystroke shorter than
+`Timber.w`, so people reach for it. Cargo-culted prefixes ("Repository:")
+drift across files. The same kind of incident ends up logged at three
+different severities in three different places, because each developer
+was thinking about *content* and the severity slot was an afterthought.
+Filtering by severity in production becomes meaningless — every codebase
+of any age has real errors at `.d` and "FYI" messages at `.e`.
+
+The typed-event pattern **separates the two decisions**:
+
+```kotlin
+// Call site only decides what happened:
+logger.log(LogEvent.Network.RefreshFailed(e))
+
+// The event class declares the severity once, for everyone:
+data class RefreshFailed(val cause: Throwable) : Network() {
+    override val priority = LogPriority.Warn   // single source of truth
+    override val message = "refresh_failed"
+    override val throwable: Throwable? = cause
+}
+```
+
+Decide later that all network failures should escalate to
+`LogPriority.Error`? Change one line in the event. Every call site
+upgrades automatically. The opposite is impossible with `.d`/`.e`
+methods on the logger — you'd have to grep every file in the codebase.
+
+### Where do `.d` / `.e` / `.i` go?
+
+Down to the sink. Each sink has a single `when` block that maps
+`LogPriority` to its medium's level API:
+
+```kotlin
+// TimberLogger.kt — the only file in `main` that knows about Timber's
+// .v/.d/.i/.w/.e methods.
+override fun log(event: LogEvent) {
+    val tree = Timber.tag(event.tag)
+    when (event.priority) {
+        LogPriority.Verbose -> tree.v(event.throwable, rendered)
+        LogPriority.Debug   -> tree.d(event.throwable, rendered)
+        LogPriority.Info    -> tree.i(event.throwable, rendered)
+        LogPriority.Warn    -> tree.w(event.throwable, rendered)
+        LogPriority.Error   -> tree.e(event.throwable, rendered)
+    }
+}
+```
+
+Everywhere else, code talks in events.
+
+### Sinks pick their own mapping
+
+The mapping is **semantic, not mechanical** — each sink decides what each
+priority means *for its medium*. Crashlytics, for instance, doesn't have
+a five-level API at all. It has two distinct mechanisms:
+
+- `FirebaseCrashlytics.log(message)` — adds a breadcrumb.
+- `FirebaseCrashlytics.recordException(throwable)` — files a non-fatal.
+
+So a `CrashlyticsLogger` collapses the priorities into the two
+behaviors that exist:
+
+```kotlin
+override fun log(event: LogEvent) {
+    val crashlytics = FirebaseCrashlytics.getInstance()
+    event.attributes.forEach { (k, v) -> crashlytics.setCustomKey(k, v.toString()) }
+    val line = "[${event.tag}] ${event.message}"
+    when (event.priority) {
+        LogPriority.Verbose, LogPriority.Debug,
+        LogPriority.Info, LogPriority.Warn ->
+            crashlytics.log(line)
+        LogPriority.Error -> {
+            crashlytics.log(line)
+            event.throwable?.let { crashlytics.recordException(it) }
+        }
+    }
+}
+```
+
+Five priorities collapse to two semantic behaviors (breadcrumb vs.
+non-fatal). A future `DatadogLogger` might map one-to-one (Datadog's
+SDK has a matching five-level enum). A `SentryLogger` might fold
+Verbose/Debug into "no-op for prod" and Error into a captured event.
+Events stay the same; only the per-sink mapping changes.
+
+### What this buys you
+
+| Concern | Free-text Timber | Typed events |
+|---|---|---|
+| *What happened?* | mixed into the message string | the event subtype |
+| *How loud is it?* | each caller picks (`.d` vs `.e`) | a property of the event |
+| *Which sink renders it?* | hard-coded to Timber | sink picks its own mapping |
+| *What payload travels with it?* | printf args, no types | typed `Map<String, Any>` |
+| *Filtering by severity in prod* | unreliable (callers drift) | reliable (event is the floor) |
+
+The biggest win isn't the type safety — it's **filter-reliability**.
+When severity is a property of the incident type, "show me all warnings"
+in your log explorer actually corresponds to a stable, predictable set
+of things. With per-call-site `.d`/`.e` choices, severity filters are
+noise.
+
 ## Step 1 — Define `LogPriority`
 
 Platform-independent severity. Kept out of `android.util.Log` so JVM unit
