@@ -794,6 +794,36 @@ architecture is the educational deliverable — sinks are interchangeable.
   Disables collection in debug builds via manifest meta-data. Bumps to
   **`v4.0.3-INTERNAL`** when this lands. Closes umbrella #150.
 
+  **Cost gates (Gate 1 — build-type filtering).** Crashlytics's free
+  tier has per-session caps (≈8 non-fatals/session, 64 KB breadcrumbs)
+  rather than a monthly billing line — overshooting silently drops
+  data. To stay inside the caps without runtime infra, Phase 15b wires
+  the sink only into release builds via Hilt source-set splits:
+
+  - `app/src/main/java/.../di/LoggerModule.kt` — shared bindings.
+    `TimberLogger` binds into `Set<Logger>` here; visible to all
+    build types.
+  - `app/src/release/java/.../di/LoggerReleaseModule.kt` — release-only.
+    `CrashlyticsLogger` binds into `Set<Logger>` here. AGP's source-set
+    merging means the Hilt graph in release builds sees both sinks; the
+    debug graph sees only Timber.
+
+  **Gate 2 — severity floor inside `CrashlyticsLogger`.** The sink
+  short-circuits events below `LogPriority.Warn`, keeping Verbose/Debug
+  chatter local-only even in release builds. One `if (event.priority <
+  LogPriority.Warn) return` line in the sink — composes naturally with
+  the build-type split above. Drops the per-session non-fatal cap as a
+  practical concern: Crashlytics only sees events we actually want
+  surfaced.
+
+  **Gate 3 — decorator-based runtime filtering (out of scope for 15b).**
+  Firebase Remote Config + a `FlaggedLogger`/`SampledLogger` decorator
+  wrapper would let a noisy event-type be killed without a release.
+  Captured as a Phase 15c / quality-bet entry — overkill for the
+  internal-test cadence today, but the architecture supports it
+  (decorators slot into the existing `Logger` set-multibinding via a
+  `@Provides` factory; no call-site change).
+
 ### Pattern reference
 
 `docs/patterns/structured-logging.md` is the load-bearing artifact —
