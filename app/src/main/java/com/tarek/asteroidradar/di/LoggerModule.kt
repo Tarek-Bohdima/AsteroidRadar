@@ -28,50 +28,28 @@
  */
 package com.tarek.asteroidradar.di
 
-import android.content.Context
-import androidx.room.Room
-import com.tarek.asteroidradar.database.AsteroidDao
-import com.tarek.asteroidradar.database.AsteroidDatabase
-import com.tarek.asteroidradar.database.MIGRATION_1_2
-import com.tarek.asteroidradar.database.PictureOfDayDao
+import com.tarek.asteroidradar.log.CompositeLogger
 import com.tarek.asteroidradar.log.Logger
-import com.tarek.asteroidradar.network.AsteroidService
-import com.tarek.asteroidradar.repository.AsteroidRepository
+import com.tarek.asteroidradar.log.TimberLogger
+import dagger.Binds
 import dagger.Module
-import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Singleton
+import dagger.multibindings.IntoSet
 
 @Module
 @InstallIn(SingletonComponent::class)
-object DatabaseModule {
-    @Provides
-    @Singleton
-    fun provideAsteroidDatabase(
-        @ApplicationContext context: Context,
-    ): AsteroidDatabase =
-        Room
-            .databaseBuilder(
-                context,
-                AsteroidDatabase::class.java,
-                "asteroids",
-            ).addMigrations(MIGRATION_1_2)
-            .build()
+abstract class LoggerModule {
+    // Each sink contributes itself to the multibound `Set<Logger>`. New sinks
+    // (e.g. CrashlyticsLogger in Phase 15b) add one more `@Binds @IntoSet`
+    // line here; nothing else changes.
+    @Binds
+    @IntoSet
+    abstract fun bindsTimberLoggerIntoSet(impl: TimberLogger): Logger
 
-    @Provides
-    fun provideAsteroidDao(database: AsteroidDatabase): AsteroidDao = database.asteroidDao
-
-    @Provides
-    fun providePictureOfDayDao(database: AsteroidDatabase): PictureOfDayDao = database.pictureOfDayDao
-
-    @Provides
-    @Singleton
-    fun provideAsteroidRepository(
-        asteroidDao: AsteroidDao,
-        pictureOfDayDao: PictureOfDayDao,
-        asteroidService: AsteroidService,
-        logger: Logger,
-    ): AsteroidRepository = AsteroidRepository(asteroidDao, pictureOfDayDao, asteroidService, logger)
+    // The singular `Logger` binding consumers inject. CompositeLogger reads
+    // the set and forwards to every sink. This is a separate binding key from
+    // `Set<Logger>` — CompositeLogger won't recursively inject itself.
+    @Binds
+    abstract fun bindsLogger(impl: CompositeLogger): Logger
 }

@@ -31,6 +31,8 @@ package com.tarek.asteroidradar.ui.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tarek.asteroidradar.domain.PictureOfDay
+import com.tarek.asteroidradar.log.LogEvent
+import com.tarek.asteroidradar.log.Logger
 import com.tarek.asteroidradar.repository.AsteroidRepository
 import com.tarek.asteroidradar.repository.AsteroidRepository.AsteroidsFilter
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -42,7 +44,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 
 private const val SUBSCRIPTION_TIMEOUT_MS = 5_000L
@@ -53,6 +54,7 @@ class MainViewModel
     @Inject
     constructor(
         private val repository: AsteroidRepository,
+        private val logger: Logger,
     ) : ViewModel() {
         // Issue #116: APOD is sourced from Room, not the network. The cached
         // row paints immediately on cold start; refreshPictureOfDay() runs in
@@ -93,7 +95,7 @@ class MainViewModel
             try {
                 repository.refreshPictureOfDay()
             } catch (e: Exception) {
-                Timber.d("MainViewModel: refreshPictureOfDay() failed : %s", e.message)
+                logger.log(LogEvent.Network.RefreshPictureOfDayFailed(e))
             }
         }
 
@@ -101,7 +103,7 @@ class MainViewModel
             try {
                 repository.refreshAsteroids()
             } catch (e: Exception) {
-                Timber.d("MainViewModel: refreshAsteroids() failed : %s", e.message)
+                logger.log(LogEvent.Network.RefreshAsteroidsFailed(e))
             }
         }
 

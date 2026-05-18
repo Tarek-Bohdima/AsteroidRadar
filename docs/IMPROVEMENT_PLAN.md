@@ -32,6 +32,8 @@ shippable; pick them off in order — each one stacks on the last.
 | 14a | `:benchmark` module + `StartupBenchmark` | Done (#132) — first second-module in the project. AndroidX Macrobenchmark library on AGP-9-compatible `androidx.baselineprofile 1.5.0-alpha06`. |
 | 14b | `BaselineProfileGenerator` + checked-in `baseline-prof.txt` | Done (#133) — 20.7k-entry profile generated on Pixel 7 / API 33 emulator; bundles into AAB at `BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`. Bumps to **`v4.0.2-INTERNAL`** (tag bundled with 14c). |
 | 14c | CI workflow + GMD provisioning | Done (#134) — manual `workflow_dispatch` only; provisions Pixel 7 / API 34 GMD; uploads Perfetto traces as artifacts. Closes issue #131. |
+| 15a | Logging architecture (sealed events + Logger interface + TimberLogger sink) | In progress (#151) — sealed `LogEvent` hierarchy + `Logger` interface + `CompositeLogger` fanout via Hilt `@IntoSet`. Migrates 4 existing `Timber.d` call sites and adds 2 `RefreshDataWorker` lifecycle events. Reference doc at `docs/patterns/structured-logging.md`. Part of umbrella #150. |
+| 15b | Firebase Crashlytics sink | Queued — adds `CrashlyticsLogger` as a second `@IntoSet` binding. Wires Firebase setup + `google-services.json`. Bumps to **`v4.0.3-INTERNAL`** when it lands. Part of umbrella #150. |
 | — | **Module split** lands with feature #2, not as a phase | — |
 
 Tick the table when phases land. Each phase below lists scope, rationale, and
@@ -760,6 +762,78 @@ added the Room read for the cached APOD; both affect cold-start budget).
 - Cheap to write, expensive to retrofit later. If we're going to do it,
   doing it before adding a second feature (where the macrobenchmark module
   pattern locks in) is the right time.
+
+## Phase 15 — Structured logging (sealed events + Hilt fanout)
+
+Goal: replace 4 ad-hoc `Timber.d(...)` printf-style call sites with a
+typed-event pattern (sealed `LogEvent` hierarchy + `Logger` interface +
+Hilt set-multibinding fanout), and use the migration as an educational
+worked example for a pattern the user wants to carry across projects.
+Tracked under umbrella issue #150 (rewritten 2026-05-18 from an
+Ultraplan-approved plan).
+
+The pattern is recovered from a past production project that used the
+same architecture with Datadog as the remote sink. Datadog is paid; for
+this educational, internal-test, solo project the substitution is:
+Logcat (via Timber) in 15a, Firebase Crashlytics (free) in 15b. The
+architecture is the educational deliverable — sinks are interchangeable.
+
+### Sub-PR breakdown
+
+- **15a (`feat/phase-15a-logging-architecture`).** Sealed `LogEvent` +
+  `Logger` interface + `CompositeLogger` + `TimberLogger`. Migrates
+  `AsteroidRadarApplication`, `AsteroidRepository`, `MainViewModel`, and
+  `RefreshDataWorker` to the typed API. Adds 2 new lifecycle events
+  (`Work.RefreshDataWorkerStarted` / `RefreshDataWorkerFinished`). Ships
+  the reference doc at `docs/patterns/structured-logging.md`. No runtime
+  dependency change (Timber stays; the existing `DebugTree` keeps Logcat
+  alive). Part of umbrella #150.
+- **15b (`feat/phase-15b-crashlytics-sink`).** Firebase Crashlytics SDK
+  + plugins + `CrashlyticsLogger` as a second `@IntoSet` binding. Adds
+  `google-services.json` (gitignored; CI decodes from a base64 secret).
+  Disables collection in debug builds via manifest meta-data. Bumps to
+  **`v4.0.3-INTERNAL`** when this lands. Closes umbrella #150.
+
+### Pattern reference
+
+`docs/patterns/structured-logging.md` is the load-bearing artifact —
+generic enough to copy into any Kotlin Android project. Includes the
+diagram, step-by-step recipe, pitfalls, and what the pattern is *not*
+(no RUM, no APM tracing, no log aggregation — those are sink concerns).
+
+### Things to watch
+
+- **`@JvmSuppressWildcards` on `Set<Logger>`.** Without it, Dagger's
+  generated `Set<? extends Logger>` collides with Kotlin variance and
+  the module fails to compile. Easy to forget when adding a second sink.
+- **Double-binding hygiene.** `TimberLogger` is bound via `@IntoSet` to
+  populate the set; `CompositeLogger` is bound via plain `@Binds` to be
+  the singular `Logger` consumers inject. These are separate Hilt keys —
+  if you accidentally add `@IntoSet` to the composite binding, you get a
+  recursive injection.
+- **`AsteroidRepository` is provided, not `@Inject`-constructed.**
+  Adding `Logger` to its constructor required updating `DatabaseModule`'s
+  `provideAsteroidRepository` factory. The existing tests instantiate
+  the repo directly with a recording fake; mockk wouldn't work here
+  because the test asserts on the captured events.
+- **Pre-existing double-log between Repository and ViewModel.** Noticed
+  during 15a: both `AsteroidRepository.refreshX` and `MainViewModel`'s
+  catch wrappers swallow + log. The ViewModel catch is dead code (the
+  repo already swallowed). 15a preserves this shape for minimal-diff
+  scope; cleanup is a separate one-PR refactor.
+
+### Out of scope
+
+- RUM (Real User Monitoring) and APM tracing — separate observability
+  surfaces, both paid in Datadog. Firebase Performance Monitoring is a
+  free RUM-ish alternative if cold-start regressions ever justify it.
+- Sentry as an alternative remote sink. Stays available as a drop-in
+  via a `SentryLogger` binding if Crashlytics proves insufficient.
+- NavController route tracking — auto-tagging events with the current
+  Compose Nav route would be a useful 15c. Worth doing if Crashlytics
+  breadcrumbs feel context-poor in practice.
+- Removing the double-swallow shape (Repository swallows + logs,
+  ViewModel re-catches dead code). Tracked as a follow-up PR.
 
 ## Quality bets to consider (capped at 3)
 

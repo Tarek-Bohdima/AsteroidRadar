@@ -26,52 +26,22 @@
  * I, the author of the project, allow you to check the code as a reference, but
  * if you submit it, it's your own responsibility if you get expelled.
  */
-package com.tarek.asteroidradar.di
+package com.tarek.asteroidradar.log
 
-import android.content.Context
-import androidx.room.Room
-import com.tarek.asteroidradar.database.AsteroidDao
-import com.tarek.asteroidradar.database.AsteroidDatabase
-import com.tarek.asteroidradar.database.MIGRATION_1_2
-import com.tarek.asteroidradar.database.PictureOfDayDao
-import com.tarek.asteroidradar.log.Logger
-import com.tarek.asteroidradar.network.AsteroidService
-import com.tarek.asteroidradar.repository.AsteroidRepository
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.components.SingletonComponent
+import javax.inject.Inject
 import javax.inject.Singleton
 
-@Module
-@InstallIn(SingletonComponent::class)
-object DatabaseModule {
-    @Provides
-    @Singleton
-    fun provideAsteroidDatabase(
-        @ApplicationContext context: Context,
-    ): AsteroidDatabase =
-        Room
-            .databaseBuilder(
-                context,
-                AsteroidDatabase::class.java,
-                "asteroids",
-            ).addMigrations(MIGRATION_1_2)
-            .build()
-
-    @Provides
-    fun provideAsteroidDao(database: AsteroidDatabase): AsteroidDao = database.asteroidDao
-
-    @Provides
-    fun providePictureOfDayDao(database: AsteroidDatabase): PictureOfDayDao = database.pictureOfDayDao
-
-    @Provides
-    @Singleton
-    fun provideAsteroidRepository(
-        asteroidDao: AsteroidDao,
-        pictureOfDayDao: PictureOfDayDao,
-        asteroidService: AsteroidService,
-        logger: Logger,
-    ): AsteroidRepository = AsteroidRepository(asteroidDao, pictureOfDayDao, asteroidService, logger)
-}
+// Hilt-managed dispatcher. The `Set<Logger>` injection point only resolves to
+// bindings contributed via `@IntoSet` in LoggerModule (currently just
+// TimberLogger); CompositeLogger itself is bound to the singular `Logger`
+// binding, so it can't end up in its own input set.
+@Singleton
+class CompositeLogger
+    @Inject
+    constructor(
+        private val sinks: Set<@JvmSuppressWildcards Logger>,
+    ) : Logger {
+        override fun log(event: LogEvent) {
+            sinks.forEach { it.log(event) }
+        }
+    }
