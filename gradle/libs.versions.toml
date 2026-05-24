@@ -88,7 +88,7 @@ mockk = "1.14.9"
 # org.json:json — Android's `org.json` ships in the Android runtime but isn't
 # on the JVM unit-test classpath; this brings the (API-compatible) library so
 # parser tests can run as plain JVM tests without Robolectric.
-orgJson = "20251224"
+orgJson = "20260522"
 truth = "1.4.5"
 turbine = "1.2.1"
 
