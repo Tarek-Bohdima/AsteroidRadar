@@ -99,7 +99,7 @@ composeRules = "0.5.8"
 # Tony Robalik's dependency-analysis-gradle-plugin — `./gradlew buildHealth`
 # flags unused / misplaced / superfluous dependencies. Phase 10. Aggregates
 # subproject reports at the root, so it's applied at the root build script.
-dependencyAnalysis = "3.12.0"
+dependencyAnalysis = "3.13.0"
 detekt = "1.23.8"
 # Kover 0.9.x supports Kotlin 2.0+; aligned with the project's Kotlin pin.
 kover = "0.9.8"
