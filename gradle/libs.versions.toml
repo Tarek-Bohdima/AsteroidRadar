@@ -95,7 +95,7 @@ turbine = "1.2.1"
 # Code-quality tooling. ktlint version pinned for reproducibility across machines.
 # Mans0n compose-rules ships a detekt-plugin variant for Compose-specific checks
 # (slot-table correctness, hoisting, parameter ordering, modifier handling).
-composeRules = "0.5.8"
+composeRules = "0.5.9"
 # Tony Robalik's dependency-analysis-gradle-plugin — `./gradlew buildHealth`
 # flags unused / misplaced / superfluous dependencies. Phase 10. Aggregates
 # subproject reports at the root, so it's applied at the root build script.
