@@ -80,7 +80,7 @@ firebaseBom = "34.13.0"
 googleServices = "4.4.4"
 # Firebase Crashlytics Gradle plugin — uploads ProGuard / R8 mapping files +
 # generates the BuildConfig flag the SDK uses to detect minification.
-firebaseCrashlyticsPlugin = "3.0.2"
+firebaseCrashlyticsPlugin = "3.0.7"
 
 androidxTestExtJunit = "1.3.0"
 junit = "4.13.2"
