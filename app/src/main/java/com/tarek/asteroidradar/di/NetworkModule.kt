@@ -40,10 +40,18 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
+import java.time.Duration
 import javax.inject.Singleton
+
+// Issue #166: OkHttp's 10s default connect/read timeout was firing on APOD
+// fetches when api.nasa.gov was slow (3–5s responses on degraded days). Bumped
+// to 20s so flaky-but-reachable responses land in Room instead of failing into
+// the cache-less broken-image path.
+private val NETWORK_TIMEOUT: Duration = Duration.ofSeconds(20)
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -56,6 +64,15 @@ object NetworkModule {
     @Singleton
     fun provideJson(): Json = Json { ignoreUnknownKeys = true }
 
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(): OkHttpClient =
+        OkHttpClient
+            .Builder()
+            .connectTimeout(NETWORK_TIMEOUT)
+            .readTimeout(NETWORK_TIMEOUT)
+            .build()
+
     // Builder order matters: Scalars first matches `String` returns and yields
     // the raw response body (for `getAsteroids`, where the parser walks the
     // nested-by-date payload manually); kotlinx-serialization second handles
@@ -64,10 +81,14 @@ object NetworkModule {
     // reflection-free at runtime.
     @Provides
     @Singleton
-    fun provideRetrofit(json: Json): Retrofit =
+    fun provideRetrofit(
+        client: OkHttpClient,
+        json: Json,
+    ): Retrofit =
         Retrofit
             .Builder()
             .baseUrl(Constants.BASE_URL)
+            .client(client)
             .addConverterFactory(ScalarsConverterFactory.create())
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
