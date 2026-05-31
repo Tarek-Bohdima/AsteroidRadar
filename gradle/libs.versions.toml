@@ -17,7 +17,7 @@ androidxAppcompat = "1.7.1"
 # published outside the BOM and pin alongside their non-Compose siblings.
 # BOM is intentionally NOT bumped in Phase 13b — Compose surface needs its
 # own validation phase, separate from the AndroidX-core group bump.
-androidxComposeBom = "2026.05.00"
+androidxComposeBom = "2026.05.01"
 androidxConstraintlayout = "2.2.1"
 # androidx.hilt:* (hilt-work, hilt-compiler) is a separate artifact group from
 # com.google.dagger:hilt-*; KSP-supported since 1.2.0.
