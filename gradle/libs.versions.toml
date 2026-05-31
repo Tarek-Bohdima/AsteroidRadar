@@ -84,7 +84,7 @@ firebaseCrashlyticsPlugin = "3.0.2"
 
 androidxTestExtJunit = "1.3.0"
 junit = "4.13.2"
-mockk = "1.14.9"
+mockk = "1.14.11"
 # org.json:json — Android's `org.json` ships in the Android runtime but isn't
 # on the JVM unit-test classpath; this brings the (API-compatible) library so
 # parser tests can run as plain JVM tests without Robolectric.
