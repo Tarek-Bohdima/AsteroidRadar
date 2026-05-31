@@ -36,7 +36,9 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.espresso.intent.Intents
@@ -74,6 +76,15 @@ class MainScreenTest {
             url = "file:///does/not/exist.mp4",
         )
 
+    // Same trick — file:// URL forces Coil's error path for an image-day, so the
+    // broken-icon path composes deterministically without a network round-trip.
+    private val brokenImageDayPicture =
+        PictureOfDay(
+            mediaType = "image",
+            title = "Definitely Not a Real Image",
+            url = "file:///does/not/exist.jpg",
+        )
+
     @Before
     fun setUp() {
         Intents.init()
@@ -87,6 +98,41 @@ class MainScreenTest {
     @After
     fun tearDown() {
         Intents.release()
+    }
+
+    @Test
+    fun nullPictureShowsPlaceholderNotBrokenIcon() {
+        // Given the cache is empty (fresh install, no APOD row in Room yet)
+        composeTestRule.setContent {
+            ImageOfTheDayHeader(picture = null, onVideoTap = {})
+        }
+
+        // When the header composes
+        // Then the placeholder testTag is on screen and the broken-icon testTag is not
+        // (issue #168: cache-empty state must not surface as a load-failure)
+        composeTestRule.onNodeWithTag(APOD_PLACEHOLDER_TEST_TAG).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(APOD_BROKEN_ICON_TEST_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun nonNullPictureWithBadUrlShowsBrokenIconNotPlaceholder() {
+        // Given a cached image-day picture with an unreachable URL
+        composeTestRule.setContent {
+            ImageOfTheDayHeader(picture = brokenImageDayPicture, onVideoTap = {})
+        }
+
+        // When Coil's error slot fires (deterministic via file:// scheme)
+        composeTestRule.waitUntil(timeoutMillis = LOAD_TIMEOUT_MS) {
+            composeTestRule
+                .onAllNodesWithTag(APOD_BROKEN_ICON_TEST_TAG)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+
+        // Then the broken-icon testTag is on screen and the placeholder testTag is not —
+        // preserves the load-failure surface for actual broken URLs
+        composeTestRule.onNodeWithTag(APOD_BROKEN_ICON_TEST_TAG).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(APOD_PLACEHOLDER_TEST_TAG).assertDoesNotExist()
     }
 
     @Test

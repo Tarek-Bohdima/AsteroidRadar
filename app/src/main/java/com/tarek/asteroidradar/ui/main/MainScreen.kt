@@ -62,6 +62,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -77,6 +78,12 @@ import com.tarek.asteroidradar.domain.PictureOfDay
 import com.tarek.asteroidradar.repository.AsteroidRepository.AsteroidsFilter
 
 private val ApodHeaderHeight = 220.dp
+
+// Issue #168: test seams to distinguish the cache-empty placeholder render from
+// the load-failure broken-icon render. The two paths previously looked identical
+// to instrumentation tests.
+internal const val APOD_PLACEHOLDER_TEST_TAG = "apod-placeholder"
+internal const val APOD_BROKEN_ICON_TEST_TAG = "apod-broken-icon"
 
 // Compose port of fragment_main.xml + main_overflow_menu.xml (Phase 9c). The
 // top-app-bar's overflow menu replaces the AppCompat MenuProvider; the
@@ -181,36 +188,55 @@ internal fun ImageOfTheDayHeader(
                 .fillMaxWidth()
                 .height(ApodHeaderHeight),
     ) {
-        SubcomposeAsyncImage(
-            model =
-                ImageRequest
-                    .Builder(context)
-                    .data(picture?.url?.replaceFirst(Regex("^http://"), "https://"))
-                    .placeholder(R.drawable.placeholder_picture_of_day)
-                    .crossfade(true)
-                    .build(),
-            contentDescription = stringResource(R.string.image_of_the_day),
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-            error = {
-                // VideoFrameDecoder handles direct .mp4/.webm — when it can't
-                // (YouTube/Vimeo embeds), fall back to a tap-through card
-                // instead of a broken-image icon.
-                if (picture?.mediaType == "video") {
-                    VideoFallbackCard(
-                        title = picture.title,
-                        onClick = { onVideoTap(picture.url) },
-                    )
-                } else {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_broken_image),
-                        contentDescription = null,
-                        tint = Color.Unspecified,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-            },
-        )
+        if (picture == null) {
+            // Cache is empty (fresh install, or no refresh has landed yet). Paint
+            // the placeholder color while the background refresh works — distinct
+            // from the "load failed" path so a slow first network round-trip
+            // doesn't surface as a broken-image icon (issue #168). Compose's
+            // painterResource() rejects <shape> drawables, so we use the same
+            // hex as the legacy drawable via colorResource + Modifier.background.
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(colorResource(R.color.placeholder_picture_of_day))
+                        .testTag(APOD_PLACEHOLDER_TEST_TAG),
+            )
+        } else {
+            SubcomposeAsyncImage(
+                model =
+                    ImageRequest
+                        .Builder(context)
+                        .data(picture.url.replaceFirst(Regex("^http://"), "https://"))
+                        .placeholder(R.drawable.placeholder_picture_of_day)
+                        .crossfade(true)
+                        .build(),
+                contentDescription = stringResource(R.string.image_of_the_day),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+                error = {
+                    // VideoFrameDecoder handles direct .mp4/.webm — when it can't
+                    // (YouTube/Vimeo embeds), fall back to a tap-through card
+                    // instead of a broken-image icon.
+                    if (picture.mediaType == "video") {
+                        VideoFallbackCard(
+                            title = picture.title,
+                            onClick = { onVideoTap(picture.url) },
+                        )
+                    } else {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_broken_image),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .testTag(APOD_BROKEN_ICON_TEST_TAG),
+                        )
+                    }
+                },
+            )
+        }
         // Caption stays visible on image-days; on video-days the card paints
         // over it via the error slot's fillMaxSize, so no double-label.
         if (!isVideo) {
