@@ -42,5 +42,10 @@
     <!-- 33% black scrim under the APOD caption text — preserves legibility
          over light NASA imagery. Mirrors fragment_main.xml's "#55010613". -->
     <color name="image_of_day_caption_scrim">#55010613</color>
+    <!-- Flat fill used while the APOD cache is empty (issue #168). Same hex as
+         the legacy `placeholder_picture_of_day.xml` shape drawable — Compose's
+         painterResource() doesn't render <shape>, so we paint the rectangle
+         via Modifier.background() instead. -->
+    <color name="placeholder_picture_of_day">#ECF0F1</color>
 
 </resources>
