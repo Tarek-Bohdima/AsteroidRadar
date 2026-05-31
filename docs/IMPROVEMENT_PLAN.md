@@ -33,7 +33,8 @@ shippable; pick them off in order — each one stacks on the last.
 | 14b | `BaselineProfileGenerator` + checked-in `baseline-prof.txt` | Done (#133) — 20.7k-entry profile generated on Pixel 7 / API 33 emulator; bundles into AAB at `BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`. Bumps to **`v4.0.2-INTERNAL`** (tag bundled with 14c). |
 | 14c | CI workflow + GMD provisioning | Done (#134) — manual `workflow_dispatch` only; provisions Pixel 7 / API 34 GMD; uploads Perfetto traces as artifacts. Closes issue #131. |
 | 15a | Logging architecture (sealed events + Logger interface + TimberLogger sink) | Done (#152) — sealed `LogEvent` hierarchy + `Logger` interface + `CompositeLogger` fanout via Hilt `@IntoSet`. Migrated 4 existing `Timber.d` call sites and added 2 `RefreshDataWorker` lifecycle events. Reference doc at `docs/patterns/structured-logging.md`. |
-| 15b | Firebase Crashlytics sink | Done — `CrashlyticsLogger` bound into `Set<Logger>` only in release builds via `LoggerReleaseModule` (Gate 1, build-type filtering). Severity floor at Warn inside the sink (Gate 2) keeps Crashlytics within its per-session non-fatal cap. Adds Firebase BoM + Crashlytics SDK + plugins; `google-services.json` required for release builds (gitignored; CI decodes from `GOOGLE_SERVICES_JSON_BASE64`). Bumps to **`v4.0.3-INTERNAL`**. Closes umbrella #150. |
+| 15b | Firebase Crashlytics sink | Done (#154) — `CrashlyticsLogger` bound into `Set<Logger>` only in release builds via `LoggerReleaseModule` (Gate 1, build-type filtering). Severity floor at Warn inside the sink (Gate 2) keeps Crashlytics within its per-session non-fatal cap. Adds Firebase BoM + Crashlytics SDK + plugins; `google-services.json` required for release builds (gitignored; CI decodes from `GOOGLE_SERVICES_JSON_BASE64`). Bumped to **`v4.0.3-INTERNAL`**. Closed umbrella #150. |
+| — | APOD reliability cycle (OkHttp 20s timeouts + null-cache placeholder) | Done (#167 + #169) — user caught broken-image pane on live v3.0.4 on 2026-05-31. Two distinct bugs diagnosed: NetworkModule's default 10s OkHttp timeout firing on slow NASA APOD responses (Fix B), and `ImageOfTheDayHeader` rendering the broken-icon when `picture == null` (Fix A). Both shipped with full PR-bound AVD smokes. Bumps to **`v4.0.4-INTERNAL`** (via chore bump #170). |
 | — | **Module split** lands with feature #2, not as a phase | — |
 
 Tick the table when phases land. Each phase below lists scope, rationale, and
@@ -42,19 +43,23 @@ the rough size; sub-bullets are the concrete deltas.
 ## Current shipping state
 
 Snapshot for whoever opens this repo next (likely future-you). Reflects the
-state at 2026-05-18, after Phase 15 closed end-to-end with `v4.0.3-INTERNAL`
-bundling 15a (logging architecture) + 15b (Crashlytics sink) into one tag.
+state at 2026-05-31, after the APOD reliability cycle (#167 + #169) shipped
+on top of Phase 15 and `v4.0.4-INTERNAL` went live on Play Internal.
 
-- **Live on Play Internal**: `v3.0.4-INTERNAL` — bundles Phase 12 + DI
-  cleanup + NDK symbols + APOD video-day handling. User confirmed it
-  behaves correctly on a Pixel 7 Pro 2026-05-08.
-- **Version-of-record on `master`**: `v4.0.3-INTERNAL` — Phase 15
-  (structured logging + Crashlytics). The streak of four consecutive
-  smoke-skips (`v3.0.3`, `v4.0.0`, `v4.0.1`, `v4.0.2`) ended with 15a's
-  on-emulator smoke (typed events + worker lifecycle verified on AVD).
-  `v4.0.3` adds the Crashlytics sink — release-build install + force-crash
-  smoke is the appropriate pre-tag check before pushing the tag.
-- **v3.x → v4.0 release timeline** (chronological):
+- **Live on Play Internal**: `v4.0.4-INTERNAL` (uploaded 2026-05-31,
+  versionCode `26040004`). Jumped from `v3.0.4-INTERNAL` directly to
+  `v4.0.4`, skipping `v4.0.0`–`v4.0.3` on Play (their AABs stayed on
+  their GitHub Releases only). User confirmed on Pixel 7 Pro: gray
+  placeholder paints on cold launch, image fades in as soon as the APOD
+  response lands — no broken-icon, both Fix A + Fix B working end-to-end
+  in production.
+- **Version-of-record on `master`**: `v4.0.4-INTERNAL` — APOD
+  reliability cycle (Fix B = OkHttp timeouts, Fix A = null-cache
+  placeholder) on top of Phase 15 + a clean 9-PR Dependabot batch.
+  Pre-tag protocol is back to load-bearing: every PR in this cycle got
+  a release-build AVD smoke before merge, plus the bump-only #170
+  rode the existing v4.0.3 smoke (no app-classpath delta).
+- **v3.x → v4.x release timeline** (chronological):
   - `v3.0.0-INTERNAL` — Phase 9c Compose rewrite. **Broken on real devices**
     via release-only converter-factory regression. Never roll back to.
   - `v3.0.1-INTERNAL` — hotfix (#114). Non-local-return loop bug in the
@@ -66,7 +71,9 @@ bundling 15a (logging architecture) + 15b (Crashlytics sink) into one tag.
     `25571009314`); smoke skipped because v3.0.4 already covered the
     underlying changes on-device.
   - `v3.0.4-INTERNAL` — APOD video-day handling (#125). Live on Play
-    Internal, on user's phone 2026-05-08.
+    Internal between 2026-05-08 and 2026-05-31; user caught the
+    broken-APOD-pane regression on this build, which seeded the v4.0.4
+    fixes.
   - `v4.0.0-INTERNAL` — Phase 13a (#127). AGP 9 + Kotlin 2.3 + Hilt 2.59
     + KSP-driven Hilt + drop kapt. Tagged without device smoke (one-off
     skip; workflow run `25575673678` succeeded in 6m39s).
@@ -79,20 +86,81 @@ bundling 15a (logging architecture) + 15b (Crashlytics sink) into one tag.
     Tagged 2026-05-08 (workflow run `25583579445`); smoke skipped (the
     fourth in the streak — benchmark module + macrobenchmark workflow
     are dev-tooling-only, never ship to users).
-  - `v4.0.3-INTERNAL` — Phase 15 (#152 + 15b PR). Structured logging
+  - `v4.0.3-INTERNAL` — Phase 15 (#152 + #154). Structured logging
     pattern: sealed `LogEvent` taxonomy + Hilt set-multibinding fanout
     (15a, on-AVD smoke verified on Pixel 7 Pro / API 33), then Firebase
     Crashlytics sink as a second `@IntoSet` binding scoped to release
     builds via source-set Hilt module (15b, Gate 1 build-type filter +
     Gate 2 severity floor at Warn). Educational reference doc at
-    `docs/patterns/structured-logging.md`. Tag held pending release-build
-    smoke on a real device (force-crash → confirm Crashlytics receives
-    it within ~5 min).
-- **Next pickup**: queue empty. Pickup is from the "Quality bets" parking
-  lot (capped at 3) or fresh feature work. Possible 15c-shaped follow-ups
-  (NavController route tracking, tag-as-event-id restructure,
-  decorator-based runtime filtering, double-swallow cleanup) were
-  explicitly deferred — promote via a fresh issue if any becomes timely.
+    `docs/patterns/structured-logging.md`. Tagged 2026-05-18 with the
+    streak-ending release-build AVD smoke; workflow run `26018460957`
+    succeeded in 8m21s.
+  - `v4.0.4-INTERNAL` — APOD reliability cycle (#167 + #169 + bump
+    #170). Fix B: bump OkHttp connect/read timeouts from the 10s
+    default to 20s so NASA APOD's slow-day responses (3–5s+ on
+    degraded backends, plus TLS handshake on a flaky link) actually
+    land in Room instead of failing into the cache-less broken-image
+    path. Fix A: render a colored `Box` when `picture == null` instead
+    of falling through to `SubcomposeAsyncImage(data = null)` which
+    Coil treated as an immediate error → broken-icon. Tagged 2026-05-31
+    with PR-bound release-build AVD smokes on both fixes; workflow run
+    `26712607059` succeeded in 7m3s. Live on Play Internal same day
+    with en-GB release notes covering the v3.0.4 → v4.0.4 delta.
+- **Next pickup**: queue empty. Pickup options:
+  - **Promote the APOD empty-state polish** (deferred during #169
+    review) — `CircularProgressIndicator` on top of the gray
+    placeholder. Demoted from "deferred but worth doing" to "only if
+    load window ever feels long again" after the 2026-05-31 real-device
+    test reported the gray-to-image transition felt fine.
+  - **Promote a 15c-shaped follow-up** (NavController route tracking,
+    tag = event-id restructure, decorator-based runtime filtering,
+    Repository/ViewModel double-swallow cleanup).
+  - **Pick from Quality bets** (capped at 3).
+  - **Fresh user-visible feature** — would be the first since v3.0.4.
+
+### APOD reliability cycle (2026-05-31) — what shipped
+
+Two surface-level bugs, distinct mechanisms, complementary fixes:
+
+- **Fix B (#166 → #167).** `NetworkModule.provideRetrofit` did not
+  configure an `OkHttpClient`, so Retrofit used OkHttp's 10s default
+  connect/read/write timeouts. Combined with NASA APOD's 3–5s response
+  budget on degraded days, the default fired before payloads landed,
+  swallowing into the existing repo-side catch and leaving Room empty.
+  Added `provideOkHttpClient()` with explicit
+  `Duration.ofSeconds(20)` for both connect and read; threaded into the
+  Retrofit builder. Three unit tests assert the timeout values and the
+  wire-through to Retrofit's `callFactory()`.
+- **Fix A (#168 → #169).** Even with Fix B, the first cold launch on a
+  fresh install (or any cache-less moment) hit a window where
+  `pictureOfDayDao.getPictureOfDay()` emitted `null`. The header
+  composable passed `picture = null` to `SubcomposeAsyncImage` with
+  `data = null`, which Coil treated as immediate error → rendered the
+  broken-image icon. Branched the header on `picture == null` to a
+  colored `Box` with the placeholder hex, distinct from the
+  load-failure path. Two new instrumented tests using internal testTag
+  constants (`APOD_PLACEHOLDER_TEST_TAG`, `APOD_BROKEN_ICON_TEST_TAG`)
+  cover both the null-cache and bad-URL branches.
+
+Two takeaways worth keeping (folded into Watchpoints below):
+1. **OkHttp's 10s default is too tight for any endpoint that can have
+   bad days.** Configure an explicit timeout for any new Retrofit
+   service that talks to an external API we don't operate.
+2. **Compose's `painterResource()` doesn't load `<shape>` drawables.**
+   The legacy `placeholder_picture_of_day.xml` was a `<shape>`, which
+   Coil tolerated but Compose rejected with
+   `IllegalArgumentException: Only VectorDrawables and rasterized asset
+   types are supported`. Paint flat fills via
+   `Modifier.background(colorResource(...))`, or convert the shape to
+   a vector.
+
+A third operational lesson surfaced too:
+- **For instrumented tests on `minSdk 26`, backtick-with-spaces test
+  names fail at DEX time** (`Space characters in SimpleName ... not
+  allowed prior to DEX version 040`). The repo's "Test style C" (G/W/T
+  in body comments) survives, but `@Test fun` declarations in
+  `androidTest/` must use camelCase. JVM unit tests in `test/` can keep
+  backticks with spaces.
 
 ### Issue close-keyword lesson (2026-05-08)
 
@@ -201,6 +269,22 @@ These are the rules of engagement for Phase 13 and beyond.
   any new dependency that uses Class.forName / KCallable / kotlin-reflect
   needs a release-build smoke before tagging. Run `./gradlew assembleRelease`
   + `adb install` on the AVD before pushing any tag, not just `installDebug`.
+- **External-API timeouts default to 10s on Retrofit/OkHttp** — too tight
+  for any endpoint that can have a bad day (the 2026-05-31 APOD outage
+  caught us with the 10s default; Fix B raised connect/read to 20s). When
+  wiring a new Retrofit service that talks to an API we don't operate,
+  configure an explicit `OkHttpClient` with sensible timeouts up front.
+- **Compose `painterResource()` rejects `<shape>` drawables.** Coil
+  tolerates them via the Android resource system, but Compose throws
+  `IllegalArgumentException: Only VectorDrawables and rasterized asset
+  types are supported`. For flat fills, prefer
+  `Modifier.background(colorResource(...))`; for shapes you actually
+  want to draw, convert to a `<vector>`.
+- **Instrumented tests on `minSdk 26`** can't use backtick-with-spaces
+  function names — DEX rejects them with `Space characters in SimpleName
+  ... not allowed prior to DEX version 040`. Use camelCase in
+  `androidTest/`; the "Test style C" body-comment G/W/T pattern still
+  applies. JVM unit tests in `test/` are unaffected.
 - **R8 fallback option**: the user has flagged that they would drop R8
   entirely (`isMinifyEnabled = false`) if a *third* R8-only bug surfaces.
   Phase 11 should make this less likely, but the option stays on the table.
