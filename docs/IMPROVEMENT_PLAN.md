@@ -35,6 +35,7 @@ shippable; pick them off in order — each one stacks on the last.
 | 15a | Logging architecture (sealed events + Logger interface + TimberLogger sink) | Done (#152) — sealed `LogEvent` hierarchy + `Logger` interface + `CompositeLogger` fanout via Hilt `@IntoSet`. Migrated 4 existing `Timber.d` call sites and added 2 `RefreshDataWorker` lifecycle events. Reference doc at `docs/patterns/structured-logging.md`. |
 | 15b | Firebase Crashlytics sink | Done (#154) — `CrashlyticsLogger` bound into `Set<Logger>` only in release builds via `LoggerReleaseModule` (Gate 1, build-type filtering). Severity floor at Warn inside the sink (Gate 2) keeps Crashlytics within its per-session non-fatal cap. Adds Firebase BoM + Crashlytics SDK + plugins; `google-services.json` required for release builds (gitignored; CI decodes from `GOOGLE_SERVICES_JSON_BASE64`). Bumped to **`v4.0.3-INTERNAL`**. Closed umbrella #150. |
 | — | APOD reliability cycle (OkHttp 20s timeouts + null-cache placeholder) | Done (#167 + #169) — user caught broken-image pane on live v3.0.4 on 2026-05-31. Two distinct bugs diagnosed: NetworkModule's default 10s OkHttp timeout firing on slow NASA APOD responses (Fix B), and `ImageOfTheDayHeader` rendering the broken-icon when `picture == null` (Fix A). Both shipped with full PR-bound AVD smokes. Bumps to **`v4.0.4-INTERNAL`** (via chore bump #170). |
+| — | APOD reliability cycle v2 (worker APOD refresh + retry interceptor + swipe-to-refresh) | **In flight (2026-06-07)** — 3 PRs open, awaiting merge gate. #176/PR #177 daily worker now refreshes APOD too (was asteroids-only); #178/PR #179 `RetryInterceptor` (bounded retry on transient NASA 5xx/timeout); #180/PR #181 swipe-to-refresh (Material3 `PullToRefreshBox`). Planned tag **`v4.1.0-INTERNAL`** (MINOR, earned by the swipe-to-refresh feature). See dedicated subsection below. |
 | — | **Module split** lands with feature #2, not as a phase | — |
 
 Tick the table when phases land. Each phase below lists scope, rationale, and
@@ -106,7 +107,23 @@ on top of Phase 15 and `v4.0.4-INTERNAL` went live on Play Internal.
     with PR-bound release-build AVD smokes on both fixes; workflow run
     `26712607059` succeeded in 7m3s. Live on Play Internal same day
     with en-GB release notes covering the v3.0.4 → v4.0.4 delta.
-- **Next pickup**: queue empty. Pickup options:
+- **In flight (2026-06-07)**: APOD reliability cycle v2 — 3 PRs open,
+  all awaiting the user's merge gate, each its own branch off master
+  `880b743` (which already carries the merged 2026-06-07 Dependabot
+  trio incl. Kotlin 2.3.21 → 2.4.0, #172/#174/#175):
+  - **#176 / PR #177** (`fix/worker-refresh-apod`, PATCH) — daily
+    `RefreshDataWorker` now refreshes the APOD, not just asteroids.
+  - **#178 / PR #179** (`fix/network-retry-interceptor`, PATCH) —
+    `RetryInterceptor` on the shared `OkHttpClient`.
+  - **#180 / PR #181** (`feat/swipe-to-refresh`, MINOR) — pull-to-refresh
+    reloading both APOD + asteroids.
+  Planned combined tag **`v4.1.0-INTERNAL`** once all three merge — no
+  version bump committed in any PR yet; apply it in whichever PR earns
+  the tag (the MINOR feature #181) per the standing convention. Kotlin
+  2.4.0 release-classpath smoke already done on the #181 branch (Pixel
+  AVD: R8 release build + signed install + Crashlytics init + clean
+  structured-log line; see Watchpoints).
+- **Next pickup after the v2 cycle ships**:
   - **Promote the APOD empty-state polish** (deferred during #169
     review) — `CircularProgressIndicator` on top of the gray
     placeholder. Demoted from "deferred but worth doing" to "only if
@@ -116,7 +133,8 @@ on top of Phase 15 and `v4.0.4-INTERNAL` went live on Play Internal.
     tag = event-id restructure, decorator-based runtime filtering,
     Repository/ViewModel double-swallow cleanup).
   - **Pick from Quality bets** (capped at 3).
-  - **Fresh user-visible feature** — would be the first since v3.0.4.
+  - **Fresh user-visible feature** — swipe-to-refresh (#181) is the
+    first since v3.0.4; the next would build on that.
 
 ### APOD reliability cycle (2026-05-31) — what shipped
 
@@ -161,6 +179,63 @@ A third operational lesson surfaced too:
   in body comments) survives, but `@Test fun` declarations in
   `androidTest/` must use camelCase. JVM unit tests in `test/` can keep
   backticks with spaces.
+
+### APOD reliability cycle v2 (2026-06-07) — in flight
+
+Seeded the same way as the 2026-05-31 cycle: the user reported "no
+photo." Diagnosis showed it was a **fresh install landing in a transient
+NASA 503 window** — reproduced directly via `curl` (APOD endpoint
+returned `503 "upstream connect error… connection timeout"`, then `200`
+on the next two calls; the NeoWs feed was `200` throughout). Not a
+regression — a gap in resilience. Three complementary changes, three
+separate PRs:
+
+- **#176 / PR #177 — worker refreshes APOD (PATCH).**
+  `RefreshDataWorker.doWork()` called `deletePastAsteroids()` +
+  `refreshAsteroids()` only. The *sole* caller of
+  `refreshPictureOfDay()` was `MainViewModel.init` (cold-start-only), so
+  a long-lived process left yesterday's APOD cached in Room. Added
+  `repository.refreshPictureOfDay()` to the worker. It swallows its own
+  network error in the repository, so it never trips the
+  asteroid-driven `HttpException` → `Result.retry()` path. New
+  `RefreshDataWorkerTest` (JVM, mockk on the injected repo/logger):
+  both refreshes fire on success, APOD failure doesn't gate the
+  outcome, and the existing `HttpException` retry still skips the APOD
+  call.
+
+- **#178 / PR #179 — retry interceptor (PATCH).** The only
+  pre-existing retry was `RefreshDataWorker`'s `Result.retry()` on
+  `HttpException`, which (a) is worker-only — the launch refresh has
+  none, (b) never sees the APOD (repo swallows the exception), and (c)
+  is a *delayed reschedule*, not a retry of the in-flight request. The
+  #167 timeout bump doesn't help a *fast* 5xx either. Added
+  `RetryInterceptor` on the shared `OkHttpClient`: bounded retry (3) +
+  linear backoff on `500/502/503/504` and `IOException`; **not** on
+  `429`/`4xx` (replaying a rate-limited/client error worsens it). Both
+  NASA endpoints are idempotent GETs, so replay is safe. One place
+  covers both endpoints + both call sites. `sleep` is injected so unit
+  tests run without real waits; `RetryInterceptorTest` mocks the
+  `Interceptor.Chain` and builds real `Response`s.
+
+- **#180 / PR #181 — swipe-to-refresh (MINOR).** Even with retry, a
+  longer outage or being offline at launch leaves an empty header with
+  no in-app recovery. Added Material3 `PullToRefreshBox`;
+  `MainViewModel` exposes `isRefreshing` + `refresh()` (reloads both
+  surfaces concurrently in a `coroutineScope`, clears the spinner in a
+  `finally` so a swallowed failure still resets it). The APOD header
+  moved into the `LazyColumn` as item 0 so the whole screen scrolls and
+  the pull engages from the top. `MainViewModelTest` adds three cases
+  (toggle true→false via Turbine, both refreshes fire, spinner clears
+  on failure). Emulator-verified: header renders as first scrollable
+  item, pull gesture refreshes without crash.
+
+Takeaways (folded into Watchpoints):
+1. **Single-attempt fetches are fragile against any external API that
+   flaps.** A bounded retry belongs at the client layer, not per call
+   site.
+2. **One refresh entry point isn't enough.** APOD freshness now has
+   three independent paths (VM init, daily worker, manual pull) — keep
+   all idempotent.
 
 ### Issue close-keyword lesson (2026-05-08)
 
@@ -274,6 +349,14 @@ These are the rules of engagement for Phase 13 and beyond.
   caught us with the 10s default; Fix B raised connect/read to 20s). When
   wiring a new Retrofit service that talks to an API we don't operate,
   configure an explicit `OkHttpClient` with sensible timeouts up front.
+- **NASA's APOD endpoint flaps transient 5xx**, independent of timeouts
+  — observed 2026-06-07 returning `503` then `200` on the next call
+  (the NeoWs feed was healthy throughout). A *fast* 5xx isn't a timeout,
+  so the 20s bump doesn't catch it. The APOD-reliability-v2 cycle added
+  `RetryInterceptor` (bounded retry on `5xx`/`IOException`, in flight as
+  PR #179). Prefer a client-layer retry over per-call-site retries, and
+  remember a single-attempt fetch on an empty cache surfaces as a
+  user-visible "no photo".
 - **Compose `painterResource()` rejects `<shape>` drawables.** Coil
   tolerates them via the Android resource system, but Compose throws
   `IllegalArgumentException: Only VectorDrawables and rasterized asset

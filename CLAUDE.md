@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project context
 
-Asteroid Radar is a Play-Store-published Android app (internal track) tracking NASA Near Earth Objects. Single-module, view-system UI (Fragments + Data Binding + Navigation), offline-first via Room, daily background refresh via WorkManager. Default package is `com.tarek.asteroidradar`.
+Asteroid Radar is a Play-Store-published Android app (internal track) tracking NASA Near Earth Objects. Single-module, **Jetpack Compose UI + Navigation Compose** (migrated off Fragments/Data Binding in Phase 9), Hilt DI, offline-first via Room, daily background refresh via WorkManager. Default package is `com.tarek.asteroidradar`. (The Architecture section below still describes the pre-Compose Fragment/Data-Binding/Moshi stack and is **stale** — trust the source and `IMPROVEMENT_PLAN.md` over it until that section is rewritten.)
 
-**Roadmap and ongoing improvements** live in [`docs/IMPROVEMENT_PLAN.md`](docs/IMPROVEMENT_PLAN.md) — phased modernization (Gradle Kotlin DSL → convention plugin → quality tooling → toolchain bump → Hilt → R8 → tests + Kover → edge-to-edge → Compose → buildHealth → kotlinx.serialization → ongoing). The plan's "Current shipping state" section is the load-bearing handoff — read it first when starting a session. Currently shipping `v3.0.2-INTERNAL`; next pickup is issue #116. PRs should reference the relevant phase.
+**Roadmap and ongoing improvements** live in [`docs/IMPROVEMENT_PLAN.md`](docs/IMPROVEMENT_PLAN.md) — phased modernization (Gradle Kotlin DSL → convention plugin → quality tooling → toolchain bump → Hilt → R8 → tests + Kover → edge-to-edge → Compose → buildHealth → kotlinx.serialization → ongoing). The plan's "Current shipping state" section is the load-bearing handoff — read it first when starting a session. Currently shipping `v4.0.4-INTERNAL` on Play Internal; in flight is the APOD-reliability-v2 cycle (PRs #177/#179/#181, planned `v4.1.0-INTERNAL`). PRs should reference the relevant phase.
 
 ## Build, test, run
 
