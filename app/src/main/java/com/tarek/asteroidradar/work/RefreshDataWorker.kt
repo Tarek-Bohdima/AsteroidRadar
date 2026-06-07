@@ -71,6 +71,14 @@ class RefreshDataWorker
                 try {
                     repository.deletePastAsteroids()
                     repository.refreshAsteroids()
+                    // Issue #176: keep the APOD current on the daily cadence too.
+                    // MainViewModel.init is the only other caller and fires just
+                    // on cold start, so a long-lived process would otherwise leave
+                    // yesterday's picture cached in Room. refreshPictureOfDay()
+                    // swallows its own network failures (logged as
+                    // RefreshPictureOfDayFailed), so it never trips the
+                    // asteroid-driven HttpException retry below.
+                    repository.refreshPictureOfDay()
                     outcome = LogEvent.Work.Outcome.Success
                     Result.success()
                 } catch (e: HttpException) {
