@@ -70,8 +70,8 @@ if (googleServicesJson.exists()) {
 // cutting a release. Classifier choices: INTERNAL, ALPHA, BETA, RC, RELEASE.
 // .github/workflows/release.yml greps these names, so don't rename them.
 val versionMajor = 4
-val versionMinor = 0
-val versionPatch = 4
+val versionMinor = 1
+val versionPatch = 0
 val versionClassifier = "INTERNAL"
 
 // versionCode formula uses minSdk as a high digit so a future minSdk bump
