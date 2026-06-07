@@ -32,6 +32,7 @@ import android.content.Context
 import coil.ImageLoader
 import coil.decode.VideoFrameDecoder
 import com.tarek.asteroidradar.network.AsteroidService
+import com.tarek.asteroidradar.network.RetryInterceptor
 import com.tarek.asteroidradar.util.Constants
 import dagger.Module
 import dagger.Provides
@@ -71,6 +72,11 @@ object NetworkModule {
             .Builder()
             .connectTimeout(NETWORK_TIMEOUT)
             .readTimeout(NETWORK_TIMEOUT)
+            // Issue #178: bounded retry on transient NASA 5xx / connection drops
+            // (the APOD endpoint flaps 503 → 200). Added as an application
+            // interceptor so it sees the final response code and covers both
+            // endpoints + both refresh call sites in one place.
+            .addInterceptor(RetryInterceptor())
             .build()
 
     // Builder order matters: Scalars first matches `String` returns and yields
