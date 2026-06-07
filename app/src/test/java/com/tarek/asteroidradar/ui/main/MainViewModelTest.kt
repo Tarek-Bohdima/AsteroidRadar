@@ -39,6 +39,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -152,6 +153,59 @@ class MainViewModelTest {
 
                 cancelAndIgnoreRemainingEvents()
             }
+        }
+
+    @Test
+    fun `refresh toggles isRefreshing true then false`() =
+        runTest(testDispatcher) {
+            // Gate the asteroid refresh so the spinner stays on long enough to
+            // observe — without it the StateFlow would conflate true→false.
+            val gate = CompletableDeferred<Unit>()
+            coEvery { repository.refreshAsteroids() } coAnswers { gate.await() }
+            val viewModel = MainViewModel(repository, logger)
+            advanceUntilIdle()
+
+            viewModel.isRefreshing.test {
+                assertThat(awaitItem()).isFalse() // idle
+
+                viewModel.refresh()
+                advanceUntilIdle()
+                assertThat(awaitItem()).isTrue() // spinner on, refresh in flight
+
+                gate.complete(Unit)
+                advanceUntilIdle()
+                assertThat(awaitItem()).isFalse() // spinner cleared when both finish
+
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `refresh reloads both the picture of the day and the asteroid feed`() =
+        runTest(testDispatcher) {
+            val viewModel = MainViewModel(repository, logger)
+            advanceUntilIdle() // init refreshes each once
+
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            // Once from init + once from the manual refresh = twice each.
+            coVerify(exactly = 2) { repository.refreshAsteroids() }
+            coVerify(exactly = 2) { repository.refreshPictureOfDay() }
+        }
+
+    @Test
+    fun `refresh still clears isRefreshing when a refresh fails`() =
+        runTest(testDispatcher) {
+            // The VM swallows the failure internally, so the finally still runs.
+            coEvery { repository.refreshAsteroids() } throws RuntimeException("boom")
+            val viewModel = MainViewModel(repository, logger)
+            advanceUntilIdle()
+
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            assertThat(viewModel.isRefreshing.value).isFalse()
         }
 
     private companion object {

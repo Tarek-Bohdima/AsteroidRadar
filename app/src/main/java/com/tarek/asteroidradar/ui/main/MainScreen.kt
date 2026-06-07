@@ -52,6 +52,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -97,6 +98,7 @@ fun MainScreen(
 ) {
     val asteroids by viewModel.asteroids.collectAsStateWithLifecycle()
     val image by viewModel.imageOfTheDay.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     Scaffold(
@@ -104,19 +106,26 @@ fun MainScreen(
         topBar = { MainTopBar(onFilterSelect = viewModel::updateFilters) },
         containerColor = colorResource(R.color.app_background),
     ) { padding ->
-        Column(
+        // Issue #180: pull down anywhere to reload both APOD + asteroids. The
+        // header is the LazyColumn's first item (not a separate Column row) so the
+        // whole screen scrolls and the gesture engages from the very top.
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = viewModel::refresh,
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(padding),
         ) {
-            ImageOfTheDayHeader(
-                picture = image,
-                onVideoTap = { url ->
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                },
-            )
             LazyColumn(modifier = Modifier.fillMaxSize()) {
+                item {
+                    ImageOfTheDayHeader(
+                        picture = image,
+                        onVideoTap = { url ->
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                        },
+                    )
+                }
                 items(asteroids, key = { it.id }) { asteroid ->
                     AsteroidRow(asteroid = asteroid, onClick = { onAsteroidClick(asteroid) })
                 }

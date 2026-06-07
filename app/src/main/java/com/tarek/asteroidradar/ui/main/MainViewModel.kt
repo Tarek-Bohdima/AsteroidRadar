@@ -37,6 +37,7 @@ import com.tarek.asteroidradar.repository.AsteroidRepository
 import com.tarek.asteroidradar.repository.AsteroidRepository.AsteroidsFilter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -71,6 +72,12 @@ class MainViewModel
         private val _filter = MutableStateFlow<AsteroidsFilter>(AsteroidsFilter.STORED)
         val filter: StateFlow<AsteroidsFilter> = _filter.asStateFlow()
 
+        // Issue #180: drives the swipe-to-refresh spinner. True for the duration
+        // of a user-initiated refresh, reset in a finally so a swallowed network
+        // failure still clears the indicator.
+        private val _isRefreshing = MutableStateFlow(false)
+        val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
         // Re-evaluates the DAO query whenever the filter flips. WhileSubscribed
         // with a 5s grace handles configuration-change hand-off without
         // resubscribing the underlying Room flow on every recomposition.
@@ -104,6 +111,25 @@ class MainViewModel
                 repository.refreshAsteroids()
             } catch (e: Exception) {
                 logger.log(LogEvent.Network.RefreshAsteroidsFailed(e))
+            }
+        }
+
+        // Issue #180: user-initiated pull-to-refresh. Reloads both surfaces
+        // concurrently (mirroring init) so one gesture recovers the whole screen
+        // — e.g. after a NASA outage left the APOD header empty at launch. Each
+        // refresh swallows its own network error, and coroutineScope waits for
+        // both before the finally clears the spinner.
+        fun refresh() {
+            viewModelScope.launch {
+                _isRefreshing.value = true
+                try {
+                    coroutineScope {
+                        launch { refreshAsteroids() }
+                        launch { refreshPictureOfDay() }
+                    }
+                } finally {
+                    _isRefreshing.value = false
+                }
             }
         }
 
