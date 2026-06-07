@@ -2,7 +2,7 @@
 
 [versions]
 agp = "9.2.1"
-kotlin = "2.3.21"
+kotlin = "2.4.0"
 # KSP version format is `<kotlin>-<ksp-impl>` since KSP2 (>= 2.0) — must match
 # the Kotlin compiler version exactly on the leading segment. Pinned to NIA's
 # 2.3.4 (Kotlin 2.3.0 baseline) rather than 2.3.7, which is the bleeding edge
