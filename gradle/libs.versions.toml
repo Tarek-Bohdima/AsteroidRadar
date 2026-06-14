@@ -73,7 +73,7 @@ timber = "5.0.1"
 # Bumped to 34.13.0 per Firebase Console's setup guidance; the BoM 34 series
 # also folds Kotlin extensions back into the main `firebase-crashlytics`
 # artifact, so the legacy `-ktx` suffix is dropped on the library coord below.
-firebaseBom = "34.14.0"
+firebaseBom = "34.14.1"
 # Google Services Gradle plugin parses `app/google-services.json` and generates
 # the per-build-type `google-services.xml` resource that Firebase libs read at
 # init. Plugin version-tracks the Firebase Android client release line.
