@@ -73,11 +73,11 @@ timber = "5.0.1"
 # Bumped to 34.13.0 per Firebase Console's setup guidance; the BoM 34 series
 # also folds Kotlin extensions back into the main `firebase-crashlytics`
 # artifact, so the legacy `-ktx` suffix is dropped on the library coord below.
-firebaseBom = "34.14.1"
+firebaseBom = "34.15.0"
 # Google Services Gradle plugin parses `app/google-services.json` and generates
 # the per-build-type `google-services.xml` resource that Firebase libs read at
 # init. Plugin version-tracks the Firebase Android client release line.
-googleServices = "4.4.4"
+googleServices = "4.5.0"
 # Firebase Crashlytics Gradle plugin — uploads ProGuard / R8 mapping files +
 # generates the BuildConfig flag the SDK uses to detect minification.
 firebaseCrashlyticsPlugin = "3.0.7"
@@ -95,7 +95,7 @@ turbine = "1.2.1"
 # Code-quality tooling. ktlint version pinned for reproducibility across machines.
 # Mans0n compose-rules ships a detekt-plugin variant for Compose-specific checks
 # (slot-table correctness, hoisting, parameter ordering, modifier handling).
-composeRules = "0.6.0"
+composeRules = "0.6.2"
 # Tony Robalik's dependency-analysis-gradle-plugin — `./gradlew buildHealth`
 # flags unused / misplaced / superfluous dependencies. Phase 10. Aggregates
 # subproject reports at the root, so it's applied at the root build script.
@@ -104,7 +104,7 @@ detekt = "1.23.8"
 # Kover 0.9.x supports Kotlin 2.0+; aligned with the project's Kotlin pin.
 kover = "0.9.8"
 ktlint = "1.5.0"
-spotless = "8.6.0"
+spotless = "8.7.0"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidxActivity" }
