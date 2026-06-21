@@ -77,7 +77,7 @@ firebaseBom = "34.14.1"
 # Google Services Gradle plugin parses `app/google-services.json` and generates
 # the per-build-type `google-services.xml` resource that Firebase libs read at
 # init. Plugin version-tracks the Firebase Android client release line.
-googleServices = "4.4.4"
+googleServices = "4.5.0"
 # Firebase Crashlytics Gradle plugin — uploads ProGuard / R8 mapping files +
 # generates the BuildConfig flag the SDK uses to detect minification.
 firebaseCrashlyticsPlugin = "3.0.7"
