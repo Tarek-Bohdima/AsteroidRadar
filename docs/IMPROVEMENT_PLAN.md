@@ -44,9 +44,9 @@ the rough size; sub-bullets are the concrete deltas.
 ## Current shipping state
 
 Snapshot for whoever opens this repo next (likely future-you). Reflects the
-state at 2026-06-21, after the APOD reliability cycle v2 (#177 + #179 +
-#181) shipped as `v4.1.0-INTERNAL` and a 8-PR Dependabot batch merged on
-top.
+state at 2026-06-29, after the APOD reliability cycle v2 (#177 + #179 +
+#181) shipped as `v4.1.0-INTERNAL` and two Dependabot batches (8-PR on
+2026-06-21, 5-PR on 2026-06-29) merged on top.
 
 - **Live on Play Internal**: `v4.0.4-INTERNAL` (uploaded 2026-05-31,
   versionCode `26040004`) — last build confirmed on a real device. The
@@ -62,13 +62,20 @@ top.
   5.3.0) and gradle deps (#192 google-services 4.5.0, #193 spotless
   8.7.0, #194 gradle-wrapper 9.6.0, #195 compose-rules detekt 0.6.2,
   #196 firebase-bom 34.15.0). All passed CI; no re-tag (dep-bump-only).
+- **Dependabot (2026-06-29)**: merged a 5-PR batch — CI actions
+  (#199 setup-java 5.4.0, #200 actions/cache 6.1.0) and gradle deps
+  (#201 dependencyAnalysis 3.16.0, #202 gradle-wrapper 9.6.1, #203
+  hilt 2.60). Each rebased onto master and re-ran green; squash-merged,
+  no re-tag (dep-bump-only). Repo has auto-merge disabled, so the batch
+  was rebased + merged one at a time.
 - **Parked**: PR #191 (androidx group — Compose BOM `2026.06.00` +
   Lifecycle `2.11.0`) is **blocked** — Lifecycle 2.11.0 requires
   `compileSdk 37` (currently 36), failing `checkBenchmarkReleaseAarMetadata`.
   Split out into **issue #197** (build: bump compileSdk 36 → 37). Parked
   pending that bump; #191 rebases once #197 lands. Note also the standing
-  DAGP↔AGP compat warning (#187): dependencyAnalysis 3.15.0 certifies
-  AGP ≤9.1.0, master is on 9.2.1 — expected, not a failure.
+  DAGP↔AGP compat warning (#187): dependencyAnalysis (now 3.16.0)
+  certifies AGP up to ~9.1.0, master is on 9.2.1 — expected, not a
+  failure.
 - **v3.x → v4.x release timeline** (chronological):
   - `v3.0.0-INTERNAL` — Phase 9c Compose rewrite. **Broken on real devices**
     via release-only converter-factory regression. Never roll back to.
