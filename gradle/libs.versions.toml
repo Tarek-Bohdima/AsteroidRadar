@@ -63,7 +63,7 @@ androidxTestRunner = "1.7.0"
 # Android). 2.55+ switched to Palantir's javapoet fork, so the JavaPoet 1.10
 # `NoSuchMethodError` that Phase 9c worked around with `enableAggregatingTask
 # = false` is gone — aggregation runs at its default `true` again.
-hilt = "2.59.2"
+hilt = "2.60"
 retrofit = "3.0.0"
 timber = "5.0.1"
 
