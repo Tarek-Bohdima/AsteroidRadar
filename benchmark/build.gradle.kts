@@ -33,7 +33,7 @@ plugins {
 
 android {
     namespace = "com.tarek.asteroidradar.benchmark"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         // Macrobenchmark requires API 23+; baseline-profile generation needs
