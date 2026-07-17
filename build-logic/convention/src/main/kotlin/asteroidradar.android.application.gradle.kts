@@ -47,10 +47,11 @@ plugins {
 }
 
 extensions.configure<ApplicationExtension> {
-    // SDK 36 (Android 16) is the new floor for AndroidX 2.10/2.9 lifecycle and
-    // navigation; bumped alongside the Phase 13b group bump. minSdk stays at
-    // 26 (no breaking-for-users bump per the SemVer table in CLAUDE.md).
-    compileSdk = 36
+    // SDK 37 is the new floor for AndroidX Lifecycle 2.11 and Hilt 1.4, whose
+    // AAR metadata requires compiling against API 37. targetSdk stays 36 and
+    // minSdk stays 26 (no breaking-for-users bump per the SemVer table in
+    // CLAUDE.md) — this bump only raises the compile-time API floor.
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 26
