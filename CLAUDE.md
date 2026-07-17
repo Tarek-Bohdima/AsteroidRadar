@@ -67,6 +67,8 @@ The classifier suffix maps cleanly to Play tracks:
 
 **Conventions:**
 
+For the step-by-step release runbook (how to cut a signed build, tag naming rules, required secrets, troubleshooting), see [`docs/RELEASING.md`](docs/RELEASING.md). The points below are the policy summary.
+
 - Bump `versionMajor/Minor/Patch` in `app/build.gradle.kts` as part of the PR that earns the bump, so the version-of-record on `master` always reflects what's there. Doc/CI/dep-bump-only PRs skip the bump.
 - Cut a tag only when actually shipping a build — phases can stack into a single tag. e.g. Phases 4 + 5 + 6 ship as one `v2.0.0-INTERNAL` once the toolchain + DI + R8 rewrite is on a device, not three separate cuts. The version field tracks the work; the tag tracks shipments.
 - When we tag, the release workflow runs: signed APK + AAB build, GitHub Release with auto-generated notes, AAB attached as a workflow artifact (Play Store upload stays manual).
