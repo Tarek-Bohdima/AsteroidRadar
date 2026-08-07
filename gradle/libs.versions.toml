@@ -2,7 +2,7 @@
 
 [versions]
 agp = "9.2.1"
-kotlin = "2.4.0"
+kotlin = "2.4.10"
 # KSP version format is `<kotlin>-<ksp-impl>` since KSP2 (>= 2.0) — must match
 # the Kotlin compiler version exactly on the leading segment. Pinned to NIA's
 # 2.3.4 (Kotlin 2.3.0 baseline) rather than 2.3.7, which is the bleeding edge
@@ -102,7 +102,7 @@ composeRules = "0.6.3"
 dependencyAnalysis = "3.18.0"
 detekt = "1.23.8"
 # Kover 0.9.x supports Kotlin 2.0+; aligned with the project's Kotlin pin.
-kover = "0.9.8"
+kover = "0.9.9"
 ktlint = "1.5.0"
 spotless = "8.9.0"
 
