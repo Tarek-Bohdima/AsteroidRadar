@@ -35,7 +35,8 @@ shippable; pick them off in order — each one stacks on the last.
 | 15a | Logging architecture (sealed events + Logger interface + TimberLogger sink) | Done (#152) — sealed `LogEvent` hierarchy + `Logger` interface + `CompositeLogger` fanout via Hilt `@IntoSet`. Migrated 4 existing `Timber.d` call sites and added 2 `RefreshDataWorker` lifecycle events. Reference doc at `docs/patterns/structured-logging.md`. |
 | 15b | Firebase Crashlytics sink | Done (#154) — `CrashlyticsLogger` bound into `Set<Logger>` only in release builds via `LoggerReleaseModule` (Gate 1, build-type filtering). Severity floor at Warn inside the sink (Gate 2) keeps Crashlytics within its per-session non-fatal cap. Adds Firebase BoM + Crashlytics SDK + plugins; `google-services.json` required for release builds (gitignored; CI decodes from `GOOGLE_SERVICES_JSON_BASE64`). Bumped to **`v4.0.3-INTERNAL`**. Closed umbrella #150. |
 | — | APOD reliability cycle (OkHttp 20s timeouts + null-cache placeholder) | Done (#167 + #169) — user caught broken-image pane on live v3.0.4 on 2026-05-31. Two distinct bugs diagnosed: NetworkModule's default 10s OkHttp timeout firing on slow NASA APOD responses (Fix B), and `ImageOfTheDayHeader` rendering the broken-icon when `picture == null` (Fix A). Both shipped with full PR-bound AVD smokes. Bumps to **`v4.0.4-INTERNAL`** (via chore bump #170). |
-| — | APOD reliability cycle v2 (worker APOD refresh + retry interceptor + swipe-to-refresh) | **In flight (2026-06-07)** — 3 PRs open, awaiting merge gate. #176/PR #177 daily worker now refreshes APOD too (was asteroids-only); #178/PR #179 `RetryInterceptor` (bounded retry on transient NASA 5xx/timeout); #180/PR #181 swipe-to-refresh (Material3 `PullToRefreshBox`). Planned tag **`v4.1.0-INTERNAL`** (MINOR, earned by the swipe-to-refresh feature). See dedicated subsection below. |
+| — | APOD reliability cycle v2 (worker APOD refresh + retry interceptor + swipe-to-refresh) | **Done (2026-06-07)** — #176/PR #177 daily worker now refreshes APOD too (was asteroids-only); #178/PR #179 `RetryInterceptor` (bounded retry on transient NASA 5xx/timeout); #180/PR #181 swipe-to-refresh (Material3 `PullToRefreshBox`). Tagged **`v4.1.0-INTERNAL`** (MINOR, earned by the swipe-to-refresh feature). See dedicated subsection below. |
+| — | compileSdk 37 + 2026-08 dependency/toolchain batch | **Done (2026-08-08)** — un-parked issue #197: `compileSdk 36 → 37` (#214, targetSdk 36/minSdk 26 unchanged) unblocked the androidx group (#206). Then a 12-PR batch bumped the toolchain: **AGP 9.3.1, Kotlin 2.4.10, KSP 2.3.11** (#232 + #233), kover 0.9.9, dependencyAnalysis 3.18.0, AndroidX (Compose BOM / Lifecycle 2.11 / Hilt 1.4 / ConstraintLayout / macrobenchmark), Firebase BoM (Crashlytics 20.1.0), org.json, spotless, CI actions. Dep/toolchain only → PATCH tag **`v4.1.1-INTERNAL`** (#234). Full pre-tag smoke passed; live on Play Internal + Pixel-verified 2026-08-08. |
 | — | **Module split** lands with feature #2, not as a phase | — |
 
 Tick the table when phases land. Each phase below lists scope, rationale, and
@@ -44,19 +45,19 @@ the rough size; sub-bullets are the concrete deltas.
 ## Current shipping state
 
 Snapshot for whoever opens this repo next (likely future-you). Reflects the
-state at 2026-06-29, after the APOD reliability cycle v2 (#177 + #179 +
-#181) shipped as `v4.1.0-INTERNAL` and two Dependabot batches (8-PR on
-2026-06-21, 5-PR on 2026-06-29) merged on top.
+state at 2026-08-08, after the compileSdk 37 bump + 2026-08 toolchain batch
+shipped as `v4.1.1-INTERNAL` (live on Play Internal, Pixel-verified).
 
-- **Live on Play Internal**: `v4.0.4-INTERNAL` (uploaded 2026-05-31,
-  versionCode `26040004`) — last build confirmed on a real device. The
-  `v4.1.0-INTERNAL` AAB exists as a GitHub Release artifact but the Play
-  upload is still manual and not yet confirmed pushed.
-- **Version-of-record on `master`**: `v4.1.0-INTERNAL` (versionCode
-  `26040100`) — APOD reliability cycle v2 (worker APOD refresh, retry
-  interceptor, swipe-to-refresh) tagged + GitHub-Released 2026-06-07
-  (workflow run `27103850166` succeeded). Subsequent dep-bump-only PRs
-  rode on top without a re-tag.
+- **Live on Play Internal**: `v4.1.1-INTERNAL` (uploaded + Pixel-verified
+  2026-08-08, versionCode `26040101`) — "works as intended" on a real
+  device. Supersedes `v4.0.4-INTERNAL`, which had been the live build since
+  2026-05-31 (v4.1.0's AAB was only ever a GitHub Release artifact, never
+  pushed to Play).
+- **Version-of-record on `master`**: `v4.1.1-INTERNAL` (versionCode
+  `26040101`) — the 2026-08 dependency/toolchain batch (AGP 9.3.1, Kotlin
+  2.4.10, KSP 2.3.11, compileSdk 37, AndroidX/Firebase/CI bumps) tagged +
+  GitHub-Released 2026-08-08 (workflow run `31231403737` succeeded). Dep/
+  toolchain only — no user-facing change, hence PATCH.
 - **Dependabot (2026-06-21)**: merged an 8-PR batch — CI actions
   (#188 action-gh-release 3.0.1, #189 checkout v7, #190 setup-java
   5.3.0) and gradle deps (#192 google-services 4.5.0, #193 spotless
@@ -68,14 +69,22 @@ state at 2026-06-29, after the APOD reliability cycle v2 (#177 + #179 +
   hilt 2.60). Each rebased onto master and re-ran green; squash-merged,
   no re-tag (dep-bump-only). Repo has auto-merge disabled, so the batch
   was rebased + merged one at a time.
-- **Parked**: PR #191 (androidx group — Compose BOM `2026.06.00` +
-  Lifecycle `2.11.0`) is **blocked** — Lifecycle 2.11.0 requires
-  `compileSdk 37` (currently 36), failing `checkBenchmarkReleaseAarMetadata`.
-  Split out into **issue #197** (build: bump compileSdk 36 → 37). Parked
-  pending that bump; #191 rebases once #197 lands. Note also the standing
-  DAGP↔AGP compat warning (#187): dependencyAnalysis (now 3.16.0)
-  certifies AGP up to ~9.1.0, master is on 9.2.1 — expected, not a
-  failure.
+- **Dependabot (2026-07-18)**: 7-PR batch (#205 uiautomator, #207
+  spotless 8.8.0, #208 setup-java 5.5.0, #210 hilt 2.60.1, #211/#213
+  dependencyAnalysis/ksp, #212 firebase-bom 34.16.0). No re-tag.
+- **Dependabot (2026-08-08)**: 12-PR toolchain batch — see the
+  "compileSdk 37 + 2026-08 dependency/toolchain batch" row above.
+  Notable interdependencies handled: `hilt-navigation-compose 1.4` +
+  `Lifecycle 2.11` required `compileSdk 37` (issue #197, PR #214); AGP and
+  Kotlin arrived as both standalone and group PRs (redundant #226/#220
+  closed in favor of groups #232/#218); #218 conflicted on adjacent
+  `libs.versions.toml` lines and was superseded by hand-authored #233.
+- **Resolved**: issue **#197** (compileSdk 36 → 37) — done via #214,
+  which un-blocked the old androidx group (formerly PR #191, superseded
+  by #206). **Still open**: DAGP↔AGP compat warning (**#187**) —
+  dependencyAnalysis 3.18.0 certifies AGP up to 9.2.1, master is on 9.3.1,
+  so the "Proceed at your own risk" warning persists at config time;
+  build succeeds, tracked for a future DAGP release that certifies 9.3.x.
 - **v3.x → v4.x release timeline** (chronological):
   - `v3.0.0-INTERNAL` — Phase 9c Compose rewrite. **Broken on real devices**
     via release-only converter-factory regression. Never roll back to.
@@ -135,6 +144,24 @@ state at 2026-06-29, after the APOD reliability cycle v2 (#177 + #179 +
   Kotlin 2.4.0 release-classpath smoke was done on the #181 branch
   (Pixel AVD: R8 release build + signed install + Crashlytics init +
   clean structured-log line; see Watchpoints). Play upload stays manual.
+- **Shipped (2026-08-08)**: `v4.1.1-INTERNAL` (versionCode `26040101`,
+  bump #234) — PATCH cut for the 2026-08 dependency/toolchain batch.
+  **compileSdk 36 → 37** (#214, un-parking #197) unblocked the androidx
+  group (#206); then a 12-PR batch landed **AGP 9.3.1, Kotlin 2.4.10,
+  KSP 2.3.11** (#232/#233), kover 0.9.9, dependencyAnalysis 3.18.0,
+  AndroidX (Compose BOM / Lifecycle 2.11 / Hilt 1.4 / ConstraintLayout /
+  macrobenchmark), Firebase BoM (Crashlytics 20.1.0), org.json, spotless,
+  compose-rules detekt, and CI actions. Dep/toolchain only — no
+  user-facing change. Full pre-tag release-build smoke on Pixel 7 Pro /
+  API 33 (assembleRelease + R8 + v2 signing + install + clean cold launch;
+  MainActivity displayed, Crashlytics 20.1.0 init, no crash/ANR). Workflow
+  run `31231403737` succeeded. **Live on Play Internal + Pixel-verified
+  same day** ("works as intended") — first Play upload since v4.0.4.
+  Gotcha this cycle: a stale Gradle daemon from the Kotlin bump deadlocked
+  the local release build until `--gradlew stop` + `--no-daemon`; during
+  the smoke, NASA APOD returned HTTP 500 (server-side, confirmed from
+  host) and the app correctly retried + logged + showed the placeholder
+  (not a regression).
 - **Next pickup after the v2 cycle ships**:
   - **Promote the APOD empty-state polish** (deferred during #169
     review) — `CircularProgressIndicator` on top of the gray
