@@ -11,13 +11,13 @@ ksp = "2.3.11"
 androidxNavigation = "2.9.8"
 
 androidxActivity = "1.13.0"
-androidxAppcompat = "1.7.1"
+androidxAppcompat = "1.8.0"
 # Compose BOM aligns the rest of the androidx.compose.* artifacts (Material 3,
 # UI, tooling). The activity/lifecycle/navigation/hilt-compose deps are
 # published outside the BOM and pin alongside their non-Compose siblings.
 # BOM is intentionally NOT bumped in Phase 13b — Compose surface needs its
 # own validation phase, separate from the AndroidX-core group bump.
-androidxComposeBom = "2026.06.01"
+androidxComposeBom = "2026.08.00"
 androidxConstraintlayout = "2.2.2"
 # androidx.hilt:* (hilt-work, hilt-compiler) is a separate artifact group from
 # com.google.dagger:hilt-*; KSP-supported since 1.2.0.
@@ -47,7 +47,7 @@ androidxTestEspresso = "3.7.0"
 # built against AGP 8.x's `TestExtension` class, which AGP 9.0 renamed to
 # `TestExtensionImpl`. The 1.5.x line restores AGP-9 compatibility. Bump to
 # stable when androidx.benchmark cuts a 1.5.0 release.
-androidxMacroBenchmark = "1.5.0-beta01"
+androidxMacroBenchmark = "1.5.0-rc01"
 # UI Automator — the baseline-profile generator drives the four golden-path
 # flows via UiAutomator (cross-app UI control), since Compose UI testing can't
 # leave the test process boundary that a baseline profile run requires.
@@ -73,14 +73,14 @@ timber = "5.0.1"
 # Bumped to 34.13.0 per Firebase Console's setup guidance; the BoM 34 series
 # also folds Kotlin extensions back into the main `firebase-crashlytics`
 # artifact, so the legacy `-ktx` suffix is dropped on the library coord below.
-firebaseBom = "34.16.0"
+firebaseBom = "34.18.0"
 # Google Services Gradle plugin parses `app/google-services.json` and generates
 # the per-build-type `google-services.xml` resource that Firebase libs read at
 # init. Plugin version-tracks the Firebase Android client release line.
 googleServices = "4.5.0"
 # Firebase Crashlytics Gradle plugin — uploads ProGuard / R8 mapping files +
 # generates the BuildConfig flag the SDK uses to detect minification.
-firebaseCrashlyticsPlugin = "3.0.7"
+firebaseCrashlyticsPlugin = "3.0.8"
 
 androidxTestExtJunit = "1.3.0"
 junit = "4.13.2"
@@ -88,14 +88,14 @@ mockk = "1.14.11"
 # org.json:json — Android's `org.json` ships in the Android runtime but isn't
 # on the JVM unit-test classpath; this brings the (API-compatible) library so
 # parser tests can run as plain JVM tests without Robolectric.
-orgJson = "20260719"
+orgJson = "20260814"
 truth = "1.4.5"
 turbine = "1.2.1"
 
 # Code-quality tooling. ktlint version pinned for reproducibility across machines.
 # Mans0n compose-rules ships a detekt-plugin variant for Compose-specific checks
 # (slot-table correctness, hoisting, parameter ordering, modifier handling).
-composeRules = "0.6.3"
+composeRules = "0.6.4"
 # Tony Robalik's dependency-analysis-gradle-plugin — `./gradlew buildHealth`
 # flags unused / misplaced / superfluous dependencies. Phase 10. Aggregates
 # subproject reports at the root, so it's applied at the root build script.
@@ -104,7 +104,7 @@ detekt = "1.23.8"
 # Kover 0.9.x supports Kotlin 2.0+; aligned with the project's Kotlin pin.
 kover = "0.9.9"
 ktlint = "1.5.0"
-spotless = "8.9.0"
+spotless = "8.10.0"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidxActivity" }
