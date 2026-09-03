@@ -1,14 +1,14 @@
 # Version catalog — single source of truth for plugin / library versions.
 
 [versions]
-agp = "9.3.1"
+agp = "9.3.2"
 kotlin = "2.4.10"
 # KSP version format is `<kotlin>-<ksp-impl>` since KSP2 (>= 2.0) — must match
 # the Kotlin compiler version exactly on the leading segment. Pinned to NIA's
 # 2.3.4 (Kotlin 2.3.0 baseline) rather than 2.3.7, which is the bleeding edge
 # where Hilt's compatibility hasn't fully caught up.
 ksp = "2.3.11"
-androidxNavigation = "2.9.8"
+androidxNavigation = "2.10.0"
 
 androidxActivity = "1.13.0"
 androidxAppcompat = "1.8.0"
@@ -47,7 +47,7 @@ androidxTestEspresso = "3.7.0"
 # built against AGP 8.x's `TestExtension` class, which AGP 9.0 renamed to
 # `TestExtensionImpl`. The 1.5.x line restores AGP-9 compatibility. Bump to
 # stable when androidx.benchmark cuts a 1.5.0 release.
-androidxMacroBenchmark = "1.5.0-rc01"
+androidxMacroBenchmark = "1.5.0-rc02"
 # UI Automator — the baseline-profile generator drives the four golden-path
 # flows via UiAutomator (cross-app UI control), since Compose UI testing can't
 # leave the test process boundary that a baseline profile run requires.
@@ -99,7 +99,7 @@ composeRules = "0.6.4"
 # Tony Robalik's dependency-analysis-gradle-plugin — `./gradlew buildHealth`
 # flags unused / misplaced / superfluous dependencies. Phase 10. Aggregates
 # subproject reports at the root, so it's applied at the root build script.
-dependencyAnalysis = "3.18.0"
+dependencyAnalysis = "3.19.1"
 detekt = "1.23.8"
 # Kover 0.9.x supports Kotlin 2.0+; aligned with the project's Kotlin pin.
 kover = "0.9.9"
