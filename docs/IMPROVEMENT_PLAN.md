@@ -37,7 +37,7 @@ shippable; pick them off in order — each one stacks on the last.
 | — | APOD reliability cycle (OkHttp 20s timeouts + null-cache placeholder) | Done (#167 + #169) — user caught broken-image pane on live v3.0.4 on 2026-05-31. Two distinct bugs diagnosed: NetworkModule's default 10s OkHttp timeout firing on slow NASA APOD responses (Fix B), and `ImageOfTheDayHeader` rendering the broken-icon when `picture == null` (Fix A). Both shipped with full PR-bound AVD smokes. Bumps to **`v4.0.4-INTERNAL`** (via chore bump #170). |
 | — | APOD reliability cycle v2 (worker APOD refresh + retry interceptor + swipe-to-refresh) | **Done (2026-06-07)** — #176/PR #177 daily worker now refreshes APOD too (was asteroids-only); #178/PR #179 `RetryInterceptor` (bounded retry on transient NASA 5xx/timeout); #180/PR #181 swipe-to-refresh (Material3 `PullToRefreshBox`). Tagged **`v4.1.0-INTERNAL`** (MINOR, earned by the swipe-to-refresh feature). See dedicated subsection below. |
 | — | compileSdk 37 + 2026-08 dependency/toolchain batch | **Done (2026-08-08)** — un-parked issue #197: `compileSdk 36 → 37` (#214, targetSdk 36/minSdk 26 unchanged) unblocked the androidx group (#206). Then a 12-PR batch bumped the toolchain: **AGP 9.3.1, Kotlin 2.4.10, KSP 2.3.11** (#232 + #233), kover 0.9.9, dependencyAnalysis 3.18.0, AndroidX (Compose BOM / Lifecycle 2.11 / Hilt 1.4 / ConstraintLayout / macrobenchmark), Firebase BoM (Crashlytics 20.1.0), org.json, spotless, CI actions. Dep/toolchain only → PATCH tag **`v4.1.1-INTERNAL`** (#234). Full pre-tag smoke passed; live on Play Internal + Pixel-verified 2026-08-08. |
-| — | 2026-09 dependency/toolchain batch | **Done (2026-09-20)** — three combined Dependabot batches merged as single-branch/single-CI PRs to save queue time: 8-PR (#246), 4-PR (#252), and an 11-PR (#270) that moved the toolchain again: **Kotlin 2.4.20, AGP 9.4.1, KSP 2.3.12**, androidx (navigation 2.10.1, Compose BOM 2026.09.00, Room 2.8.5, macrobenchmark 1.5.0 stable), Firebase BoM 34.19.0, dependencyAnalysis 3.19.2, spotless/compose-rules, CI actions (setup-java 6.0.1, setup-android 4.0.4, gh-release 3.0.3). Overlapping standalone/group PRs de-duplicated (agp 9.4.1 from #268 over #261's 9.4.0; kotlin/ksp dups closed). Dep/toolchain only → PATCH tag **`v4.1.2-INTERNAL`** (#271). |
+| — | 2026-09 dependency/toolchain batch | **Done (2026-09-20)** — three combined Dependabot batches merged as single-branch/single-CI PRs to save queue time: 8-PR (#246), 4-PR (#252), and an 11-PR (#270) that moved the toolchain again: **Kotlin 2.4.20, AGP 9.4.1, KSP 2.3.12**, androidx (navigation 2.10.1, Compose BOM 2026.09.00, Room 2.8.5, macrobenchmark 1.5.0 stable), Firebase BoM 34.19.0, dependencyAnalysis 3.19.2, spotless/compose-rules, CI actions (setup-java 6.0.1, setup-android 4.0.4, gh-release 3.0.3). Overlapping standalone/group PRs de-duplicated (agp 9.4.1 from #268 over #261's 9.4.0; kotlin/ksp dups closed). Dep/toolchain only → PATCH tag **`v4.1.2-INTERNAL`** (#271); release workflow run `35536437234` succeeded — signed AAB + APK + mapping.txt attached to the GitHub Release. |
 | — | **Module split** lands with feature #2, not as a phase | — |
 
 Tick the table when phases land. Each phase below lists scope, rationale, and
@@ -182,8 +182,11 @@ state at 2026-09-20, after the 2026-09 dependency/toolchain batch was cut as
   emulator (assembleRelease + R8 + v2 signing BUILD SUCCESSFUL in 5m24s;
   install + clean cold launch — `Displayed MainActivity +3s654ms`,
   Firebase/Crashlytics init, ProfileInstaller ran, no crash/ANR). Tagged
-  2026-09-20; Play upload deferred to maintainer (dep-only, last Play
-  build stays v4.1.1). Note: the DAGP↔AGP warning (#187) widened —
+  2026-09-20; release workflow run `35536437234` succeeded — signed AAB +
+  APK + mapping.txt attached to the GitHub Release. Play upload deferred to
+  maintainer (dep-only, last Play build stays v4.1.1 until the AAB is
+  uploaded to the Internal track). Note: the DAGP↔AGP warning (#187)
+  widened —
   dependencyAnalysis 3.19.2 certifies AGP ≤ 9.3.1, we run 9.4.1.
 - **Next pickup after the v2 cycle ships**:
   - **Promote the APOD empty-state polish** (deferred during #169
