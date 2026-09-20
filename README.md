@@ -1,8 +1,10 @@
 # Asteroid Radar
 
 [![Android CI](https://github.com/Tarek-Bohdima/AsteroidRadar/actions/workflows/build_pull_request.yml/badge.svg)](https://github.com/Tarek-Bohdima/AsteroidRadar/actions/workflows/build_pull_request.yml)
-[![Kotlin](https://img.shields.io/badge/Kotlin-1.6.21-blueviolet?logo=kotlin)](#)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20-blueviolet?logo=kotlin)](#)
+[![AGP](https://img.shields.io/badge/AGP-9.4.1-blue?logo=android)](#)
 [![minSdk](https://img.shields.io/badge/minSdk-26-brightgreen)](#)
+[![compileSdk](https://img.shields.io/badge/compileSdk-37-brightgreen)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](#license)
 
 Asteroid Radar tracks Near Earth Objects (NEOs) using NASA's
@@ -29,13 +31,14 @@ Available on Google Play (internal track).
 | Layer | Choice |
 |---|---|
 | Language | Kotlin |
-| UI | Fragments + Data Binding + Navigation Component (safe-args) |
+| UI | Jetpack Compose + Navigation Compose (typed routes via kotlinx.serialization) |
+| DI | Hilt |
 | Async | Kotlin Coroutines |
-| Networking | Retrofit + Moshi + OkHttp; Scalars and Moshi converter factories registered in order so `String` returns get the raw body and `@JsonClass`-annotated returns get the codegen-generated adapter |
+| Networking | Retrofit + kotlinx.serialization + OkHttp; Scalars and kotlinx.serialization converter factories registered in order so `String` returns get the raw body (the NeoWs feed is parsed by hand) and class returns get the reflection-free generated serializer. A bounded `RetryInterceptor` retries transient NASA 5xx / timeouts |
 | Persistence | Room (compiled with KSP) |
 | Background | WorkManager (`PeriodicWorkRequest`, KEEP policy) |
 | Image loading | Coil |
-| Logging | Timber |
+| Logging | Timber + Firebase Crashlytics via a structured `LogEvent` taxonomy fanned out through Hilt set-multibinding |
 
 Architecture is a standard offline-first repo pattern (`domain` / `network` /
 `database` / `repository` / `ui` / `work`). See [`CLAUDE.md`](CLAUDE.md) for

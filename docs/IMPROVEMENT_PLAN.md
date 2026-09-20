@@ -37,6 +37,7 @@ shippable; pick them off in order — each one stacks on the last.
 | — | APOD reliability cycle (OkHttp 20s timeouts + null-cache placeholder) | Done (#167 + #169) — user caught broken-image pane on live v3.0.4 on 2026-05-31. Two distinct bugs diagnosed: NetworkModule's default 10s OkHttp timeout firing on slow NASA APOD responses (Fix B), and `ImageOfTheDayHeader` rendering the broken-icon when `picture == null` (Fix A). Both shipped with full PR-bound AVD smokes. Bumps to **`v4.0.4-INTERNAL`** (via chore bump #170). |
 | — | APOD reliability cycle v2 (worker APOD refresh + retry interceptor + swipe-to-refresh) | **Done (2026-06-07)** — #176/PR #177 daily worker now refreshes APOD too (was asteroids-only); #178/PR #179 `RetryInterceptor` (bounded retry on transient NASA 5xx/timeout); #180/PR #181 swipe-to-refresh (Material3 `PullToRefreshBox`). Tagged **`v4.1.0-INTERNAL`** (MINOR, earned by the swipe-to-refresh feature). See dedicated subsection below. |
 | — | compileSdk 37 + 2026-08 dependency/toolchain batch | **Done (2026-08-08)** — un-parked issue #197: `compileSdk 36 → 37` (#214, targetSdk 36/minSdk 26 unchanged) unblocked the androidx group (#206). Then a 12-PR batch bumped the toolchain: **AGP 9.3.1, Kotlin 2.4.10, KSP 2.3.11** (#232 + #233), kover 0.9.9, dependencyAnalysis 3.18.0, AndroidX (Compose BOM / Lifecycle 2.11 / Hilt 1.4 / ConstraintLayout / macrobenchmark), Firebase BoM (Crashlytics 20.1.0), org.json, spotless, CI actions. Dep/toolchain only → PATCH tag **`v4.1.1-INTERNAL`** (#234). Full pre-tag smoke passed; live on Play Internal + Pixel-verified 2026-08-08. |
+| — | 2026-09 dependency/toolchain batch | **Done (2026-09-20)** — three combined Dependabot batches merged as single-branch/single-CI PRs to save queue time: 8-PR (#246), 4-PR (#252), and an 11-PR (#270) that moved the toolchain again: **Kotlin 2.4.20, AGP 9.4.1, KSP 2.3.12**, androidx (navigation 2.10.1, Compose BOM 2026.09.00, Room 2.8.5, macrobenchmark 1.5.0 stable), Firebase BoM 34.19.0, dependencyAnalysis 3.19.2, spotless/compose-rules, CI actions (setup-java 6.0.1, setup-android 4.0.4, gh-release 3.0.3). Overlapping standalone/group PRs de-duplicated (agp 9.4.1 from #268 over #261's 9.4.0; kotlin/ksp dups closed). Dep/toolchain only → PATCH tag **`v4.1.2-INTERNAL`** (#271). |
 | — | **Module split** lands with feature #2, not as a phase | — |
 
 Tick the table when phases land. Each phase below lists scope, rationale, and
@@ -45,19 +46,24 @@ the rough size; sub-bullets are the concrete deltas.
 ## Current shipping state
 
 Snapshot for whoever opens this repo next (likely future-you). Reflects the
-state at 2026-08-08, after the compileSdk 37 bump + 2026-08 toolchain batch
-shipped as `v4.1.1-INTERNAL` (live on Play Internal, Pixel-verified).
+state at 2026-09-20, after the 2026-09 dependency/toolchain batch was cut as
+`v4.1.2-INTERNAL` (version-of-record on `master`). Last Play-verified build is
+`v4.1.1-INTERNAL`.
 
 - **Live on Play Internal**: `v4.1.1-INTERNAL` (uploaded + Pixel-verified
   2026-08-08, versionCode `26040101`) — "works as intended" on a real
   device. Supersedes `v4.0.4-INTERNAL`, which had been the live build since
   2026-05-31 (v4.1.0's AAB was only ever a GitHub Release artifact, never
-  pushed to Play).
-- **Version-of-record on `master`**: `v4.1.1-INTERNAL` (versionCode
-  `26040101`) — the 2026-08 dependency/toolchain batch (AGP 9.3.1, Kotlin
-  2.4.10, KSP 2.3.11, compileSdk 37, AndroidX/Firebase/CI bumps) tagged +
-  GitHub-Released 2026-08-08 (workflow run `31231403737` succeeded). Dep/
-  toolchain only — no user-facing change, hence PATCH.
+  pushed to Play). `v4.1.2-INTERNAL` is dep/toolchain-only; upload to Play
+  is at the maintainer's discretion (Play upload is always manual).
+- **Version-of-record on `master`**: `v4.1.2-INTERNAL` (versionCode
+  `26040102`) — the 2026-09 dependency/toolchain batch (AGP 9.4.1, Kotlin
+  2.4.20, KSP 2.3.12, androidx nav 2.10.1 / Compose BOM 2026.09.00 / Room
+  2.8.5 / macrobenchmark 1.5.0, Firebase BoM 34.19.0, dependencyAnalysis
+  3.19.2, CI actions) bumped via #271 and tagged 2026-09-20. Dep/toolchain
+  only — no user-facing change, hence PATCH. The prior version-of-record was
+  `v4.1.1-INTERNAL` (versionCode `26040101`, 2026-08 batch, AGP 9.3.1 /
+  Kotlin 2.4.10 / KSP 2.3.11 / compileSdk 37).
 - **Dependabot (2026-06-21)**: merged an 8-PR batch — CI actions
   (#188 action-gh-release 3.0.1, #189 checkout v7, #190 setup-java
   5.3.0) and gradle deps (#192 google-services 4.5.0, #193 spotless
@@ -82,9 +88,9 @@ shipped as `v4.1.1-INTERNAL` (live on Play Internal, Pixel-verified).
 - **Resolved**: issue **#197** (compileSdk 36 → 37) — done via #214,
   which un-blocked the old androidx group (formerly PR #191, superseded
   by #206). **Still open**: DAGP↔AGP compat warning (**#187**) —
-  dependencyAnalysis 3.18.0 certifies AGP up to 9.2.1, master is on 9.3.1,
+  dependencyAnalysis 3.19.2 certifies AGP up to 9.3.1, master is on 9.4.1,
   so the "Proceed at your own risk" warning persists at config time;
-  build succeeds, tracked for a future DAGP release that certifies 9.3.x.
+  build succeeds, tracked for a future DAGP release that certifies 9.4.x.
 - **v3.x → v4.x release timeline** (chronological):
   - `v3.0.0-INTERNAL` — Phase 9c Compose rewrite. **Broken on real devices**
     via release-only converter-factory regression. Never roll back to.
@@ -162,6 +168,23 @@ shipped as `v4.1.1-INTERNAL` (live on Play Internal, Pixel-verified).
   the smoke, NASA APOD returned HTTP 500 (server-side, confirmed from
   host) and the app correctly retried + logged + showed the placeholder
   (not a regression).
+- **Shipped (2026-09-20)**: `v4.1.2-INTERNAL` (versionCode `26040102`,
+  bump #271) — PATCH cut for the 2026-09 dependency/toolchain batch,
+  landed as three combined single-CI Dependabot PRs (#246 8-PR, #252
+  4-PR, #270 11-PR). Toolchain moved to **AGP 9.4.1, Kotlin 2.4.20, KSP
+  2.3.12**; androidx (navigation 2.10.1, Compose BOM 2026.09.00, Room
+  2.8.5, macrobenchmark 1.5.0 stable), Firebase BoM 34.19.0,
+  dependencyAnalysis 3.19.2, spotless/compose-rules, and CI actions
+  (setup-java 6.0.1, setup-android 4.0.4, gh-release 3.0.3). Overlapping
+  standalone/group PRs de-duplicated (AGP 9.4.1 from #268 chosen over
+  #261's 9.4.0; kotlin/ksp dups closed). Dep/toolchain only — no
+  user-facing change. Pre-tag release-build smoke on the Pixel_7_Pro
+  emulator (assembleRelease + R8 + v2 signing BUILD SUCCESSFUL in 5m24s;
+  install + clean cold launch — `Displayed MainActivity +3s654ms`,
+  Firebase/Crashlytics init, ProfileInstaller ran, no crash/ANR). Tagged
+  2026-09-20; Play upload deferred to maintainer (dep-only, last Play
+  build stays v4.1.1). Note: the DAGP↔AGP warning (#187) widened —
+  dependencyAnalysis 3.19.2 certifies AGP ≤ 9.3.1, we run 9.4.1.
 - **Next pickup after the v2 cycle ships**:
   - **Promote the APOD empty-state polish** (deferred during #169
     review) — `CircularProgressIndicator` on top of the gray
