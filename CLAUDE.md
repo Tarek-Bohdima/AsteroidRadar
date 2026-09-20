@@ -6,11 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Asteroid Radar is a Play-Store-published Android app (internal track) tracking NASA Near Earth Objects. Single-module, **Jetpack Compose UI + Navigation Compose** (migrated off Fragments/Data Binding in Phase 9), Hilt DI, offline-first via Room, daily background refresh via WorkManager. Default package is `com.tarek.asteroidradar`. (The Architecture section below still describes the pre-Compose Fragment/Data-Binding/Moshi stack and is **stale** — trust the source and `IMPROVEMENT_PLAN.md` over it until that section is rewritten.)
 
-**Roadmap and ongoing improvements** live in [`docs/IMPROVEMENT_PLAN.md`](docs/IMPROVEMENT_PLAN.md) — phased modernization (Gradle Kotlin DSL → convention plugin → quality tooling → toolchain bump → Hilt → R8 → tests + Kover → edge-to-edge → Compose → buildHealth → kotlinx.serialization → ongoing). The plan's "Current shipping state" section is the load-bearing handoff — read it first when starting a session. Currently shipping `v4.0.4-INTERNAL` on Play Internal; in flight is the APOD-reliability-v2 cycle (PRs #177/#179/#181, planned `v4.1.0-INTERNAL`). PRs should reference the relevant phase.
+**Roadmap and ongoing improvements** live in [`docs/IMPROVEMENT_PLAN.md`](docs/IMPROVEMENT_PLAN.md) — phased modernization (Gradle Kotlin DSL → convention plugin → quality tooling → toolchain bump → Hilt → R8 → tests + Kover → edge-to-edge → Compose → buildHealth → kotlinx.serialization → ongoing). The plan's "Current shipping state" section is the load-bearing handoff — read it first when starting a session. Currently shipping `v4.1.1-INTERNAL` on Play Internal (Pixel-verified 2026-08-08); `v4.1.2-INTERNAL` (2026-09-20 dependency/toolchain batch) is being cut. PRs should reference the relevant phase.
 
 ## Build, test, run
 
-Single-module Android Gradle project. JDK 17, Kotlin 1.6.21, AGP 8.3.0, `compileSdk`/`targetSdk` 35, `minSdk` 26.
+Single-module Android Gradle project. JDK 17, Kotlin 2.4.20, AGP 9.4.1, `compileSdk` 37, `targetSdk` 36, `minSdk` 26. (Toolchain versions live in `gradle/libs.versions.toml`; SDK levels in the `asteroidradar.android.application` convention plugin.)
 
 ```bash
 ./gradlew assembleDebug          # debug APK
@@ -28,7 +28,7 @@ There is no separate lint step in CI; use `./gradlew lint` locally if needed.
 
 ## Required configuration
 
-`app/build.gradle` reads these from env vars first, then falls back to `local.properties`:
+`app/build.gradle.kts` reads these from env vars first, then falls back to `local.properties`:
 
 - `NASA_API_KEY` — required for both debug and release; injected as `BuildConfig.NASA_API_KEY`.
 - `KEYSTORE_PATH`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` — required only when running `assembleRelease` / `bundleRelease`. The keystore must be PKCS12 (`storeType "PKCS12"` is hard-coded in `signingConfigs.release`).
@@ -37,7 +37,7 @@ There is no separate lint step in CI; use `./gradlew lint` locally if needed.
 
 ## Versioning and tags
 
-Version is computed in `app/build.gradle` from four fields at the top:
+Version is computed in `app/build.gradle.kts` from four fields at the top:
 
 ```
 versionMajor / versionMinor / versionPatch / versionClassifier
