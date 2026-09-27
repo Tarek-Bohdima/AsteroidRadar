@@ -8,7 +8,7 @@ kotlin = "2.4.20"
 # 2.3.4 (Kotlin 2.3.0 baseline) rather than 2.3.7, which is the bleeding edge
 # where Hilt's compatibility hasn't fully caught up.
 ksp = "2.3.12"
-androidxNavigation = "2.10.1"
+androidxNavigation = "2.10.2"
 
 androidxActivity = "1.13.0"
 androidxAppcompat = "1.8.0"
@@ -24,7 +24,7 @@ androidxConstraintlayout = "2.2.2"
 androidxHilt = "1.4.0"
 androidxLifecycle = "2.11.0"
 androidxRoom = "2.8.5"
-androidxWork = "2.11.2"
+androidxWork = "2.12.0"
 
 # Coroutines core + android unified on a single ref. Bumped to the
 # Kotlin-2.3-compatible release in Phase 13a alongside the Kotlin / KSP / AGP
