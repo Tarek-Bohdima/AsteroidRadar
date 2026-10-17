@@ -8,7 +8,7 @@ kotlin = "2.4.20"
 # 2.3.4 (Kotlin 2.3.0 baseline) rather than 2.3.7, which is the bleeding edge
 # where Hilt's compatibility hasn't fully caught up.
 ksp = "2.3.12"
-androidxNavigation = "2.10.1"
+androidxNavigation = "2.10.2"
 
 androidxActivity = "1.13.0"
 androidxAppcompat = "1.8.0"
@@ -24,7 +24,7 @@ androidxConstraintlayout = "2.2.2"
 androidxHilt = "1.4.0"
 androidxLifecycle = "2.11.0"
 androidxRoom = "2.8.5"
-androidxWork = "2.11.2"
+androidxWork = "2.12.0"
 
 # Coroutines core + android unified on a single ref. Bumped to the
 # Kotlin-2.3-compatible release in Phase 13a alongside the Kotlin / KSP / AGP
@@ -73,7 +73,7 @@ timber = "5.0.1"
 # Bumped to 34.13.0 per Firebase Console's setup guidance; the BoM 34 series
 # also folds Kotlin extensions back into the main `firebase-crashlytics`
 # artifact, so the legacy `-ktx` suffix is dropped on the library coord below.
-firebaseBom = "34.19.0"
+firebaseBom = "35.0.0"
 # Google Services Gradle plugin parses `app/google-services.json` and generates
 # the per-build-type `google-services.xml` resource that Firebase libs read at
 # init. Plugin version-tracks the Firebase Android client release line.
@@ -95,16 +95,16 @@ turbine = "1.2.1"
 # Code-quality tooling. ktlint version pinned for reproducibility across machines.
 # Mans0n compose-rules ships a detekt-plugin variant for Compose-specific checks
 # (slot-table correctness, hoisting, parameter ordering, modifier handling).
-composeRules = "0.6.6"
+composeRules = "0.6.7"
 # Tony Robalik's dependency-analysis-gradle-plugin — `./gradlew buildHealth`
 # flags unused / misplaced / superfluous dependencies. Phase 10. Aggregates
 # subproject reports at the root, so it's applied at the root build script.
 dependencyAnalysis = "3.19.2"
 detekt = "1.23.8"
 # Kover 0.9.x supports Kotlin 2.0+; aligned with the project's Kotlin pin.
-kover = "0.9.9"
+kover = "0.9.11"
 ktlint = "1.5.0"
-spotless = "8.10.2"
+spotless = "8.10.3"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidxActivity" }
