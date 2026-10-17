@@ -80,6 +80,10 @@ import com.tarek.asteroidradar.repository.AsteroidRepository.AsteroidsFilter
 
 private val ApodHeaderHeight = 220.dp
 
+// Hoisted so the APOD header doesn't allocate a fresh Regex on every
+// recomposition — NASA sometimes returns an http:// URL; upgrade it to https.
+private val HttpSchemeRegex = Regex("^http://")
+
 // Issue #168: test seams to distinguish the cache-empty placeholder render from
 // the load-failure broken-icon render. The two paths previously looked identical
 // to instrumentation tests.
@@ -126,7 +130,7 @@ fun MainScreen(
                         },
                     )
                 }
-                items(asteroids, key = { it.id }) { asteroid ->
+                items(asteroids, key = { it.id }, contentType = { "asteroid" }) { asteroid ->
                     AsteroidRow(asteroid = asteroid, onClick = { onAsteroidClick(asteroid) })
                 }
             }
@@ -212,14 +216,17 @@ internal fun ImageOfTheDayHeader(
                         .testTag(APOD_PLACEHOLDER_TEST_TAG),
             )
         } else {
-            SubcomposeAsyncImage(
-                model =
+            val imageRequest =
+                remember(picture.url) {
                     ImageRequest
                         .Builder(context)
-                        .data(picture.url.replaceFirst(Regex("^http://"), "https://"))
+                        .data(picture.url.replaceFirst(HttpSchemeRegex, "https://"))
                         .placeholder(R.drawable.placeholder_picture_of_day)
                         .crossfade(true)
-                        .build(),
+                        .build()
+                }
+            SubcomposeAsyncImage(
+                model = imageRequest,
                 contentDescription = stringResource(R.string.image_of_the_day),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
