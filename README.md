@@ -1,7 +1,7 @@
 # Asteroid Radar
 
 [![Android CI](https://github.com/Tarek-Bohdima/AsteroidRadar/actions/workflows/build_pull_request.yml/badge.svg)](https://github.com/Tarek-Bohdima/AsteroidRadar/actions/workflows/build_pull_request.yml)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20-blueviolet?logo=kotlin)](#)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.21-blueviolet?logo=kotlin)](#)
 [![AGP](https://img.shields.io/badge/AGP-9.4.1-blue?logo=android)](#)
 [![minSdk](https://img.shields.io/badge/minSdk-26-brightgreen)](#)
 [![compileSdk](https://img.shields.io/badge/compileSdk-37-brightgreen)](#)

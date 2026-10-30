@@ -46,9 +46,13 @@ the rough size; sub-bullets are the concrete deltas.
 ## Current shipping state
 
 Snapshot for whoever opens this repo next (likely future-you). Reflects the
-state at 2026-09-20, after the 2026-09 dependency/toolchain batch was cut as
-`v4.1.2-INTERNAL` (version-of-record on `master`). Last Play-verified build is
-`v4.1.1-INTERNAL`.
+state at 2026-10-30. Version-of-record on `master` is `v4.1.2-INTERNAL`; three
+dep-only batches have landed on top of it since the tag (no re-tag, no version
+bump — see the 2026-10 Dependabot bullet). Last Play-verified build is
+`v4.1.1-INTERNAL`. **Heads-up for the next tag**: master has accumulated
+un-smoked release-classpath changes since v4.1.2 (Firebase 34→35.1, WorkManager
+2.12, Kotlin 2.4.21, kotlinx-serialization 1.12) — run a device release smoke
+before cutting `v4.1.3`.
 
 - **Live on Play Internal**: `v4.1.1-INTERNAL` (uploaded + Pixel-verified
   2026-08-08, versionCode `26040101`) — "works as intended" on a real
@@ -64,6 +68,15 @@ state at 2026-09-20, after the 2026-09 dependency/toolchain batch was cut as
   only — no user-facing change, hence PATCH. The prior version-of-record was
   `v4.1.1-INTERNAL` (versionCode `26040101`, 2026-08 batch, AGP 9.3.1 /
   Kotlin 2.4.10 / KSP 2.3.11 / compileSdk 37).
+- **Dependabot (2026-10)**: four combined single-CI batches merged on top of
+  v4.1.2 (dep-only, no re-tag) — 7-PR #282 (**Firebase BoM 34.19.0 → 35.0.0**
+  major, androidx nav 2.10.2 / **work 2.11.2 → 2.12.0**, gradle-wrapper 9.8.1,
+  kover 0.9.11, spotless/compose-rules, upload-artifact v7.0.2), 4-PR #290
+  (**Kotlin 2.4.20 → 2.4.21**, compose-rules 0.6.8, spotless 8.10.4, setup-java
+  6.1.0), 3-PR #294 (**kotlinx-serialization 1.12.0**, Firebase BoM 35.1.0,
+  gradle-wrapper 9.8.2), plus the small Compose-perf PR #284 (remember APOD
+  ImageRequest + lazy-list contentType; closes #283). All passed PR CI; none
+  device-smoked yet — see the heads-up above before the next tag.
 - **Dependabot (2026-06-21)**: merged an 8-PR batch — CI actions
   (#188 action-gh-release 3.0.1, #189 checkout v7, #190 setup-java
   5.3.0) and gradle deps (#192 google-services 4.5.0, #193 spotless
