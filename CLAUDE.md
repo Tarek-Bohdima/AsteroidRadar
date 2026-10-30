@@ -10,7 +10,7 @@ Asteroid Radar is a Play-Store-published Android app (internal track) tracking N
 
 ## Build, test, run
 
-Single-module Android Gradle project. JDK 17, Kotlin 2.4.20, AGP 9.4.1, `compileSdk` 37, `targetSdk` 36, `minSdk` 26. (Toolchain versions live in `gradle/libs.versions.toml`; SDK levels in the `asteroidradar.android.application` convention plugin.)
+Single-module Android Gradle project. JDK 17, Kotlin 2.4.21, AGP 9.4.1, `compileSdk` 37, `targetSdk` 36, `minSdk` 26. (Toolchain versions live in `gradle/libs.versions.toml`; SDK levels in the `asteroidradar.android.application` convention plugin.)
 
 ```bash
 ./gradlew assembleDebug          # debug APK
